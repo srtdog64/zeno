@@ -1,5 +1,5 @@
-import { ProjectionView } from "@zeno/runtime";
-import type { z } from "@zeno/types";
+import { ProjectionView } from "@exornea/zeno-runtime";
+import type { z } from "@exornea/zeno-types";
 
 export const runtimeValue = ProjectionView;
 

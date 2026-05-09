@@ -58,7 +58,7 @@ These are source-level non-breaking only; they do not change the wire layout:
 For v1, version records explicitly at the application envelope level:
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Envelope {
   schemaVersion: z.u16;

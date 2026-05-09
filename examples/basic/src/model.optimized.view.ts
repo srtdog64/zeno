@@ -1,4 +1,4 @@
-import { BytesSpanView, DynamicLayoutWriter, ProjectionView, Utf8SpanView, Utf8VectorView, decodeFixedText, fixedBytesView, writeFixedText } from "@zeno/runtime";
+import { BytesSpanView, DynamicLayoutWriter, ProjectionView, Utf8SpanView, Utf8VectorView, decodeFixedText, fixedBytesView, writeFixedText } from "@exornea/zeno-runtime";
 
 export interface UserViewInput {
   readonly id: bigint;

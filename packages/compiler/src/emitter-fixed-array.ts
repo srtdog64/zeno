@@ -3,7 +3,7 @@ import {
   type FieldLayout,
   type FixedArrayElementLayout,
   type StructLayout,
-} from "@zeno/schema";
+} from "@exornea/zeno-schema";
 
 import { method } from "./emitter-template.js";
 

@@ -11,10 +11,10 @@
 
 ## Stable V1.1 Additions
 
-- Optional `ZENO` frame header helpers in `@zeno/runtime`.
+- Optional `ZENO` frame header helpers in `@exornea/zeno-runtime`.
 - Frame metadata for major/minor version, payload endianness, flags, layout hash,
   payload offset, and payload byte length.
-- `analyzeProjectionSourceFile(sourceFile, options)` in `@zeno/compiler`.
+- `analyzeProjectionSourceFile(sourceFile, options)` in `@exornea/zeno-compiler`.
 - `zeno-codegen` uses the source-file analyzer path internally.
 
 ## Explicit Non-Goals

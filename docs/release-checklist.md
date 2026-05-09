@@ -32,10 +32,10 @@ This runs:
 For a scoped public publish, use explicit package order:
 
 ```powershell
-npm publish --workspace @zeno/types --access public
-npm publish --workspace @zeno/schema --access public
-npm publish --workspace @zeno/runtime --access public
-npm publish --workspace @zeno/compiler --access public
+npm publish --workspace @exornea/zeno-types --access public
+npm publish --workspace @exornea/zeno-schema --access public
+npm publish --workspace @exornea/zeno-runtime --access public
+npm publish --workspace @exornea/zeno-compiler --access public
 ```
 
 ## Preconditions

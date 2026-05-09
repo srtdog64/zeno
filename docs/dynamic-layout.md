@@ -141,7 +141,7 @@ Without descriptors, the reader cannot jump to dynamic fields in O(1).
 For a schema like:
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 interface User {
   id: z.u64;

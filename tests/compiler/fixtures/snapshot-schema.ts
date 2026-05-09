@@ -1,4 +1,4 @@
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Mini {
   id: z.u64;

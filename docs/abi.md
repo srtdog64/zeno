@@ -71,7 +71,7 @@ packages/runtime/src/index.ts
   public root export surface
 ```
 
-The package intentionally exports only the root `@zeno/runtime` entrypoint.
+The package intentionally exports only the root `@exornea/zeno-runtime` entrypoint.
 Internal files exist to keep responsibilities separate; they are not separate
 public subpath APIs.
 
@@ -119,7 +119,7 @@ endianness field describes the payload. This keeps frame detection independent
 from the payload ABI and avoids a "read endian before knowing endian" bootstrap
 problem.
 
-Frame helpers live in the root `@zeno/runtime` export:
+Frame helpers live in the root `@exornea/zeno-runtime` export:
 
 - `writeZenoFrameHeader(...)`
 - `readZenoFrameHeader(...)`

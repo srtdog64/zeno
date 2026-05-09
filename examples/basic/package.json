@@ -1,11 +1,11 @@
 {
-  "name": "@zeno/example-basic",
+  "name": "@exornea/zeno-example-basic",
   "version": "1.7.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@zeno/compiler": "1.7.0",
-    "@zeno/runtime": "1.7.0",
-    "@zeno/types": "1.7.0"
+    "@exornea/zeno-compiler": "1.7.0",
+    "@exornea/zeno-runtime": "1.7.0",
+    "@exornea/zeno-types": "1.7.0"
   }
 }

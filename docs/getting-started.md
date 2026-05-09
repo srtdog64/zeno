@@ -5,17 +5,17 @@
 | Property | Status | Reason |
 | --- | --- | --- |
 | TypeScript-only schema authoring | load-bearing | Zeno removes a separate `.fbs`-style IDL only for TS-only systems. |
-| `@zeno/types` ABI aliases | load-bearing | Binary width and dynamic layout policy must be explicit in the type layer. |
+| `@exornea/zeno-types` ABI aliases | load-bearing | Binary width and dynamic layout policy must be explicit in the type layer. |
 | `.zeno.ts` schema files | load-bearing | They keep schema review separate from application logic while staying valid TypeScript. |
 | Dynamic read/write views | load-bearing | `Span32` and `Vector32` readers and supported writers are part of the v1 surface. |
 | Bare `string` shorthand | diagnostic | The compiler can lower it to UTF-8 today, but `z.utf8` is clearer in schema review. |
 
 ## 1. Write a Schema
 
-Create a schema-only file with type imports from `@zeno/types`.
+Create a schema-only file with type imports from `@exornea/zeno-types`.
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface User {
   id: z.u64;

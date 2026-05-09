@@ -5,7 +5,7 @@ import * as runtime from "../packages/runtime/src/index.js";
 import * as schema from "../packages/schema/src/index.js";
 
 describe("public package runtime exports", () => {
-  it("keeps the @zeno/runtime root export surface stable", () => {
+  it("keeps the @exornea/zeno-runtime root export surface stable", () => {
     expect(Object.keys(runtime).sort()).toMatchInlineSnapshot(`
       [
         "BytesSpanView",
@@ -60,7 +60,7 @@ describe("public package runtime exports", () => {
     `);
   });
 
-  it("keeps the @zeno/compiler root export surface stable", () => {
+  it("keeps the @exornea/zeno-compiler root export surface stable", () => {
     expect(Object.keys(compiler).sort()).toMatchInlineSnapshot(`
       [
         "MEASUREMENT_LAYERS",
@@ -90,7 +90,7 @@ describe("public package runtime exports", () => {
     `);
   });
 
-  it("keeps the @zeno/schema runtime helper export surface stable", () => {
+  it("keeps the @exornea/zeno-schema runtime helper export surface stable", () => {
     expect(Object.keys(schema).sort()).toMatchInlineSnapshot(`
       [
         "POINTER32_BYTE_LENGTH",

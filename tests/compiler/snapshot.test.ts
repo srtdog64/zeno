@@ -108,7 +108,7 @@ describe("compiler snapshots", () => {
       emitted.indexOf("Invalid base offset: ${baseOffset}"),
     ).toBeLessThan(emitted.indexOf("const start = baseOffset + 8"));
     expect(emitted).toMatchInlineSnapshot(`
-      "import { DynamicLayoutWriter, FixedBytesVectorView, ProjectionView, decodeFixedText, fixedBytesView, writeFixedText } from "@zeno/runtime";
+      "import { DynamicLayoutWriter, FixedBytesVectorView, ProjectionView, decodeFixedText, fixedBytesView, writeFixedText } from "@exornea/zeno-runtime";
 
       export interface MiniViewInput {
         readonly id: bigint;
@@ -254,7 +254,7 @@ describe("compiler snapshots", () => {
 
     expect(result.diagnostics).toEqual([]);
     expect(emitProjectionFile(result.layouts)).toMatchInlineSnapshot(`
-      "import { DynamicLayoutWriter, PointerVectorView, ProjectionView } from "@zeno/runtime";
+      "import { DynamicLayoutWriter, PointerVectorView, ProjectionView } from "@exornea/zeno-runtime";
 
       export interface NodeViewInput {
         readonly value: number;

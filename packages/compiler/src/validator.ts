@@ -8,7 +8,7 @@ import {
   type FixedArrayElementLayout,
   type StructLayout,
   type VectorElementLayout,
-} from "@zeno/schema";
+} from "@exornea/zeno-schema";
 
 import { createIrDiagnostic, type LayoutDiagnostic } from "./diagnostics.js";
 import {

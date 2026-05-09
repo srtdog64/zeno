@@ -5,7 +5,7 @@ import {
   type FieldLayout,
   type StructLayout,
   type VectorElementLayout,
-} from "@zeno/schema";
+} from "@exornea/zeno-schema";
 
 import {
   canWriteFixedArrayStructElement,
@@ -54,7 +54,7 @@ export function emitProjectionFile(
   const lines: string[] = [];
   const runtimeImports = collectRuntimeImports(layouts);
   const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
-  lines.push(`import { ${runtimeImports.join(", ")} } from "@zeno/runtime";`);
+  lines.push(`import { ${runtimeImports.join(", ")} } from "@exornea/zeno-runtime";`);
   lines.push("");
 
   for (const layout of layouts) {

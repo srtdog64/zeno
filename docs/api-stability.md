@@ -7,9 +7,9 @@ the stable `1.x` surface.
 
 | Property | Status | Reason |
 | --- | --- | --- |
-| Root package imports | load-bearing | Consumers must import only package roots such as `@zeno/runtime`; package subpaths are intentionally closed. |
+| Root package imports | load-bearing | Consumers must import only package roots such as `@exornea/zeno-runtime`; package subpaths are intentionally closed. |
 | Generated view class shape | load-bearing | This is the user-facing runtime API produced by the compiler. |
-| `@zeno/types` ABI marker names | load-bearing | Schema authors depend on these names in `.zeno.ts` files. |
+| `@exornea/zeno-types` ABI marker names | load-bearing | Schema authors depend on these names in `.zeno.ts` files. |
 | Fixed-layout scalar accessors | load-bearing | This is the stable hot path Zeno is built around. |
 | Dynamic span/vector APIs | load-bearing | `Span32` and `Vector32` are part of the v1 ABI and covered by runtime, compiler, and consumer witnesses. |
 | Pointer APIs | load-bearing | `pointer32` is stable as an explicit relative reference primitive; object graph serialization remains out of scope. |
@@ -20,14 +20,14 @@ the stable `1.x` surface.
 Use package roots only:
 
 ```ts
-import { ProjectionView, DynamicLayoutWriter } from "@zeno/runtime";
-import type { z } from "@zeno/types";
+import { ProjectionView, DynamicLayoutWriter } from "@exornea/zeno-runtime";
+import type { z } from "@exornea/zeno-types";
 ```
 
 Do not import runtime internals:
 
 ```ts
-import { readScalar } from "@zeno/runtime/dist/abi.js"; // rejected
+import { readScalar } from "@exornea/zeno-runtime/dist/abi.js"; // rejected
 ```
 
 The runtime package may ship internal `dist/*.js` files because Node needs them
@@ -38,7 +38,7 @@ behind the root export graph. They are not public subpath APIs.
 Stable for `1.x`:
 
 - `.zeno.ts` TypeScript interface input convention
-- `@zeno/types` scalar markers: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`,
+- `@exornea/zeno-types` scalar markers: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`,
   `u64`, `f32`, `f64`, `bool`
 - semantic scalar aliases: `enumU8`, `enumU16`, `flags8`, `flags32`,
   `timestampMs`
@@ -54,7 +54,7 @@ Stable for `1.x`:
 - optional frame boundary helpers, including `assertZenoFramePayload(...)` and
   `checkedZenoFramePayloadView(...)`
 - `zeno-codegen` CLI
-- root `@zeno/runtime` imports used by generated code
+- root `@exornea/zeno-runtime` imports used by generated code
 
 Experimental for `1.x`:
 

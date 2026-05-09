@@ -53,10 +53,10 @@ const rootExport = {
 const policies = [
   {
     path: "packages/compiler/package.json",
-    name: "@zeno/compiler",
+    name: "@exornea/zeno-compiler",
     files: ["dist/", "bin/", "!dist/plugin.*"],
     dependencies: {
-      "@zeno/schema": rootPackage.version,
+      "@exornea/zeno-schema": rootPackage.version,
       typescript: "^5.9.0",
     },
     bin: {
@@ -65,20 +65,20 @@ const policies = [
   },
   {
     path: "packages/runtime/package.json",
-    name: "@zeno/runtime",
+    name: "@exornea/zeno-runtime",
     files: ["dist/"],
     dependencies: {
-      "@zeno/types": rootPackage.version,
+      "@exornea/zeno-types": rootPackage.version,
     },
   },
   {
     path: "packages/schema/package.json",
-    name: "@zeno/schema",
+    name: "@exornea/zeno-schema",
     files: ["dist/"],
   },
   {
     path: "packages/types/package.json",
-    name: "@zeno/types",
+    name: "@exornea/zeno-types",
     files: ["dist/"],
   },
 ];

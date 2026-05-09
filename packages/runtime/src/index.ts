@@ -25,7 +25,7 @@ export type {
   utf8,
   vector,
   z,
-} from "@zeno/types";
+} from "@exornea/zeno-types";
 
 export {
   POINTER32_BYTE_LENGTH,

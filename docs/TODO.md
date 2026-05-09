@@ -205,10 +205,10 @@ Status: local witness only.
 ## Immediate next tasks
 
 - tag and publish `1.7.0` after human release review
-- confirm npm scope ownership for `@zeno/*`; if unavailable, decide the fallback
+- publish under the owned `@exornea/zeno-*` package family
   scope before renaming packages
-- keep the publish order explicit: `@zeno/types`, `@zeno/schema`,
-  `@zeno/runtime`, then `@zeno/compiler`
+- keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
+  `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
 - keep [performance-comparison.md](performance-comparison.md) synced when
   benchmark code or generated hot-path code changes
 - use [release-checklist.md](release-checklist.md) as the release gate before

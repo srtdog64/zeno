@@ -14,7 +14,7 @@ import {
   type ScalarKind,
   type StructLayout,
   type VectorElementLayout,
-} from "@zeno/schema";
+} from "@exornea/zeno-schema";
 
 import {
   createDiagnostic,

@@ -3,7 +3,7 @@
 Zeno exposes two API layers on purpose: a static hot-path API and a projection
 view API. They should not be collapsed into one abstraction.
 
-Schema authors use `.zeno.ts` files and `import type { z } from "@zeno/types"`.
+Schema authors use `.zeno.ts` files and `import type { z } from "@exornea/zeno-types"`.
 Runtime code imports generated `.view.ts` classes.
 
 ## Claim Status

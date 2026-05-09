@@ -11,7 +11,7 @@ IDL file.
 | --- | --- | --- |
 | TypeScript-only scope | load-bearing | Cross-language support would change the product and compiler design. |
 | `.zeno.ts` schema-only convention | load-bearing | It keeps schema diffs and documentation cleaner than arbitrary interfaces spread through app code. |
-| `@zeno/types` marker imports | load-bearing | ABI facts must be explicit in TypeScript without runtime schema objects. |
+| `@exornea/zeno-types` marker imports | load-bearing | ABI facts must be explicit in TypeScript without runtime schema objects. |
 | FlatBuffers comparison | diagnostic | It helps explain tradeoffs, but Zeno should not be judged as a universal FlatBuffers replacement. |
 | Runtime has no external dependencies | load-bearing | Hot-path projection should stay small; internal type-only package references are acceptable. |
 
@@ -37,7 +37,7 @@ Use FlatBuffers, Cap'n Proto, protobuf, or another IDL when:
 Zeno schemas should live in `.zeno.ts` files.
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface User {
   id: z.u64;
@@ -51,7 +51,7 @@ export interface User {
 
 Rules:
 
-- schema files use `import type { z } from "@zeno/types"`
+- schema files use `import type { z } from "@exornea/zeno-types"`
 - schema files export `interface` and supported `type` declarations only
 - runtime logic does not belong in `.zeno.ts`
 - generated views go into separate `.view.ts` files
@@ -63,14 +63,14 @@ runtime values or exports runtime values receives
 
 ## Import Boundary
 
-`@zeno/types` contains type-only ABI markers:
+`@exornea/zeno-types` contains type-only ABI markers:
 
 - `z.i32`, `z.u64`, `z.f32`, `z.f64`
 - `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>`
 - `z.utf8`, `z.ascii`, `z.bytes`
 - `z.vector<T>`
 
-`@zeno/runtime` contains generated-code helpers and projection views. Schema
+`@exornea/zeno-runtime` contains generated-code helpers and projection views. Schema
 authors should not import ABI markers from runtime, even though compatibility
 aliases may remain during transition.
 

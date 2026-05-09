@@ -46,27 +46,27 @@ for (const { lockKey, packagePath, manifest } of workspacePackages) {
 const compilerPackage = readJson("packages/compiler/package.json");
 const runtimePackage = readJson("packages/runtime/package.json");
 assertEqual(
-  compilerPackage.dependencies?.["@zeno/schema"],
+  compilerPackage.dependencies?.["@exornea/zeno-schema"],
   version,
-  "@zeno/compiler dependency @zeno/schema",
+  "@exornea/zeno-compiler dependency @exornea/zeno-schema",
 );
 assertEqual(
-  runtimePackage.dependencies?.["@zeno/types"],
+  runtimePackage.dependencies?.["@exornea/zeno-types"],
   version,
-  "@zeno/runtime dependency @zeno/types",
+  "@exornea/zeno-runtime dependency @exornea/zeno-types",
 );
 
 const lockCompiler = lockfile.packages["packages/compiler"];
 const lockRuntime = lockfile.packages["packages/runtime"];
 assertEqual(
-  lockCompiler.dependencies?.["@zeno/schema"],
+  lockCompiler.dependencies?.["@exornea/zeno-schema"],
   version,
-  "package-lock @zeno/compiler dependency @zeno/schema",
+  "package-lock @exornea/zeno-compiler dependency @exornea/zeno-schema",
 );
 assertEqual(
-  lockRuntime.dependencies?.["@zeno/types"],
+  lockRuntime.dependencies?.["@exornea/zeno-types"],
   version,
-  "package-lock @zeno/runtime dependency @zeno/types",
+  "package-lock @exornea/zeno-runtime dependency @exornea/zeno-types",
 );
 
 console.log(`version check passed: ${version}`);

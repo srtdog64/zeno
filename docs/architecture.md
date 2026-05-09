@@ -28,7 +28,7 @@ That can be encoded with type aliases such as `z.i32`, `z.u32`, `z.f64`, `z.byte
 ## Authoring model
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface User {
   id: z.u64;

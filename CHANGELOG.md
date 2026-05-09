@@ -58,8 +58,8 @@ Status: compiler maintainability release with no intended ABI or generated-code 
 
 Status: stable v1 surface plus optional container-boundary helpers.
 
-- Optional `ZENO` frame header helpers in `@zeno/runtime`.
-- `analyzeProjectionSourceFile(sourceFile, options)` in `@zeno/compiler`.
+- Optional `ZENO` frame header helpers in `@exornea/zeno-runtime`.
+- `analyzeProjectionSourceFile(sourceFile, options)` in `@exornea/zeno-compiler`.
 - Schema source validation rejects value declarations in `.zeno.ts` files.
 - Backwards-compatible `analyzeProjectionFile(program?, sourceFile)` wrapper.
 
@@ -69,7 +69,7 @@ Status: stable v1 API for the documented TypeScript-only surface.
 
 ### Load-Bearing Scope
 
-- TypeScript-only `.zeno.ts` schema authoring through `@zeno/types`.
+- TypeScript-only `.zeno.ts` schema authoring through `@exornea/zeno-types`.
 - AST and type-checker analysis into Layout IR.
 - Generated `DataView` projection classes with static scalar accessors and reusable cursor views.
 - Fixed-size scalar, fixed byte/string, nested fixed struct, and endian-aware accessor generation.

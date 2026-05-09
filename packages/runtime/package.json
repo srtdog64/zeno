@@ -1,5 +1,5 @@
 {
-  "name": "@zeno/runtime",
+  "name": "@exornea/zeno-runtime",
   "version": "1.7.0",
   "description": "Runtime views, descriptors, writers, and frame helpers for Zeno binary projections.",
   "keywords": [
@@ -34,6 +34,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@zeno/types": "1.7.0"
+    "@exornea/zeno-types": "1.7.0"
   }
 }

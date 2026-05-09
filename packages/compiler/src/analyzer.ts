@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { alignTo, type Endianness, type StructLayout } from "@zeno/schema";
+import { alignTo, type Endianness, type StructLayout } from "@exornea/zeno-schema";
 
 import {
   createDiagnostic,
@@ -109,7 +109,7 @@ function isAllowedTypeOnlyImport(statement: ts.ImportDeclaration): boolean {
     return false;
   }
 
-  if (moduleName.text === "@zeno/runtime") {
+  if (moduleName.text === "@exornea/zeno-runtime") {
     return false;
   }
 

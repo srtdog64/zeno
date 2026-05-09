@@ -3,7 +3,7 @@
 Korean version: [schema-grammar.ko.md](schema-grammar.ko.md)
 
 This document describes the supported `.zeno.ts` authoring grammar. It is a
-TypeScript subset plus Zeno ABI marker types from `@zeno/types`.
+TypeScript subset plus Zeno ABI marker types from `@exornea/zeno-types`.
 
 ## Claim Status
 
@@ -18,7 +18,7 @@ TypeScript subset plus Zeno ABI marker types from `@zeno/types`.
 ## File Shape
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface StructName {
   fieldName: z.i32;
@@ -48,7 +48,7 @@ file has already parsed as TypeScript.
 ```txt
 schema-file      ::= type-import* declaration*
 
-type-import      ::= "import type" ... "from" "@zeno/types"
+type-import      ::= "import type" ... "from" "@exornea/zeno-types"
 
 declaration      ::= interface-declaration | type-alias
 
@@ -110,7 +110,7 @@ N                ::= numeric-literal
 ### Fixed Scalar Record
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Point {
   x: z.f32;
@@ -122,7 +122,7 @@ export interface Point {
 ### Dynamic Text And Bytes
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface ArticleMeta {
   id: z.u64;
@@ -139,7 +139,7 @@ reviewed as a binary contract.
 ### Fixed Strings And Vectors
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface SearchRow {
   id: z.u32;
@@ -152,7 +152,7 @@ export interface SearchRow {
 ### Semantic Aliases And Fixed Arrays
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Point {
   x: z.f32;
@@ -175,7 +175,7 @@ inline fixed-layout region, not a `Vector32` descriptor.
 ### Nested Fixed Struct
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Stats {
   hp: z.i32;
@@ -194,7 +194,7 @@ can still be referenced through `z.pointer<T>`.
 ### Explicit Recursive Reference
 
 ```ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface Node {
   value: z.i32;
@@ -266,7 +266,7 @@ define a tag field and fixed variant table before accepting union syntax.
 ### Runtime Values
 
 ```ts
-import { ProjectionView } from "@zeno/runtime";
+import { ProjectionView } from "@exornea/zeno-runtime";
 
 export const runtimeValue = ProjectionView;
 
@@ -276,7 +276,7 @@ export interface Bad {
 ```
 
 Rejected because `.zeno.ts` files are schema-only. Use type-only imports from
-`@zeno/types`.
+`@exornea/zeno-types`.
 
 ## Cross-References
 

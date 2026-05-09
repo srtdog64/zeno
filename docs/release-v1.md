@@ -13,7 +13,7 @@
 ## Stable V1 Surface
 
 - `.zeno.ts` schema-only convention using TypeScript interfaces.
-- `@zeno/types` ABI marker namespace `z`.
+- `@exornea/zeno-types` ABI marker namespace `z`.
 - fixed scalar, fixed bytes, fixed string, nested fixed struct layouts.
 - `z.utf8`, `z.ascii`, `z.bytes` as `Span32` descriptors.
 - emitted readers and writers preserve UTF-8 vs ASCII text encoding.
@@ -24,7 +24,7 @@
   object writer methods.
 - generated `sum<Field>()` scan kernels for `number` scalar fields.
 - unchecked cursor movement methods for caller-proven hot loops.
-- runtime root export `@zeno/runtime`.
+- runtime root export `@exornea/zeno-runtime`.
 - compiler CLI `zeno-codegen`, including `--diagnostics=json` for structured
   diagnostic output.
 

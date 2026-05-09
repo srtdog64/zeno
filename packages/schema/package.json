@@ -1,5 +1,5 @@
 {
-  "name": "@zeno/schema",
+  "name": "@exornea/zeno-schema",
   "version": "1.7.0",
   "description": "Layout IR and ABI constants for Zeno zero-copy TypeScript binary views.",
   "keywords": [

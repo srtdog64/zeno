@@ -52,10 +52,10 @@ mkdirSync(path.join(consumerDir, "src"), { recursive: true });
 
 run(npmBin, [
   "pack",
-  "--workspace", "@zeno/schema",
-  "--workspace", "@zeno/types",
-  "--workspace", "@zeno/runtime",
-  "--workspace", "@zeno/compiler",
+  "--workspace", "@exornea/zeno-schema",
+  "--workspace", "@exornea/zeno-types",
+  "--workspace", "@exornea/zeno-runtime",
+  "--workspace", "@exornea/zeno-compiler",
   "--pack-destination",
   packDir,
 ]);
@@ -103,7 +103,7 @@ writeFileSync(
 
 writeFileSync(
   path.join(consumerDir, "src", "model.zeno.ts"),
-  `import type { z } from "@zeno/types";
+  `import type { z } from "@exornea/zeno-types";
 
 export interface Mini {
   id: z.u64;
@@ -118,7 +118,7 @@ export interface Mini {
 writeFileSync(
   path.join(consumerDir, "src", "main.ts"),
   `import { MiniView } from "./model.view.js";
-import { POINTER32_NULL } from "@zeno/runtime";
+import { POINTER32_NULL } from "@exornea/zeno-runtime";
 
 const buffer = new ArrayBuffer(128);
 const view = new DataView(buffer);
@@ -154,7 +154,7 @@ if (JSON.stringify(result) !== JSON.stringify({
 
 try {
   // @ts-expect-error Package exports intentionally block runtime internals.
-  await import("@zeno/runtime/dist/abi.js");
+  await import("@exornea/zeno-runtime/dist/abi.js");
   throw new Error("Deep import unexpectedly succeeded");
 } catch (error) {
   if (!(error instanceof Error) || !error.message.includes("Package subpath")) {
@@ -166,8 +166,8 @@ try {
 
 writeFileSync(
   path.join(consumerDir, "src", "invalid.zeno.ts"),
-  `import { ProjectionView } from "@zeno/runtime";
-import type { z } from "@zeno/types";
+  `import { ProjectionView } from "@exornea/zeno-runtime";
+import type { z } from "@exornea/zeno-types";
 
 export const runtimeValue = ProjectionView;
 

@@ -27,8 +27,8 @@ Cap'n Proto, protobuf, or MessagePack are better fits there.
 ## Install
 
 ```sh
-npm install @zeno/runtime @zeno/types
-npm install -D @zeno/compiler
+npm install @exornea/zeno-runtime @exornea/zeno-types
+npm install -D @exornea/zeno-compiler
 ```
 
 The compiler package provides the `zeno-codegen` CLI.
@@ -39,7 +39,7 @@ Write a schema-only TypeScript file:
 
 ```ts
 // src/model.zeno.ts
-import type { z } from "@zeno/types";
+import type { z } from "@exornea/zeno-types";
 
 export interface User {
   id: z.u64;
@@ -158,10 +158,10 @@ criteria.
 
 ## Packages
 
-- `@zeno/types`: type-only ABI marker namespace for schema authors.
-- `@zeno/schema`: Layout IR and ABI constants.
-- `@zeno/runtime`: runtime views, descriptors, frame helpers, and writers.
-- `@zeno/compiler`: analyzer, validator, emitter, and `zeno-codegen`.
+- `@exornea/zeno-types`: type-only ABI marker namespace for schema authors.
+- `@exornea/zeno-schema`: Layout IR and ABI constants.
+- `@exornea/zeno-runtime`: runtime views, descriptors, frame helpers, and writers.
+- `@exornea/zeno-compiler`: analyzer, validator, emitter, and `zeno-codegen`.
 
 ## Repository Commands
 

@@ -49,24 +49,25 @@ Summary:
 
 | Comparison | Median delta | Pooled std | Status |
 | --- | ---: | ---: | --- |
-| age: static offset vs direct | +2.00 ns/record | 2.58 ns/record | within noise |
-| age: static index vs direct | +0.18 ns/record | 1.69 ns/record | within noise |
-| age: cursor `rebase` vs direct | +5.03 ns/record | 2.21 ns/record | above noise |
-| age: cursor `rebaseUnchecked` vs direct | -1.05 ns/record | 1.73 ns/record | within noise |
-| age: cursor `moveToUnchecked` vs direct | -1.32 ns/record | 1.48 ns/record | within noise |
-| age: per-record view vs direct | +21.16 ns/record | 4.05 ns/record | above noise |
-| scalar mix: static offset vs direct | +3.52 ns/record | 5.98 ns/record | within noise |
-| scalar mix: static index vs direct | +3.70 ns/record | 7.57 ns/record | within noise |
-| scalar mix: cursor `rebase` vs direct | +27.85 ns/record | 11.16 ns/record | above noise |
-| scalar mix: cursor `rebaseUnchecked` vs direct | +13.30 ns/record | 6.75 ns/record | above noise |
+| age: static offset vs direct | -0.75 ns/record | 0.94 ns/record | within noise |
+| age: static index vs direct | -0.84 ns/record | 1.04 ns/record | within noise |
+| age: generated `sumAge` vs direct | -1.03 ns/record | 0.92 ns/record | above noise |
+| age: cursor `rebase` vs direct | +5.60 ns/record | 1.25 ns/record | above noise |
+| age: cursor `rebaseUnchecked` vs direct | -0.04 ns/record | 1.01 ns/record | within noise |
+| age: cursor `moveToUnchecked` vs direct | -0.36 ns/record | 1.22 ns/record | within noise |
+| age: per-record view vs direct | +19.69 ns/record | 2.58 ns/record | above noise |
+| scalar mix: static offset vs direct | +3.13 ns/record | 3.45 ns/record | within noise |
+| scalar mix: static index vs direct | +1.72 ns/record | 3.49 ns/record | within noise |
+| scalar mix: cursor `rebase` vs direct | +10.80 ns/record | 3.51 ns/record | above noise |
+| scalar mix: cursor `rebaseUnchecked` vs direct | +1.92 ns/record | 3.67 ns/record | within noise |
 
 Retained memory:
 
 | Scenario | Heap delta over buffer-only | Meaning |
 | --- | ---: | --- |
-| Scalar passes after GC | +286.52 KiB | Hot scalar reads leave little retained heap. |
-| Retained `UserView` objects | +10.97 MiB | Per-record views are still an avoid path. |
-| Retained materialized JS objects | +23.18 MiB | Plain object materialization is heavier in this witness. |
+| Scalar passes after GC | +297.61 KiB | Hot scalar reads leave little retained heap. |
+| Retained `UserView` objects | +10.98 MiB | Per-record views are still an avoid path. |
+| Retained materialized JS objects | +23.19 MiB | Plain object materialization is heavier in this witness. |
 
 Current conclusion: static offset and static index access are both within the
 measured noise floor for the single-field witness after emitting literal record
@@ -78,10 +79,10 @@ Pointer dereference witness from the same local run:
 
 | Pointer workload | Median | p95 | p99 | Std | Median ns/record |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Direct `DataView` signed `pointer32` deref | 0.53 ms | 1.72 ms | 1.80 ms | 0.32 ms | 2.67 ns |
-| Cursor `pointer32` `nextInto` | 2.02 ms | 2.18 ms | 2.18 ms | 0.12 ms | 10.11 ns |
+| Direct `DataView` signed `pointer32` deref | 0.51 ms | 0.54 ms | 0.56 ms | 0.02 ms | 2.57 ns |
+| Cursor `pointer32` `nextInto` | 1.82 ms | 2.00 ms | 2.09 ms | 0.25 ms | 9.09 ns |
 
-Pointer delta: cursor `nextInto` was +7.43 ns/record over direct `DataView`,
+Pointer delta: cursor `nextInto` was +6.53 ns/record over direct `DataView`,
 above the pooled noise floor in this run. This is a separate workload from
 fixed-stride scalar projection because it measures pointer chasing and cursor
 rebasing rather than contiguous record scanning.
@@ -204,9 +205,9 @@ kernel is `sum<Field>()`, emitted for scalar fields whose TypeScript value is
 
 Latest local witness:
 
-- direct `DataView` age loop: `5.70 ns/record`
-- generated `UserView.sumAge`: `5.38 ns/record`
-- pooled noise floor: `1.76 ns/record`
+- direct `DataView` age loop: `2.29 ns/record`
+- generated `UserView.sumAge`: `1.26 ns/record`
+- pooled noise floor: `0.92 ns/record`
 
 This puts the generated sum kernel inside the direct `DataView` noise floor
 while removing handwritten offset math from the caller. Do not generalize this

@@ -4,7 +4,7 @@ import path from "node:path";
 import ts from "typescript";
 
 import {
-  analyzeProjectionFile,
+  analyzeProjectionSourceFile,
   emitProjectionFile,
   formatDiagnosticLocation,
 } from "../dist/index.js";
@@ -97,9 +97,7 @@ const sourceFile = ts.createSourceFile(
   true,
 );
 
-const program = undefined;
-
-const result = analyzeProjectionFile(program, sourceFile, { endianness });
+const result = analyzeProjectionSourceFile(sourceFile, { endianness });
 
 if (result.diagnostics.length > 0) {
   if (diagnosticsFormat === "json") {

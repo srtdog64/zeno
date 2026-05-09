@@ -1,5 +1,6 @@
 export {
   analyzeProjectionFile,
+  analyzeProjectionSourceFile,
   type AnalyzeOptions,
   type AnalyzeResult,
 } from "./analyzer.js";

@@ -34,6 +34,13 @@ export function analyzeProjectionFile(
   sourceFile: ts.SourceFile,
   options: AnalyzeOptions = {},
 ): AnalyzeResult {
+  return analyzeProjectionSourceFile(sourceFile, options);
+}
+
+export function analyzeProjectionSourceFile(
+  sourceFile: ts.SourceFile,
+  options: AnalyzeOptions = {},
+): AnalyzeResult {
   const state: AnalyzerState = {
     sourceFile,
     endianness: options.endianness ?? "little",

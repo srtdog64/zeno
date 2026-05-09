@@ -96,15 +96,35 @@ same.
 
 ## Container Header Policy
 
-Zeno v1 raw records do not include a mandatory magic number, version word,
+Zeno raw records do not include a mandatory magic number, version word,
 endianness marker, or layout hash. Generated views project over a caller-owned
-`DataView` plus `baseOffset`; adding a global header would change that ABI and
-make embedded records harder to compose.
+`DataView` plus `baseOffset`; adding a global header to every record would
+change that ABI and make embedded records harder to compose.
 
-File and network formats that need self-identification should wrap Zeno payloads
-in an application container header. A future optional Zeno frame can define a
-magic/version/endian/layout-hash envelope, but that envelope is not part of the
-v1 wire ABI.
+Zeno 1.1 adds an optional frame header for file and network boundaries:
+
+```txt
+offset + 0:  u8[4] magic bytes "ZENO"
+offset + 4:  u8    major version
+offset + 5:  u8    minor version
+offset + 6:  u8    payload endianness marker (1 little, 2 big)
+offset + 7:  u8    flags, currently 0
+offset + 8:  u64   layout hash, little-endian, 0 means unspecified
+offset + 16: u32   payload offset, frame-relative, little-endian
+offset + 20: u32   payload byte length, little-endian
+```
+
+The frame header itself is always little-endian after the magic bytes. Its
+endianness field describes the payload. This keeps frame detection independent
+from the payload ABI and avoids a "read endian before knowing endian" bootstrap
+problem.
+
+Frame helpers live in the root `@zeno/runtime` export:
+
+- `writeZenoFrameHeader(...)`
+- `readZenoFrameHeader(...)`
+- `assertZenoFrameHeader(...)`
+- `zenoFramePayloadView(...)`
 
 ## Descriptor ABI
 

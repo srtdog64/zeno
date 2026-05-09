@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   analyzeProjectionFile,
+  analyzeProjectionSourceFile,
   emitProjectionFile,
   emitStructView,
 } from "../../packages/compiler/src/index.js";
@@ -172,6 +173,21 @@ describe("analyzeProjectionFile", () => {
     expect(optimizedPlayerViewSource).toContain("override rebase(baseOffset: number): this");
     expect(optimizedPlayerViewSource).toContain("this.$idOffset = this.baseOffset + 0");
     expect(optimizedPlayerViewSource).toContain("return this.view.getBigUint64(this.$idOffset");
+  });
+
+  it("analyzes a source file without requiring a TypeScript program", () => {
+    const fixturePath = path.join(fixturesDir, "valid-schema.ts");
+    const program = createProgramFromRootNames([fixturePath]);
+    const sourceFile = program.getSourceFile(fixturePath);
+
+    expect(sourceFile).toBeDefined();
+
+    const result = analyzeProjectionSourceFile(sourceFile!, {
+      endianness: "big",
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.layouts[0]?.endianness).toBe("big");
   });
 
   it("reports ambiguous bare runtime types early", () => {

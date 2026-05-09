@@ -40,3 +40,16 @@ export {
   POINTER32_NULL,
   pointer32RelativeOffset,
 } from "./pointer32.js";
+export {
+  ZENO_FRAME_HEADER_BYTE_LENGTH,
+  ZENO_FRAME_LAYOUT_HASH_NONE,
+  ZENO_FRAME_VERSION_MAJOR,
+  assertZenoFrameHeader,
+  readZenoFrameHeader,
+  writeZenoFrameHeader,
+  zenoFramePayloadView,
+  type WriteZenoFrameHeaderOptions,
+  type ZenoFrameEndianness,
+  type ZenoFrameExpectation,
+  type ZenoFrameHeader,
+} from "./frame.js";

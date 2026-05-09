@@ -26,6 +26,10 @@ describe("public package runtime exports", () => {
         "Utf8VectorView",
         "VECTOR32_BYTE_LENGTH",
         "VectorView",
+        "ZENO_FRAME_HEADER_BYTE_LENGTH",
+        "ZENO_FRAME_LAYOUT_HASH_NONE",
+        "ZENO_FRAME_VERSION_MAJOR",
+        "assertZenoFrameHeader",
         "decodeFixedText",
         "decodeFixedUtf8",
         "decodeText",
@@ -34,6 +38,7 @@ describe("public package runtime exports", () => {
         "readScalar",
         "readSpan32Descriptor",
         "readVector32Descriptor",
+        "readZenoFrameHeader",
         "scalarByteLength",
         "traversePointerChain",
         "writeFixedBytes",
@@ -42,6 +47,8 @@ describe("public package runtime exports", () => {
         "writeScalar",
         "writeSpan32Descriptor",
         "writeVector32Descriptor",
+        "writeZenoFrameHeader",
+        "zenoFramePayloadView",
       ]
     `);
   });
@@ -52,6 +59,7 @@ describe("public package runtime exports", () => {
         "MEASUREMENT_LAYERS",
         "ambiguousLayout",
         "analyzeProjectionFile",
+        "analyzeProjectionSourceFile",
         "andThen",
         "createDiagnostic",
         "createIrDiagnostic",

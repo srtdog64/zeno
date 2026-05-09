@@ -116,6 +116,14 @@ Zeno `1.0.0` treats the following as stable:
 - package-root runtime imports through `@zeno/runtime`.
 - `zeno-codegen`, including `--diagnostics=json` and `--endian=little|big`.
 
+Zeno `1.1.0` adds optional container-boundary helpers without changing the raw
+record ABI:
+
+- `writeZenoFrameHeader(...)`, `readZenoFrameHeader(...)`,
+  `assertZenoFrameHeader(...)`, and `zenoFramePayloadView(...)` in
+  `@zeno/runtime`.
+- `analyzeProjectionSourceFile(sourceFile, options)` in `@zeno/compiler`.
+
 ## Non-Goals In V1
 
 Zeno v1 does not provide:
@@ -170,9 +178,9 @@ The current local benchmark keeps generated scan kernels within the direct
 `DataView` noise floor for the first v1 aggregate:
 
 ```text
-direct DataView age loop   5.70 ns/record
-UserView.sumAge            5.38 ns/record
-pooled noise floor         1.76 ns/record
+direct DataView age loop   2.29 ns/record
+UserView.sumAge            1.26 ns/record
+pooled noise floor         0.92 ns/record
 ```
 
 This is a local witness, not a universal runtime guarantee. See
@@ -182,6 +190,8 @@ benchmark methodology and promotion criteria.
 ## Design Notes
 
 - [docs/release-v1.md](docs/release-v1.md): stable v1 surface and non-goals.
+- [docs/release-v1.1.md](docs/release-v1.1.md): optional frame header and
+  source-file analyzer additions.
 - [docs/api-design.md](docs/api-design.md): static accessors, cursors, pointers,
   and scan kernel API rules.
 - [docs/abi.md](docs/abi.md): scalar, `Span32`, `Vector32`, and `pointer32` ABI.

@@ -671,6 +671,8 @@ function emitField(
   field: FieldLayout,
   options: EmitOptions,
 ): string[] {
+  // This switch intentionally mirrors the Layout IR field-kind surface.
+  // Split it only when a dispatch table removes real emitter complexity.
   switch (field.kind) {
     case "scalar": {
       const getterMethod = scalarGetterMethod(field.scalar);

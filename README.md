@@ -1,10 +1,10 @@
 # Zeno
 
-TypeScript-only zero-copy binary projection compiler.
+TypeScript-only zero-copy binary projection compiler without IDL overhead.
 
 Zeno turns schema-only TypeScript interfaces into generated `DataView` view
 classes. It is for TS-only systems that want FlatBuffers-like binary projection
-without maintaining a separate `.fbs`/IDL file.
+without maintaining a separate `.fbs`/IDL file or cross-language codegen flow.
 
 ```txt
 .zeno.ts interfaces -> Layout IR -> generated DataView views
@@ -103,18 +103,18 @@ per-record view allocation.
 
 ## Supported Schema Surface
 
-| Type | ABI shape | Status |
-| --- | --- | --- |
-| `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32` | scalar | stable |
-| `z.i64`, `z.u64` | bigint scalar | stable |
-| `z.f32`, `z.f64`, `z.bool` | scalar | stable |
-| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases | stable |
-| `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>` | inline fixed region | stable |
-| `z.fixedArray<T, N>` | inline fixed array | stable for scalar, fixed bytes/string, and fixed-size struct elements |
-| `z.utf8`, `z.ascii`, `z.bytes` | `Span32` descriptor | stable |
-| `z.vector<T>` | `Vector32` descriptor | stable for supported elements |
-| `z.pointer<T>` | signed relative `pointer32` | stable |
-| bare `string` | UTF-8 `Span32` shorthand | supported, but `z.utf8` is clearer |
+| Type                                                                    | ABI shape                   | Status                                                                |
+| ----------------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32`                      | scalar                      | stable                                                                |
+| `z.i64`, `z.u64`                                                        | bigint scalar               | stable                                                                |
+| `z.f32`, `z.f64`, `z.bool`                                              | scalar                      | stable                                                                |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases     | stable                                                                |
+| `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>`                  | inline fixed region         | stable                                                                |
+| `z.fixedArray<T, N>`                                                    | inline fixed array          | stable for scalar, fixed bytes/string, and fixed-size struct elements |
+| `z.utf8`, `z.ascii`, `z.bytes`                                          | `Span32` descriptor         | stable                                                                |
+| `z.vector<T>`                                                           | `Vector32` descriptor       | stable for supported elements                                         |
+| `z.pointer<T>`                                                          | signed relative `pointer32` | stable                                                                |
+| bare `string`                                                           | UTF-8 `Span32` shorthand    | supported, but `z.utf8` is clearer                                    |
 
 Unsupported by design in v1:
 

@@ -291,14 +291,24 @@ Status: local witness only.
   `lines.push(...)` blocks when the change removes real friction
 - keep large AST switches when they directly mirror TypeScript syntax; do not
   split them only to satisfy a line-count target
-- add formatting enforcement after the compiler refactor stabilizes, preferably
-  with a minimal Prettier check and no broad lint policy churn
+- keep `emitField`'s large switch intentionally until a dispatch table removes
+  real friction; if it stays, add an in-code note explaining that it mirrors the
+  Layout IR kind surface
+- align fixed-array emitter branching with the vector-writer dispatch-table
+  style when that reduces local complexity
+- formatting enforcement is active through Prettier and ESLint; keep the policy
+  minimal and avoid broad lint churn
+- add generated source maps only after the source-position contract is written:
+  map generated `.view.ts` members back to the originating `.zeno.ts` field and
+  avoid a runtime `source-map-support` dependency in hot-path packages
 
 ### Performance surface
 
 - document `--optimize-cursor-offsets` as experimental or remove it from the
   public CLI if repeated witnesses keep showing no stable win plus higher
   retained memory
+- current status: `--optimize-cursor-offsets` is a retired diagnostic mode, not
+  a recommended public optimization
 - promote generated scan kernels as the main aggregate hot path, not optimized
   cursor offsets
 - add generated scan kernel candidates only after `sum<Field>()` has repeated
@@ -317,6 +327,9 @@ Status: local witness only.
   when endian/alignment/browser witnesses are explicit
 - add browser benchmark smoke runs for generated static accessors and scan
   kernels, because Node/V8 local witnesses are not browser guarantees
+- measure whether `VectorView.length` plus `at(i)` double descriptor reads are
+  visible in vector hot paths before adding descriptor caching; any cache needs
+  an explicit immutable-descriptor invariant
 
 ### Runtime and ABI safety
 
@@ -324,6 +337,8 @@ Status: local witness only.
   API separately from projection methods
 - add a malformed-buffer corpus once deterministic inline fixtures become too
   large for focused unit tests
+- expand property-based tests from descriptor/runtime roundtrips to generated
+  random schema roundtrips before promoting production-readiness claims
 
 ### Schema and grammar
 
@@ -342,6 +357,16 @@ Status: local witness only.
 - keep generated-code golden snapshots representative rather than exhaustive;
   add a new golden only when a new ABI family appears
 - add a browser bundle smoke test before claiming browser-ready distribution
+- keep PR CI green for lint, format, release check, and WebGL example build
+
+### Examples
+
+- split examples by user-facing workload instead of growing `basic`:
+  - `examples/scalar-only`: fixed record hot-path scans
+  - `examples/dynamic`: strings, bytes, vectors, and writer tail layout
+  - `examples/recursive`: pointer-based graph projection
+  - `examples/webgl-instance-streamer`: large WebGL instance projection with
+    Zeno, FlatBuffers, and JSON comparison
 
 ## Deferred tasks
 

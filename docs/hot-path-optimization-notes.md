@@ -6,16 +6,16 @@ it needs a witness case and a failure mode.
 
 ## Claim Status
 
-| Proposal | Status | Reason |
-| --- | --- | --- |
-| Static byte-offset accessors | load-bearing | They avoid per-record views and remain the main scan API. |
-| Reusing one cursor view | load-bearing | It avoids one view object per record, though it is not the scalar hot path. |
-| Hoisted offset constants | candidate | Latest scalar-mix witness is favorable, but prior runs were not stable. |
-| Precomputed cursor field offsets | candidate | Helps single-field cursor reads; scalar mix does not yet justify extra generated state. |
-| Bound `DataView` methods | retired | Latest witness shows worse age-scan timing and bound functions add per-view state. |
-| TypedArray reinterpretation | candidate | Potentially useful for native-endian homogeneous vectors, not general mixed structs. |
-| Generic indexed `getField(index)` | diagnostic | Useful for tooling, but not a hot-path API because it becomes polymorphic. |
-| `TextDecoder` singleton and explicit bytes/text split | load-bearing | Already implemented in runtime; text decode remains explicit allocation work. |
+| Proposal                                              | Status       | Reason                                                                                                                                |
+| ----------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Static byte-offset accessors                          | load-bearing | They avoid per-record views and remain the main scan API.                                                                             |
+| Reusing one cursor view                               | load-bearing | It avoids one view object per record, though it is not the scalar hot path.                                                           |
+| Hoisted offset constants                              | candidate    | Latest scalar-mix witness is favorable, but prior runs were not stable.                                                               |
+| Precomputed cursor field offsets                      | retired      | Manual micro-witnesses can look favorable, but generated cursor offsets repeatedly fail scalar-mix and retained-heap promotion gates. |
+| Bound `DataView` methods                              | retired      | Latest witness shows worse age-scan timing and bound functions add per-view state.                                                    |
+| TypedArray reinterpretation                           | candidate    | Potentially useful for native-endian homogeneous vectors, not general mixed structs.                                                  |
+| Generic indexed `getField(index)`                     | diagnostic   | Useful for tooling, but not a hot-path API because it becomes polymorphic.                                                            |
+| `TextDecoder` singleton and explicit bytes/text split | load-bearing | Already implemented in runtime; text decode remains explicit allocation work.                                                         |
 
 ## Latest Witness
 
@@ -38,42 +38,42 @@ Parameters:
 
 Single-field `age` scan:
 
-| Candidate | Median ns/record | Delta vs direct | Status |
-| --- | ---: | ---: | --- |
-| Direct `DataView.getInt32` | 3.80 | baseline | baseline |
-| Direct offset-increment loop | 2.10 | -1.70 | favorable in this run |
-| Bound `DataView.getInt32` | 1.23 | -2.57 | median favorable, but cursor binding remains poor |
-| Zeno static offset accessor | 3.26 | -0.54 | within noise |
-| Current Zeno cursor `rebase` | 8.70 | +4.90 | not hot path |
-| Current Zeno cursor `moveTo` | 8.96 | +5.16 | not hot path |
-| Optimized generated cursor `rebase` | 9.15 | +5.35 | no win vs current |
-| Optimized generated cursor `moveTo` | 8.93 | +5.13 | no win vs current |
-| Bound-method cursor | 10.33 | +6.54 | worse |
-| Manual precomputed-offset cursor | 1.51 | -2.28 | useful micro witness, not generated shape |
-| Per-record view | 22.66 | +18.86 | avoid |
+| Candidate                           | Median ns/record | Delta vs direct | Status                                            |
+| ----------------------------------- | ---------------: | --------------: | ------------------------------------------------- |
+| Direct `DataView.getInt32`          |             3.80 |        baseline | baseline                                          |
+| Direct offset-increment loop        |             2.10 |           -1.70 | favorable in this run                             |
+| Bound `DataView.getInt32`           |             1.23 |           -2.57 | median favorable, but cursor binding remains poor |
+| Zeno static offset accessor         |             3.26 |           -0.54 | within noise                                      |
+| Current Zeno cursor `rebase`        |             8.70 |           +4.90 | not hot path                                      |
+| Current Zeno cursor `moveTo`        |             8.96 |           +5.16 | not hot path                                      |
+| Optimized generated cursor `rebase` |             9.15 |           +5.35 | no win vs current                                 |
+| Optimized generated cursor `moveTo` |             8.93 |           +5.13 | no win vs current                                 |
+| Bound-method cursor                 |            10.33 |           +6.54 | worse                                             |
+| Manual precomputed-offset cursor    |             1.51 |           -2.28 | useful micro witness, not generated shape         |
+| Per-record view                     |            22.66 |          +18.86 | avoid                                             |
 
 Scalar mix (`u64`, `i32`, `f64`, `f32`):
 
-| Candidate | Median ns/record | Delta vs direct | Status |
-| --- | ---: | ---: | --- |
-| Direct `DataView` scalar mix | 23.66 | baseline | baseline |
-| Direct offset-increment loop | 23.77 | +0.11 | within noise |
-| Hoisted offset constants | 22.70 | -0.96 | within noise |
-| Zeno static offset accessor | 28.60 | +4.95 | within noise |
-| Zeno static offset loop | 27.13 | +3.47 | within noise |
-| Current Zeno cursor `rebase` | 34.04 | +10.38 | worse |
-| Optimized generated cursor `rebase` | 32.67 | +9.02 | slight improvement vs current, within noise |
-| Optimized generated cursor `moveTo` | 34.10 | +10.44 | worse vs direct |
-| Manual precomputed-offset cursor | 22.56 | -1.10 | within noise |
-| Zeno cursor `moveTo` | 48.23 | +24.57 | worse |
+| Candidate                           | Median ns/record | Delta vs direct | Status                                      |
+| ----------------------------------- | ---------------: | --------------: | ------------------------------------------- |
+| Direct `DataView` scalar mix        |            23.66 |        baseline | baseline                                    |
+| Direct offset-increment loop        |            23.77 |           +0.11 | within noise                                |
+| Hoisted offset constants            |            22.70 |           -0.96 | within noise                                |
+| Zeno static offset accessor         |            28.60 |           +4.95 | within noise                                |
+| Zeno static offset loop             |            27.13 |           +3.47 | within noise                                |
+| Current Zeno cursor `rebase`        |            34.04 |          +10.38 | worse                                       |
+| Optimized generated cursor `rebase` |            32.67 |           +9.02 | slight improvement vs current, within noise |
+| Optimized generated cursor `moveTo` |            34.10 |          +10.44 | worse vs direct                             |
+| Manual precomputed-offset cursor    |            22.56 |           -1.10 | within noise                                |
+| Zeno cursor `moveTo`                |            48.23 |          +24.57 | worse                                       |
 
 Retained view memory:
 
-| Scenario | Heap delta over buffer-only | Status |
-| --- | ---: | --- |
-| Current generated `UserView` objects | 10.93 MiB | baseline |
-| Optimized generated `UserView` objects | 17.04 MiB | higher heap |
-| Materialized JS objects | 23.14 MiB | highest heap |
+| Scenario                               | Heap delta over buffer-only | Status       |
+| -------------------------------------- | --------------------------: | ------------ |
+| Current generated `UserView` objects   |                   10.93 MiB | baseline     |
+| Optimized generated `UserView` objects |                   17.04 MiB | higher heap  |
+| Materialized JS objects                |                   23.14 MiB | highest heap |
 
 Methodological note: these are V8/Node local measurements. They supply
 promotion evidence only for this runtime and this schema shape.
@@ -92,14 +92,14 @@ Reason:
 
 ### Precomputed cursor offsets
 
-Keep as candidate, but do not promote. The compiler has an experimental emit
-switch for this:
+Retire as a public optimization path. The compiler still accepts the diagnostic
+emit switch for regression experiments:
 
 ```powershell
 node .\packages\compiler\bin\zeno-codegen.mjs .\examples\basic\src\model.zeno.ts .\examples\basic\src\model.optimized.view.ts --optimize-cursor-offsets
 ```
 
-The default emitter does not enable it.
+The default emitter does not enable it, and new users should not start from it.
 
 Latest generated-view witness:
 
@@ -109,7 +109,7 @@ Latest generated-view witness:
   views
 - single-field `age` does not improve versus current cursor in the default run
 
-Promote only if:
+Reconsider only if:
 
 - scalar mix improves across at least three default benchmark runs
 - retained `UserView` heap does not meaningfully regress
@@ -144,7 +144,11 @@ Document as a call-site pattern, not a generated view change.
 For tight scans, callers should prefer:
 
 ```ts
-for (let offset = 0, end = count * UserView.byteLength; offset < end; offset += UserView.byteLength) {
+for (
+  let offset = 0, end = count * UserView.byteLength;
+  offset < end;
+  offset += UserView.byteLength
+) {
   sum += UserView.getAge(view, offset);
 }
 ```

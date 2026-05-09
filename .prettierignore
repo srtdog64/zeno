@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.tmp-release-check/
+*.tsbuildinfo
+*.tgz
+examples/**/dist/
+examples/**/*.view.ts
+examples/**/*.optimized.view.ts
+package-lock.json

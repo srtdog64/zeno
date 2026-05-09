@@ -13,20 +13,26 @@ const args = process.argv.slice(2);
 let optimizeCursorOffsets = false;
 let endianness = "little";
 const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
-let diagnosticsFormat = diagnosticsArg === undefined
-  ? "text"
-  : diagnosticsArg.slice("--diagnostics=".length);
+let diagnosticsFormat =
+  diagnosticsArg === undefined ? "text" : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
-const usage = "Usage: zeno-codegen <input.ts> <output.view.ts> [--optimize-cursor-offsets experimental] [--endian=little|big] [--diagnostics=text|json]";
+const usage =
+  "Usage: zeno-codegen <input.ts> <output.view.ts> [--optimize-cursor-offsets retired-diagnostic] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {
-    console.error(JSON.stringify({
-      event: "Codegen_Failed",
-      code,
-      message,
-      details,
-    }, null, 2));
+    console.error(
+      JSON.stringify(
+        {
+          event: "Codegen_Failed",
+          code,
+          message,
+          details,
+        },
+        null,
+        2,
+      ),
+    );
   } else {
     console.error(message);
   }
@@ -41,6 +47,9 @@ for (const arg of args) {
 
   if (arg === "--optimize-cursor-offsets") {
     optimizeCursorOffsets = true;
+    console.error(
+      "Warning: --optimize-cursor-offsets is a retired diagnostic mode; static accessors and scan kernels are the supported hot path.",
+    );
     continue;
   }
 
@@ -67,11 +76,9 @@ if (inputPath === undefined || outputPath === undefined) {
 }
 
 if (endianness !== "little" && endianness !== "big") {
-  fail(
-    "INVALID_ENDIANNESS",
-    `Invalid endianness: ${endianness}. Expected "little" or "big".`,
-    { endianness },
-  );
+  fail("INVALID_ENDIANNESS", `Invalid endianness: ${endianness}. Expected "little" or "big".`, {
+    endianness,
+  });
 }
 
 if (diagnosticsFormat !== "text" && diagnosticsFormat !== "json") {
@@ -90,12 +97,7 @@ try {
   });
 }
 
-const sourceFile = ts.createSourceFile(
-  rootName,
-  sourceText,
-  ts.ScriptTarget.ES2022,
-  true,
-);
+const sourceFile = ts.createSourceFile(rootName, sourceText, ts.ScriptTarget.ES2022, true);
 
 const result = analyzeProjectionSourceFile(sourceFile, { endianness });
 
@@ -104,7 +106,9 @@ if (result.diagnostics.length > 0) {
     console.error(JSON.stringify({ diagnostics: result.diagnostics }, null, 2));
   } else {
     for (const diagnostic of result.diagnostics) {
-      console.error(`${formatDiagnosticLocation(diagnostic)} ${diagnostic.code}: ${diagnostic.message}`);
+      console.error(
+        `${formatDiagnosticLocation(diagnostic)} ${diagnostic.code}: ${diagnostic.message}`,
+      );
     }
   }
   process.exit(1);

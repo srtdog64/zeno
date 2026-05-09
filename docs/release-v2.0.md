@@ -43,6 +43,11 @@ it is returned from the emitter or written by the CLI. The compiler still keeps
 Zeno's tagged-template emitter formatting, but invalid generated TypeScript now
 fails at the emitter boundary instead of surfacing later in a consumer build.
 
+This is intentionally an AST-checked boundary, not a full `ts.factory` rewrite.
+The generated formatting and field-level source map contract stay stable for
+v2.0. A fully synthetic AST emitter belongs with statement-level source map
+generation and is deferred to v2.1 candidate work.
+
 The v2 release gate also covers:
 
 - generated-code compile/run fuzzing for scalar schemas

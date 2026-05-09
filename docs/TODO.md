@@ -320,6 +320,9 @@ Status: local witness only.
 - generated `.view.ts` output crosses a TypeScript AST parse boundary before it
   is returned or written, while preserving the existing tagged-template emitter
   formatting.
+- v2.0 deliberately stops at an AST-checked emitter boundary. A full
+  `ts.factory`/synthetic AST emitter is deferred until statement-level source
+  map generation is worth the extra surface.
 - generated-code compile/run fuzzing covers scalar schema shapes, and a
   representative big-endian nested dynamic schema runs through generated
   writer/view APIs.

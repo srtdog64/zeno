@@ -1,6 +1,6 @@
 {
   "name": "@zeno/compiler",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +19,7 @@
     "zeno-codegen": "./bin/zeno-codegen.mjs"
   },
   "dependencies": {
-    "@zeno/schema": "1.1.0",
+    "@zeno/schema": "1.2.0",
     "typescript": "^5.9.0"
   }
 }

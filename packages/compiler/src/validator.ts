@@ -17,222 +17,356 @@ import {
   unsupportedAtPhase,
 } from "./measurement.js";
 
+interface ValidationContext {
+  readonly layoutNames: ReadonlySet<string>;
+  readonly layoutMap: ReadonlyMap<string, StructLayout>;
+}
+
+interface FieldValidationContext extends ValidationContext {
+  readonly layout: StructLayout;
+  readonly field: FieldLayout;
+  readonly seenFieldNames: ReadonlySet<string>;
+}
+
+interface LayoutValidationContext extends ValidationContext {
+  readonly layout: StructLayout;
+}
+
+type FieldValidationRule = (
+  context: FieldValidationContext,
+) => LayoutDiagnostic | null;
+
+type LayoutValidationRule = (
+  context: LayoutValidationContext,
+) => readonly LayoutDiagnostic[];
+
 export function validateLayouts(layouts: StructLayout[]): LayoutDiagnostic[] {
   const diagnostics: LayoutDiagnostic[] = [];
-  const layoutNames = new Set(layouts.map((layout) => layout.name));
-  const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
+  const context: ValidationContext = {
+    layoutNames: new Set(layouts.map((layout) => layout.name)),
+    layoutMap: new Map(layouts.map((layout) => [layout.name, layout])),
+  };
 
   for (const layout of layouts) {
-    const fieldNames = new Set<string>();
+    const seenFieldNames = new Set<string>();
     for (const field of layout.fields) {
-      if (fieldNames.has(field.name)) {
-        diagnostics.push(
-          createIrDiagnostic(
-            "DUPLICATE_FIELD",
-            `Field "${field.name}" is duplicated in struct "${layout.name}".`,
-            `validateLayouts:${layout.name}.${field.name}`,
-            {
-              structName: layout.name,
-              fieldName: field.name,
-              measurement: measure(
-                `field "${field.name}" definition`,
-                "layout-ir-fixed",
-                "phase-0",
-              ),
-              error: duplicateDefinition(
-                `field "${field.name}"`,
-                "first declaration",
-                "duplicate declaration",
-              ),
-            },
-          ),
-        );
+      const fieldContext = { ...context, layout, field, seenFieldNames };
+      for (const rule of fieldValidationRules) {
+        const diagnostic = rule(fieldContext);
+        if (diagnostic !== null) {
+          diagnostics.push(diagnostic);
+        }
       }
-      fieldNames.add(field.name);
-
-      if (!isAligned(field)) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "ALIGNMENT_VIOLATION",
-            `Field "${field.name}" in struct "${layout.name}" is not aligned to ${field.alignment} bytes.`,
-            `field "${field.name}" alignment`,
-            `offset must be divisible by ${field.alignment}`,
-          ),
-        );
-      }
-
-      if (!hasValidDescriptorShape(field)) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "LAYOUT_INVARIANT",
-            `Field "${field.name}" in struct "${layout.name}" has an invalid descriptor layout.`,
-            `field "${field.name}" descriptor`,
-            "descriptor fields must use 4-byte alignment and the correct descriptor byte length",
-          ),
-        );
-      }
-
-      if (field.kind === "pointer" && !layoutNames.has(field.targetTypeName)) {
-        diagnostics.push(unknownPointerTargetDiagnostic(
-          layout,
-          field.name,
-          field.targetTypeName,
-          `validateLayouts:${layout.name}.${field.name}`,
-        ));
-      }
-
-      if (
-        field.kind === "vector" &&
-        field.element.kind === "pointer" &&
-        !layoutNames.has(field.element.targetTypeName)
-      ) {
-        diagnostics.push(unknownPointerTargetDiagnostic(
-          layout,
-          field.name,
-          field.element.targetTypeName,
-          `validateLayouts:${layout.name}.${field.name}.element`,
-        ));
-      }
-
-      if (field.kind === "pointer" && !hasValidPointerShape(field)) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "LAYOUT_INVARIANT",
-            `Pointer field "${field.name}" in struct "${layout.name}" has an invalid pointer layout.`,
-            `field "${field.name}" pointer`,
-            "pointer32 must use signed i32 field-relative offsets and raw 0xffffffff null",
-          ),
-        );
-      }
-
-      if (
-        field.kind === "vector" &&
-        field.element.kind === "pointer" &&
-        !hasValidPointerElementShape(field.element)
-      ) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "LAYOUT_INVARIANT",
-            `Pointer vector field "${field.name}" in struct "${layout.name}" has an invalid pointer element layout.`,
-            `field "${field.name}" pointer vector element`,
-            "pointer vector elements must use signed i32 element-relative offsets and raw 0xffffffff null",
-          ),
-        );
-      }
-
-      if (field.kind === "vector" && !hasValidVectorElementByteLength(field.element)) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "LAYOUT_INVARIANT",
-            `Vector field "${field.name}" in struct "${layout.name}" has an invalid element byte length.`,
-            `field "${field.name}" vector element`,
-            "vector element byteLength must match its element kind",
-          ),
-        );
-      }
-
-      if (
-        field.kind === "vector" &&
-        field.element.kind === "struct" &&
-        !layoutNames.has(field.element.typeName)
-      ) {
-        diagnostics.push(unknownStructVectorElementDiagnostic(
-          layout,
-          field.name,
-          field.element.typeName,
-          `validateLayouts:${layout.name}.${field.name}.element`,
-        ));
-      }
-
-      if (
-        field.kind === "vector" &&
-        field.element.kind === "struct" &&
-        layoutNames.has(field.element.typeName) &&
-        !isFixedStrideStruct(field.element.typeName, layoutMap, new Set())
-      ) {
-        diagnostics.push(
-          invariantDiagnostic(
-            layout,
-            field,
-            "LAYOUT_INVARIANT",
-            `Vector field "${field.name}" in struct "${layout.name}" uses struct element "${field.element.typeName}" with dynamic tail fields; use vector<pointer<T>> for dynamic or graph-shaped elements.`,
-            `field "${field.name}" struct vector element`,
-            "vector<struct> elements must be fixed-stride; use vector<pointer<T>> for dynamic or graph-shaped elements",
-          ),
-        );
-      }
+      seenFieldNames.add(field.name);
     }
 
-    for (const field of overlappingFields(layout.fields)) {
-      diagnostics.push(
-        invariantDiagnostic(
-          layout,
-          field,
-          "LAYOUT_INVARIANT",
-          `Field "${field.name}" in struct "${layout.name}" overlaps a previous field.`,
-          `field "${field.name}" offset range`,
-          "field ranges must not overlap",
-        ),
-      );
-    }
-
-    const expectedByteLength = expectedStructByteLength(layout);
-    if (layout.byteLength !== expectedByteLength) {
-      diagnostics.push(
-        createIrDiagnostic(
-          "LAYOUT_INVARIANT",
-          `Struct "${layout.name}" byteLength is ${layout.byteLength}, expected ${expectedByteLength}.`,
-          `validateLayouts:${layout.name}.byteLength`,
-          {
-            structName: layout.name,
-            measurement: measure(
-              `struct "${layout.name}" byteLength`,
-              "layout-ir-fixed",
-              "phase-0",
-            ),
-            error: layoutInvariantViolation(
-              `struct "${layout.name}" byteLength`,
-              "byteLength must equal the aligned end of the last field",
-            ),
-          },
-        ),
-      );
-    }
-
-    if (hasInlineStructCycle(layout.name, layoutMap, new Set())) {
-      diagnostics.push(
-        createIrDiagnostic(
-          "RECURSIVE_STRUCT",
-          `Struct "${layout.name}" contains an inline recursive layout. Use pointer<T> for recursive references.`,
-          `validateLayouts:${layout.name}.inlineCycle`,
-          {
-            structName: layout.name,
-            measurement: measure(
-              `struct "${layout.name}" inline size`,
-              "layout-ir-fixed",
-              "phase-0",
-            ),
-            error: unsupportedAtPhase(
-              `inline recursive struct "${layout.name}"`,
-              "phase-0",
-            ),
-          },
-        ),
-      );
+    const layoutContext = { ...context, layout };
+    for (const rule of layoutValidationRules) {
+      diagnostics.push(...rule(layoutContext));
     }
   }
 
   return diagnostics;
+}
+
+const fieldValidationRules = [
+  validateDuplicateField,
+  validateFieldAlignment,
+  validateDescriptorShape,
+  validatePointerTarget,
+  validatePointerVectorTarget,
+  validatePointerShape,
+  validatePointerVectorElementShape,
+  validateVectorElementByteLength,
+  validateStructVectorElementTarget,
+  validateStructVectorElementStride,
+] satisfies readonly FieldValidationRule[];
+
+const layoutValidationRules = [
+  validateNoOverlappingFields,
+  validateStructByteLength,
+  validateNoInlineStructCycle,
+] satisfies readonly LayoutValidationRule[];
+
+function validateDuplicateField({
+  layout,
+  field,
+  seenFieldNames,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (!seenFieldNames.has(field.name)) {
+    return null;
+  }
+
+  return createIrDiagnostic(
+    "DUPLICATE_FIELD",
+    `Field "${field.name}" is duplicated in struct "${layout.name}".`,
+    `validateLayouts:${layout.name}.${field.name}`,
+    {
+      structName: layout.name,
+      fieldName: field.name,
+      measurement: measure(
+        `field "${field.name}" definition`,
+        "layout-ir-fixed",
+        "phase-0",
+      ),
+      error: duplicateDefinition(
+        `field "${field.name}"`,
+        "first declaration",
+        "duplicate declaration",
+      ),
+    },
+  );
+}
+
+function validateFieldAlignment({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (isAligned(field)) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "ALIGNMENT_VIOLATION",
+    `Field "${field.name}" in struct "${layout.name}" is not aligned to ${field.alignment} bytes.`,
+    `field "${field.name}" alignment`,
+    `offset must be divisible by ${field.alignment}`,
+  );
+}
+
+function validateDescriptorShape({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (hasValidDescriptorShape(field)) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Field "${field.name}" in struct "${layout.name}" has an invalid descriptor layout.`,
+    `field "${field.name}" descriptor`,
+    "descriptor fields must use 4-byte alignment and the correct descriptor byte length",
+  );
+}
+
+function validatePointerTarget({
+  layout,
+  field,
+  layoutNames,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (field.kind !== "pointer" || layoutNames.has(field.targetTypeName)) {
+    return null;
+  }
+
+  return unknownPointerTargetDiagnostic(
+    layout,
+    field.name,
+    field.targetTypeName,
+    `validateLayouts:${layout.name}.${field.name}`,
+  );
+}
+
+function validatePointerVectorTarget({
+  layout,
+  field,
+  layoutNames,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "vector" ||
+    field.element.kind !== "pointer" ||
+    layoutNames.has(field.element.targetTypeName)
+  ) {
+    return null;
+  }
+
+  return unknownPointerTargetDiagnostic(
+    layout,
+    field.name,
+    field.element.targetTypeName,
+    `validateLayouts:${layout.name}.${field.name}.element`,
+  );
+}
+
+function validatePointerShape({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (field.kind !== "pointer" || hasValidPointerShape(field)) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Pointer field "${field.name}" in struct "${layout.name}" has an invalid pointer layout.`,
+    `field "${field.name}" pointer`,
+    "pointer32 must use signed i32 field-relative offsets and raw 0xffffffff null",
+  );
+}
+
+function validatePointerVectorElementShape({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "vector" ||
+    field.element.kind !== "pointer" ||
+    hasValidPointerElementShape(field.element)
+  ) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Pointer vector field "${field.name}" in struct "${layout.name}" has an invalid pointer element layout.`,
+    `field "${field.name}" pointer vector element`,
+    "pointer vector elements must use signed i32 element-relative offsets and raw 0xffffffff null",
+  );
+}
+
+function validateVectorElementByteLength({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (field.kind !== "vector" || hasValidVectorElementByteLength(field.element)) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Vector field "${field.name}" in struct "${layout.name}" has an invalid element byte length.`,
+    `field "${field.name}" vector element`,
+    "vector element byteLength must match its element kind",
+  );
+}
+
+function validateStructVectorElementTarget({
+  layout,
+  field,
+  layoutNames,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "vector" ||
+    field.element.kind !== "struct" ||
+    layoutNames.has(field.element.typeName)
+  ) {
+    return null;
+  }
+
+  return unknownStructVectorElementDiagnostic(
+    layout,
+    field.name,
+    field.element.typeName,
+    `validateLayouts:${layout.name}.${field.name}.element`,
+  );
+}
+
+function validateStructVectorElementStride({
+  layout,
+  field,
+  layoutNames,
+  layoutMap,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "vector" ||
+    field.element.kind !== "struct" ||
+    !layoutNames.has(field.element.typeName) ||
+    isFixedStrideStruct(field.element.typeName, layoutMap, new Set())
+  ) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Vector field "${field.name}" in struct "${layout.name}" uses struct element "${field.element.typeName}" with dynamic tail fields; use vector<pointer<T>> for dynamic or graph-shaped elements.`,
+    `field "${field.name}" struct vector element`,
+    "vector<struct> elements must be fixed-stride; use vector<pointer<T>> for dynamic or graph-shaped elements",
+  );
+}
+
+function validateNoOverlappingFields({
+  layout,
+}: LayoutValidationContext): readonly LayoutDiagnostic[] {
+  return overlappingFields(layout.fields).map((field) =>
+    invariantDiagnostic(
+      layout,
+      field,
+      "LAYOUT_INVARIANT",
+      `Field "${field.name}" in struct "${layout.name}" overlaps a previous field.`,
+      `field "${field.name}" offset range`,
+      "field ranges must not overlap",
+    ),
+  );
+}
+
+function validateStructByteLength({
+  layout,
+}: LayoutValidationContext): readonly LayoutDiagnostic[] {
+  const expectedByteLength = expectedStructByteLength(layout);
+  if (layout.byteLength === expectedByteLength) {
+    return [];
+  }
+
+  return [
+    createIrDiagnostic(
+      "LAYOUT_INVARIANT",
+      `Struct "${layout.name}" byteLength is ${layout.byteLength}, expected ${expectedByteLength}.`,
+      `validateLayouts:${layout.name}.byteLength`,
+      {
+        structName: layout.name,
+        measurement: measure(
+          `struct "${layout.name}" byteLength`,
+          "layout-ir-fixed",
+          "phase-0",
+        ),
+        error: layoutInvariantViolation(
+          `struct "${layout.name}" byteLength`,
+          "byteLength must equal the aligned end of the last field",
+        ),
+      },
+    ),
+  ];
+}
+
+function validateNoInlineStructCycle({
+  layout,
+  layoutMap,
+}: LayoutValidationContext): readonly LayoutDiagnostic[] {
+  if (!hasInlineStructCycle(layout.name, layoutMap, new Set())) {
+    return [];
+  }
+
+  return [
+    createIrDiagnostic(
+      "RECURSIVE_STRUCT",
+      `Struct "${layout.name}" contains an inline recursive layout. Use pointer<T> for recursive references.`,
+      `validateLayouts:${layout.name}.inlineCycle`,
+      {
+        structName: layout.name,
+        measurement: measure(
+          `struct "${layout.name}" inline size`,
+          "layout-ir-fixed",
+          "phase-0",
+        ),
+        error: unsupportedAtPhase(
+          `inline recursive struct "${layout.name}"`,
+          "phase-0",
+        ),
+      },
+    ),
+  ];
 }
 
 function unknownStructVectorElementDiagnostic(

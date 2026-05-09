@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+Status: compiler maintainability release with no intended ABI or generated-code behavior changes.
+
+- `validateLayouts` now runs explicit field and layout rule lists instead of one large imperative validator body.
+- Dynamic vector writer generation now uses an exhaustive dispatch table over `VectorElementLayout["kind"]`.
+- `emitter.ts` has a lightweight tagged-template codegen helper for generated methods.
+- Package manifests and workspace lockfile are aligned at `1.2.0`.
+
 ## 1.1.0
 
 Status: stable v1 surface plus optional container-boundary helpers.

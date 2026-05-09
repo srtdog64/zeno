@@ -7,6 +7,31 @@ import {
   type VectorElementLayout,
 } from "@zeno/schema";
 
+type VectorFieldLayout = Extract<FieldLayout, { kind: "vector" }>;
+type VectorWriterElement<K extends VectorElementLayout["kind"]> = Extract<
+  VectorElementLayout,
+  { kind: K }
+>;
+type VectorWriterField<K extends VectorElementLayout["kind"]> = Omit<
+  VectorFieldLayout,
+  "element"
+> & {
+  readonly element: VectorWriterElement<K>;
+};
+
+interface VectorWriterContext<K extends VectorElementLayout["kind"]> {
+  readonly layout: StructLayout;
+  readonly layoutMap: ReadonlyMap<string, StructLayout>;
+  readonly field: VectorWriterField<K>;
+  readonly pascalName: string;
+}
+
+type VectorWriterEmitter<K extends VectorElementLayout["kind"]> = (
+  context: VectorWriterContext<K>,
+) => string[];
+
+type CodeValue = string | number | boolean | readonly string[];
+
 export interface EmitOptions {
   readonly optimizeCursorOffsets?: boolean;
 }
@@ -293,9 +318,10 @@ function emitDynamicWriterMethods(
   }
 
   const lines: string[] = [
-    `  static createWriter(view: DataView, baseOffset = 0, tailOffset = ${layout.name}View.byteLength, littleEndian = ${toLittleEndianLiteral(layout)}): DynamicLayoutWriter {`,
-    "    return new DynamicLayoutWriter(view, tailOffset, baseOffset, littleEndian);",
-    "  }",
+    ...method`
+static createWriter(view: DataView, baseOffset = 0, tailOffset = ${layout.name}View.byteLength, littleEndian = ${toLittleEndianLiteral(layout)}): DynamicLayoutWriter {
+  return new DynamicLayoutWriter(view, tailOffset, baseOffset, littleEndian);
+}`,
     "",
   ];
 
@@ -304,64 +330,22 @@ function emitDynamicWriterMethods(
     switch (field.kind) {
       case "dynamic-string":
         lines.push(
-          `  static write${pascalName}(writer: DynamicLayoutWriter, value: string) {`,
-          `    return writer.writeText(${layout.name}View.${field.name}Offset, value, ${encodingLiteral(field.encoding)});`,
-          "  }",
+          ...method`
+static write${pascalName}(writer: DynamicLayoutWriter, value: string) {
+  return writer.writeText(${layout.name}View.${field.name}Offset, value, ${encodingLiteral(field.encoding)});
+}`,
         );
         break;
       case "dynamic-bytes":
         lines.push(
-          `  static write${pascalName}(writer: DynamicLayoutWriter, value: ArrayLike<number> | Uint8Array) {`,
-          `    return writer.writeBytes(${layout.name}View.${field.name}Offset, value);`,
-          "  }",
+          ...method`
+static write${pascalName}(writer: DynamicLayoutWriter, value: ArrayLike<number> | Uint8Array) {
+  return writer.writeBytes(${layout.name}View.${field.name}Offset, value);
+}`,
         );
         break;
       case "vector":
-        if (field.element.kind === "dynamic-string") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly string[]) {`,
-            `    return writer.writeTextVector(${layout.name}View.${field.name}Offset, values, ${encodingLiteral(field.element.encoding)});`,
-            "  }",
-          );
-        } else if (field.element.kind === "dynamic-bytes") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (ArrayLike<number> | Uint8Array)[]) {`,
-            `    return writer.writeBytesVector(${layout.name}View.${field.name}Offset, values);`,
-            "  }",
-          );
-        } else if (field.element.kind === "fixed-bytes") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (ArrayLike<number> | Uint8Array)[]) {`,
-            `    return writer.writeFixedBytesVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength});`,
-            "  }",
-          );
-        } else if (field.element.kind === "fixed-string") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly string[]) {`,
-            `    return writer.writeFixedTextVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, ${encodingLiteral(field.element.encoding)});`,
-            "  }",
-          );
-        } else if (field.element.kind === "scalar") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${scalarTsType(field.element.scalar)}[]) {`,
-            `    return writer.writeScalarVector(${layout.name}View.${field.name}Offset, "${field.element.scalar}", values);`,
-            "  }",
-          );
-        } else if (field.element.kind === "struct") {
-          const elementLayout = layoutMap.get(field.element.typeName);
-          const alignment = elementLayout?.alignment ?? 1;
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${field.element.typeName}ViewInput[]) {`,
-            `    return writer.writeStructVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, (view, value, baseOffset, littleEndian) => ${field.element.typeName}View.write(view, value, baseOffset, littleEndian), ${alignment});`,
-            "  }",
-          );
-        } else if (field.element.kind === "pointer") {
-          lines.push(
-            `  static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (number | null)[]) {`,
-            `    return writer.writePointerVector(${layout.name}View.${field.name}Offset, values, ${field.element.targetTypeName}View.byteLength);`,
-            "  }",
-          );
-        }
+        lines.push(...emitVectorWriterMethod(layout, layoutMap, field, pascalName));
         break;
     }
     lines.push("");
@@ -369,6 +353,105 @@ function emitDynamicWriterMethods(
 
   lines.pop();
   return lines;
+}
+
+const vectorWriterEmitters = {
+  "dynamic-string": ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly string[]) {
+  return writer.writeTextVector(${layout.name}View.${field.name}Offset, values, ${encodingLiteral(field.element.encoding)});
+}`,
+  "dynamic-bytes": ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (ArrayLike<number> | Uint8Array)[]) {
+  return writer.writeBytesVector(${layout.name}View.${field.name}Offset, values);
+}`,
+  "fixed-bytes": ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (ArrayLike<number> | Uint8Array)[]) {
+  return writer.writeFixedBytesVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength});
+}`,
+  "fixed-string": ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly string[]) {
+  return writer.writeFixedTextVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, ${encodingLiteral(field.element.encoding)});
+}`,
+  scalar: ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${scalarTsType(field.element.scalar)}[]) {
+  return writer.writeScalarVector(${layout.name}View.${field.name}Offset, "${field.element.scalar}", values);
+}`,
+  struct: ({ layout, layoutMap, field, pascalName }) => {
+    const elementLayout = layoutMap.get(field.element.typeName);
+    const alignment = elementLayout?.alignment ?? 1;
+    return method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${field.element.typeName}ViewInput[]) {
+  return writer.writeStructVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, (view, value, baseOffset, littleEndian) => ${field.element.typeName}View.write(view, value, baseOffset, littleEndian), ${alignment});
+}`;
+  },
+  pointer: ({ layout, field, pascalName }) => method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (number | null)[]) {
+  return writer.writePointerVector(${layout.name}View.${field.name}Offset, values, ${field.element.targetTypeName}View.byteLength);
+}`,
+} satisfies {
+  readonly [K in VectorElementLayout["kind"]]: VectorWriterEmitter<K>;
+};
+
+function emitVectorWriterMethod(
+  layout: StructLayout,
+  layoutMap: ReadonlyMap<string, StructLayout>,
+  field: VectorFieldLayout,
+  pascalName: string,
+): string[] {
+  const emitWriter = vectorWriterEmitters[field.element.kind] as VectorWriterEmitter<
+    typeof field.element.kind
+  >;
+  return emitWriter({ layout, layoutMap, field, pascalName });
+}
+
+function method(
+  strings: TemplateStringsArray,
+  ...values: CodeValue[]
+): string[] {
+  return indentLines("  ", code(strings, ...values));
+}
+
+function code(
+  strings: TemplateStringsArray,
+  ...values: CodeValue[]
+): string[] {
+  let source = strings[0] ?? "";
+  for (let index = 0; index < values.length; index += 1) {
+    source += stringifyCodeValue(values[index]!) + strings[index + 1];
+  }
+  return dedent(source).split("\n");
+}
+
+function stringifyCodeValue(value: CodeValue): string {
+  if (Array.isArray(value)) {
+    return value.join("\n");
+  }
+  return String(value);
+}
+
+function indentLines(indent: string, lines: readonly string[]): string[] {
+  return lines.map((line) => (line.length === 0 ? line : indent + line));
+}
+
+function dedent(source: string): string {
+  const lines = trimBlankEdges(source).split("\n");
+  const indent = commonIndent(lines);
+  return lines.map((line) => line.slice(Math.min(indent, leadingSpaces(line)))).join("\n");
+}
+
+function trimBlankEdges(source: string): string {
+  return source.replace(/^\n/, "").replace(/\n[ \t]*$/, "");
+}
+
+function commonIndent(lines: readonly string[]): number {
+  const indents = lines
+    .filter((line) => line.trim().length > 0)
+    .map((line) => leadingSpaces(line));
+  return indents.length === 0 ? 0 : Math.min(...indents);
+}
+
+function leadingSpaces(line: string): number {
+  return line.match(/^[ \t]*/)?.[0].length ?? 0;
 }
 
 function emitObjectWriterMethod(

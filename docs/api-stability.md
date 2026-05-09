@@ -40,7 +40,11 @@ Stable for `1.x`:
 - `.zeno.ts` TypeScript interface input convention
 - `@zeno/types` scalar markers: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`,
   `u64`, `f32`, `f64`, `bool`
+- semantic scalar aliases: `enumU8`, `enumU16`, `flags8`, `flags32`,
+  `timestampMs`
 - fixed bytes/string markers with explicit length
+- fixed inline arrays over scalar, fixed bytes/string, and fixed-size struct
+  elements
 - generated fixed-layout scalar getters/setters
 - generated static accessor methods for fixed fields
 - `z.utf8`, `z.ascii`, `z.bytes`, `z.vector<T>`, and `z.pointer<T>`

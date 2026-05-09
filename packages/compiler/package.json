@@ -1,6 +1,25 @@
 {
   "name": "@zeno/compiler",
-  "version": "1.5.0",
+  "version": "1.7.0",
+  "description": "TypeScript schema analyzer and code generator for Zeno zero-copy binary views.",
+  "keywords": [
+    "typescript",
+    "binary",
+    "zero-copy",
+    "codegen",
+    "cli",
+    "dataview",
+    "schema"
+  ],
+  "homepage": "https://github.com/srtdog64/zeno#readme",
+  "bugs": {
+    "url": "https://github.com/srtdog64/zeno/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srtdog64/zeno.git",
+    "directory": "packages/compiler"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,8 +37,11 @@
   "bin": {
     "zeno-codegen": "./bin/zeno-codegen.mjs"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@zeno/schema": "1.5.0",
+    "@zeno/schema": "1.7.0",
     "typescript": "^5.9.0"
   }
 }

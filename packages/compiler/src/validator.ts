@@ -5,6 +5,7 @@ import {
   alignTo,
   scalarByteLength,
   type FieldLayout,
+  type FixedArrayElementLayout,
   type StructLayout,
   type VectorElementLayout,
 } from "@zeno/schema";
@@ -78,8 +79,11 @@ const fieldValidationRules = [
   validatePointerShape,
   validatePointerVectorElementShape,
   validateVectorElementByteLength,
+  validateFixedArrayElementByteLength,
   validateStructVectorElementTarget,
   validateStructVectorElementStride,
+  validateStructFixedArrayElementTarget,
+  validateStructFixedArrayElementStride,
 ] satisfies readonly FieldValidationRule[];
 
 const layoutValidationRules = [
@@ -250,6 +254,31 @@ function validateVectorElementByteLength({
   );
 }
 
+function validateFixedArrayElementByteLength({
+  layout,
+  field,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "fixed-array" ||
+    (
+      field.length > 0 &&
+      hasValidFixedArrayElementByteLength(field.element) &&
+      field.byteLength === field.length * field.element.byteLength
+    )
+  ) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Fixed array field "${field.name}" in struct "${layout.name}" has an invalid element layout.`,
+    `field "${field.name}" fixed array element`,
+    "fixed array length must be positive and byteLength must equal length * element byteLength",
+  );
+}
+
 function validateStructVectorElementTarget({
   layout,
   field,
@@ -268,6 +297,28 @@ function validateStructVectorElementTarget({
     field.name,
     field.element.typeName,
     `validateLayouts:${layout.name}.${field.name}.element`,
+  );
+}
+
+function validateStructFixedArrayElementTarget({
+  layout,
+  field,
+  layoutNames,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "fixed-array" ||
+    field.element.kind !== "struct" ||
+    layoutNames.has(field.element.typeName)
+  ) {
+    return null;
+  }
+
+  return unknownStructElementDiagnostic(
+    layout,
+    field.name,
+    field.element.typeName,
+    `validateLayouts:${layout.name}.${field.name}.element`,
+    "Fixed array",
   );
 }
 
@@ -293,6 +344,31 @@ function validateStructVectorElementStride({
     `Vector field "${field.name}" in struct "${layout.name}" uses struct element "${field.element.typeName}" with dynamic tail fields; use vector<pointer<T>> for dynamic or graph-shaped elements.`,
     `field "${field.name}" struct vector element`,
     "vector<struct> elements must be fixed-stride; use vector<pointer<T>> for dynamic or graph-shaped elements",
+  );
+}
+
+function validateStructFixedArrayElementStride({
+  layout,
+  field,
+  layoutNames,
+  layoutMap,
+}: FieldValidationContext): LayoutDiagnostic | null {
+  if (
+    field.kind !== "fixed-array" ||
+    field.element.kind !== "struct" ||
+    !layoutNames.has(field.element.typeName) ||
+    isFixedStrideStruct(field.element.typeName, layoutMap, new Set())
+  ) {
+    return null;
+  }
+
+  return invariantDiagnostic(
+    layout,
+    field,
+    "LAYOUT_INVARIANT",
+    `Fixed array field "${field.name}" in struct "${layout.name}" uses struct element "${field.element.typeName}" with dynamic tail fields; use fixedArray<pointer<T>, N> only after pointer fixed arrays have an ABI policy.`,
+    `field "${field.name}" fixed array struct element`,
+    "fixedArray<struct, N> elements must be fixed-stride",
   );
 }
 
@@ -395,6 +471,33 @@ function unknownStructVectorElementDiagnostic(
   );
 }
 
+function unknownStructElementDiagnostic(
+  layout: StructLayout,
+  fieldName: string,
+  typeName: string,
+  description: string,
+  label: "Vector" | "Fixed array",
+): LayoutDiagnostic {
+  return createIrDiagnostic(
+    "UNKNOWN_STRUCT",
+    `${label} field "${fieldName}" in struct "${layout.name}" targets unknown struct "${typeName}".`,
+    description,
+    {
+      structName: layout.name,
+      fieldName,
+      measurement: measure(
+        `${label.toLowerCase()} "${fieldName}" struct element`,
+        "layout-ir-fixed",
+        "phase-0",
+      ),
+      error: unsupportedAtPhase(
+        `${label.toLowerCase()} struct element "${typeName}"`,
+        "phase-0",
+      ),
+    },
+  );
+}
+
 function unknownPointerTargetDiagnostic(
   layout: StructLayout,
   fieldName: string,
@@ -466,6 +569,14 @@ function hasInlineStructCycle(
       active.delete(layoutName);
       return true;
     }
+    if (
+      field.kind === "fixed-array" &&
+      field.element.kind === "struct" &&
+      hasInlineStructCycle(field.element.typeName, layouts, active)
+    ) {
+      active.delete(layoutName);
+      return true;
+    }
   }
   active.delete(layoutName);
   return false;
@@ -493,6 +604,15 @@ function isFixedStrideStruct(
       case "vector":
         active.delete(layoutName);
         return false;
+      case "fixed-array":
+        if (
+          field.element.kind === "struct" &&
+          !isFixedStrideStruct(field.element.typeName, layouts, active)
+        ) {
+          active.delete(layoutName);
+          return false;
+        }
+        break;
       case "struct":
         if (!isFixedStrideStruct(field.typeName, layouts, active)) {
           active.delete(layoutName);
@@ -542,6 +662,17 @@ function hasValidVectorElementByteLength(element: VectorElementLayout): boolean 
       return element.byteLength > 0;
     case "pointer":
       return element.byteLength === POINTER32_BYTE_LENGTH;
+  }
+}
+
+function hasValidFixedArrayElementByteLength(element: FixedArrayElementLayout): boolean {
+  switch (element.kind) {
+    case "scalar":
+      return element.byteLength === scalarByteLength(element.scalar);
+    case "fixed-bytes":
+    case "fixed-string":
+    case "struct":
+      return element.byteLength > 0;
   }
 }
 

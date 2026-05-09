@@ -204,7 +204,7 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.5.0` after human release review
+- tag and publish `1.7.0` after human release review
 - confirm npm scope ownership for `@zeno/*`; if unavailable, decide the fallback
   scope before renaming packages
 - keep the publish order explicit: `@zeno/types`, `@zeno/schema`,
@@ -255,7 +255,31 @@ Status: local witness only.
 - generated-code golden snapshots stayed stable through the remaining class
   scaffold refactor.
 
-## v1.6 Candidate Work
+## Completed in 1.7
+
+- supported ABI aliases without changing underlying scalar layout:
+  - `z.enumU8<T>` / `enum_u8<T>` -> `u8`
+  - `z.enumU16<T>` / `enum_u16<T>` -> `u16`
+  - `z.flags8` / `flags8` -> `u8`
+  - `z.flags32` / `flags32` -> `u32`
+  - `z.timestampMs` / `timestamp_ms` -> `i64`
+- generated accessors stay typed by the underlying scalar value type.
+- `z.fixedArray<T, N>` / `fixed_array<T, N>` is supported for fixed-layout
+  scalar, fixed bytes/string, and fixed-size struct elements.
+- fixed arrays stay distinct from dynamic `z.vector<T>` descriptors: fixed arrays are
+  inline head bytes, vectors are tail descriptors
+- analyzer, validator, emitter, runtime view/writer, grammar, and test witnesses
+  cover the new fixed-array ABI surface.
+
+## v2 Deferred Design
+
+- optional fields: needs vtable/schema-evolution ABI
+- unions: needs discriminant and fixed variant table ABI
+- packed bool/bitset: reduces memory but adds ABI and accessor complexity
+- graph/object serializer: pointer is a projection primitive; graph allocation
+  and serialization is a separate design
+
+## v1.8 Candidate Work
 
 ### Compiler maintainability
 
@@ -273,10 +297,20 @@ Status: local witness only.
   retained memory
 - promote generated scan kernels as the main aggregate hot path, not optimized
   cursor offsets
-- add generated `min<Field>()`, `max<Field>()`, and `count<Field>Where(...)`
-  candidates only after `sum<Field>()` has repeated benchmark witnesses
+- add generated scan kernel candidates only after `sum<Field>()` has repeated
+  benchmark witnesses:
+  - `min<Field>()` / `max<Field>()` for number scalar fields
+  - `count<Field>()` for `bool` fields
+  - `count<Field>WhereEq(...)` and `findFirst<Field>WhereEq(...)` for scalar
+    equality predicates
 - keep checked cursor APIs for safety and unchecked cursor APIs for caller-proven
   loops; benchmark them separately
+- add text byte predicate candidates that avoid JS `string` decode and allocation:
+  `equalsAscii`, `startsWithAscii`, and byte-slice comparison helpers for
+  `z.ascii`, `z.utf8`, and bare `string` descriptors
+- add a homogeneous scalar vector fast-path candidate for `z.vector<z.f32>`,
+  `z.vector<z.i32>`, and related scalar vectors using `TypedArray` views only
+  when endian/alignment/browser witnesses are explicit
 - add browser benchmark smoke runs for generated static accessors and scan
   kernels, because Node/V8 local witnesses are not browser guarantees
 

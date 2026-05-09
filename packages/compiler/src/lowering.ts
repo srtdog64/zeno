@@ -10,6 +10,7 @@ import {
   type Encoding,
   type Endianness,
   type FieldLayout,
+  type FixedArrayElementLayout,
   type ScalarKind,
   type StructLayout,
   type VectorElementLayout,
@@ -41,6 +42,17 @@ const SCALAR_NAMES = new Set<ScalarKind>([
   "bool",
 ]);
 
+const SCALAR_ALIASES = new Map<string, ScalarKind>([
+  ["enum_u8", "u8"],
+  ["enumU8", "u8"],
+  ["enum_u16", "u16"],
+  ["enumU16", "u16"],
+  ["flags8", "u8"],
+  ["flags32", "u32"],
+  ["timestamp_ms", "i64"],
+  ["timestampMs", "i64"],
+]);
+
 export interface LoweringContext {
   readonly sourceFile: ts.SourceFile;
   readonly endianness: Endianness;
@@ -56,6 +68,12 @@ export interface LoweredFieldShape {
   readonly alignment: number;
   readonly byteLength: number;
   readonly build: (offset: number) => FieldLayout;
+}
+
+interface LoweredFixedArrayElement {
+  readonly alignment: number;
+  readonly byteLength: number;
+  readonly layout: FixedArrayElementLayout;
 }
 
 export function lowerField(
@@ -268,6 +286,11 @@ function lowerTypeReferenceNode(
     return lowerScalarReference(referenceName as ScalarKind, fieldName);
   }
 
+  const scalarAlias = SCALAR_ALIASES.get(referenceName);
+  if (scalarAlias !== undefined) {
+    return lowerScalarReference(scalarAlias, fieldName);
+  }
+
   if (referenceName === "fixed_bytes" || referenceName === "fixedBytes") {
     return lowerFixedBytesReference(typeNode, fieldName, context);
   }
@@ -291,6 +314,10 @@ function lowerTypeReferenceNode(
 
   if (referenceName === "vector") {
     return lowerVectorReference(typeNode, fieldName, context);
+  }
+
+  if (referenceName === "fixed_array" || referenceName === "fixedArray") {
+    return lowerFixedArrayReference(typeNode, fieldName, context);
   }
 
   if (referenceName === "pointer") {
@@ -428,6 +455,41 @@ function lowerVectorReference(
   });
 }
 
+function lowerFixedArrayReference(
+  typeNode: ts.TypeReferenceNode,
+  fieldName: string,
+  context: LoweringContext,
+): Result<LoweredFieldShape, LayoutDiagnostic> {
+  const [elementType] = typeNode.typeArguments ?? [];
+  if (elementType === undefined) {
+    return missingFixedArrayElementType(typeNode, fieldName, context);
+  }
+
+  const length = extractNumericTypeArgAt(typeNode, 1, fieldName, context);
+  if (!length.ok) {
+    return length;
+  }
+
+  const element = lowerFixedArrayElementType(elementType, fieldName, context);
+  if (!element.ok) {
+    return element;
+  }
+
+  return ok({
+    alignment: element.value.alignment,
+    byteLength: element.value.byteLength * length.value,
+    build: (offset) => ({
+      kind: "fixed-array",
+      name: fieldName,
+      offset,
+      alignment: element.value.alignment,
+      byteLength: element.value.byteLength * length.value,
+      length: length.value,
+      element: element.value.layout,
+    }),
+  });
+}
+
 function lowerPointerReference(
   typeNode: ts.TypeReferenceNode,
   fieldName: string,
@@ -485,6 +547,146 @@ function fixedStringEncoding(referenceName: string): Encoding {
   return referenceName === "fixed_ascii" || referenceName === "fixedAscii"
     ? "ascii"
     : "utf8";
+}
+
+function missingFixedArrayElementType(
+  typeNode: ts.TypeReferenceNode,
+  fieldName: string,
+  context: LoweringContext,
+): Result<LoweredFieldShape, LayoutDiagnostic> {
+  return loweringError(
+    createDiagnostic(
+      context.sourceFile,
+      typeNode,
+      "UNSUPPORTED_TYPE",
+      `Field "${fieldName}" must provide a fixedArray<T, N> element type.`,
+      {
+        structName: context.structName,
+        fieldName,
+        measurement: measure("fixed array without element type", "typescript-type", "phase-0"),
+        error: insufficientResolution(
+          "fixed array without element type",
+          "typescript-type",
+          "typescript-syntax",
+          "phase-0",
+        ),
+      },
+    ),
+  );
+}
+
+function lowerFixedArrayElementType(
+  elementType: ts.TypeNode,
+  fieldName: string,
+  context: LoweringContext,
+): Result<LoweredFixedArrayElement, LayoutDiagnostic> {
+  if (!ts.isTypeReferenceNode(elementType)) {
+    return unsupportedFixedArrayElementType(elementType, fieldName, context);
+  }
+
+  const referenceName = getReferenceName(elementType.typeName);
+  if (referenceName === undefined) {
+    return unsupportedFixedArrayElementType(elementType, fieldName, context);
+  }
+
+  const scalar = SCALAR_NAMES.has(referenceName as ScalarKind)
+    ? referenceName as ScalarKind
+    : SCALAR_ALIASES.get(referenceName);
+  if (scalar !== undefined) {
+    return ok({
+      alignment: scalarAlignment(scalar),
+      byteLength: scalarByteLength(scalar),
+      layout: {
+        kind: "scalar",
+        scalar,
+        byteLength: scalarByteLength(scalar),
+      },
+    });
+  }
+
+  if (referenceName === "fixed_bytes" || referenceName === "fixedBytes") {
+    const byteLength = extractNumericTypeArg(elementType, fieldName, context);
+    if (!byteLength.ok) {
+      return byteLength;
+    }
+    return ok({
+      alignment: 1,
+      byteLength: byteLength.value,
+      layout: {
+        kind: "fixed-bytes",
+        byteLength: byteLength.value,
+      },
+    });
+  }
+
+  if (
+    referenceName === "fixed_utf8" ||
+    referenceName === "fixed_ascii" ||
+    referenceName === "fixedUtf8" ||
+    referenceName === "fixedAscii"
+  ) {
+    const byteLength = extractNumericTypeArg(elementType, fieldName, context);
+    if (!byteLength.ok) {
+      return byteLength;
+    }
+    return ok({
+      alignment: 1,
+      byteLength: byteLength.value,
+      layout: {
+        kind: "fixed-string",
+        encoding: fixedStringEncoding(referenceName),
+        byteLength: byteLength.value,
+      },
+    });
+  }
+
+  if (
+    referenceName === "utf8" ||
+    referenceName === "ascii" ||
+    referenceName === "bytes" ||
+    referenceName === "vector" ||
+    referenceName === "fixed_array" ||
+    referenceName === "fixedArray" ||
+    referenceName === "pointer"
+  ) {
+    return unsupportedFixedArrayElementType(elementType, fieldName, context);
+  }
+
+  const structLayout = context.lowerStructByName(referenceName, elementType);
+  if (!structLayout.ok) {
+    return structLayout;
+  }
+
+  return ok({
+    alignment: structLayout.value.alignment,
+    byteLength: structLayout.value.byteLength,
+    layout: {
+      kind: "struct",
+      typeName: structLayout.value.name,
+      byteLength: structLayout.value.byteLength,
+    },
+  });
+}
+
+function unsupportedFixedArrayElementType(
+  elementType: ts.TypeNode,
+  fieldName: string,
+  context: LoweringContext,
+): Result<LoweredFixedArrayElement, LayoutDiagnostic> {
+  return loweringError(
+    createDiagnostic(
+      context.sourceFile,
+      elementType,
+      "UNSUPPORTED_TYPE",
+      `Field "${fieldName}" has an unsupported fixed array element type.`,
+      {
+        structName: context.structName,
+        fieldName,
+        measurement: measure(elementType.getText(context.sourceFile), "typescript-type", "phase-0"),
+        error: unsupportedAtPhase(elementType.getText(context.sourceFile), "phase-0"),
+      },
+    ),
+  );
 }
 
 function lowerVectorElement(
@@ -624,6 +826,11 @@ function lowerVectorElementReference(
     return lowerScalarVectorElement(referenceName as ScalarKind);
   }
 
+  const scalarAlias = SCALAR_ALIASES.get(referenceName);
+  if (scalarAlias !== undefined) {
+    return lowerScalarVectorElement(scalarAlias);
+  }
+
   if (referenceName === "fixed_bytes" || referenceName === "fixedBytes") {
     return lowerFixedBytesVectorElement(elementType, fieldName, context);
   }
@@ -756,7 +963,16 @@ function extractNumericTypeArg(
   fieldName: string,
   context: LoweringContext,
 ): Result<number, LayoutDiagnostic> {
-  const [arg] = typeNode.typeArguments ?? [];
+  return extractNumericTypeArgAt(typeNode, 0, fieldName, context);
+}
+
+function extractNumericTypeArgAt(
+  typeNode: ts.TypeReferenceNode,
+  index: number,
+  fieldName: string,
+  context: LoweringContext,
+): Result<number, LayoutDiagnostic> {
+  const arg = typeNode.typeArguments?.[index];
   if (
     arg !== undefined &&
     ts.isLiteralTypeNode(arg) &&

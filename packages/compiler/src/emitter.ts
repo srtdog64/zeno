@@ -7,6 +7,15 @@ import {
   type VectorElementLayout,
 } from "@zeno/schema";
 
+import {
+  canWriteFixedArrayStructElement,
+  collectFixedArrayRuntimeImports,
+  emitFixedArrayFieldAccessor,
+  emitFixedArrayObjectFieldWrite,
+  fixedArrayInputElementType,
+} from "./emitter-fixed-array.js";
+import { method } from "./emitter-template.js";
+
 type VectorFieldLayout = Extract<FieldLayout, { kind: "vector" }>;
 type VectorWriterElement<K extends VectorElementLayout["kind"]> = Extract<
   VectorElementLayout,
@@ -29,8 +38,6 @@ interface VectorWriterContext<K extends VectorElementLayout["kind"]> {
 type VectorWriterEmitter<K extends VectorElementLayout["kind"]> = (
   context: VectorWriterContext<K>,
 ) => string[];
-
-type CodeValue = string | number | boolean | readonly string[];
 
 export interface EmitOptions {
   readonly optimizeCursorOffsets?: boolean;
@@ -125,6 +132,9 @@ function collectFieldRuntimeImports(
         default:
           return;
       }
+    case "fixed-array":
+      collectFixedArrayRuntimeImports(field.element, imports);
+      return;
     default:
       return;
   }
@@ -155,6 +165,8 @@ function fieldInputType(field: FieldLayout): string {
       return `${field.typeName}ViewInput`;
     case "pointer":
       return "number | null";
+    case "fixed-array":
+      return `readonly ${fixedArrayInputElementType(field.element)}[]`;
     case "vector":
       switch (field.element.kind) {
         case "scalar":
@@ -432,56 +444,6 @@ function emitVectorWriterMethod(
   return emitWriter({ layout, layoutMap, field, pascalName });
 }
 
-function method(
-  strings: TemplateStringsArray,
-  ...values: CodeValue[]
-): string[] {
-  return indentLines("  ", code(strings, ...values));
-}
-
-function code(
-  strings: TemplateStringsArray,
-  ...values: CodeValue[]
-): string[] {
-  let source = strings[0] ?? "";
-  for (let index = 0; index < values.length; index += 1) {
-    source += stringifyCodeValue(values[index]!) + strings[index + 1];
-  }
-  return dedent(source).split("\n");
-}
-
-function stringifyCodeValue(value: CodeValue): string {
-  if (Array.isArray(value)) {
-    return value.join("\n");
-  }
-  return String(value);
-}
-
-function indentLines(indent: string, lines: readonly string[]): string[] {
-  return lines.map((line) => (line.length === 0 ? line : indent + line));
-}
-
-function dedent(source: string): string {
-  const lines = trimBlankEdges(source).split("\n");
-  const indent = commonIndent(lines);
-  return lines.map((line) => line.slice(Math.min(indent, leadingSpaces(line)))).join("\n");
-}
-
-function trimBlankEdges(source: string): string {
-  return source.replace(/^\n/, "").replace(/\n[ \t]*$/, "");
-}
-
-function commonIndent(lines: readonly string[]): number {
-  const indents = lines
-    .filter((line) => line.trim().length > 0)
-    .map((line) => leadingSpaces(line));
-  return indents.length === 0 ? 0 : Math.min(...indents);
-}
-
-function leadingSpaces(line: string): number {
-  return line.match(/^[ \t]*/)?.[0].length ?? 0;
-}
-
 function emitObjectWriterMethod(
   layout: StructLayout,
   layoutMap: ReadonlyMap<string, StructLayout>,
@@ -540,6 +502,8 @@ function emitObjectFieldWrite(layout: StructLayout, field: FieldLayout): string[
       return [
         `  ${layout.name}View.set${pascalName}TargetOffset(view, value.${field.name}, baseOffset, littleEndian);`,
       ];
+    case "fixed-array":
+      return emitFixedArrayObjectFieldWrite(field, encodingLiteral);
     case "vector":
       return [`  ${layout.name}View.write${pascalName}(writer, value.${field.name});`];
   }
@@ -831,6 +795,8 @@ ${field.name}Into(out: ${field.targetTypeName}View): boolean {
   return true;
 }`;
     }
+    case "fixed-array":
+      return emitFixedArrayFieldAccessor(field, encodingLiteral);
     case "vector":
       switch (field.element.kind) {
         case "scalar":
@@ -934,6 +900,11 @@ function canWriteObjectField(
     case "struct":
     case "pointer":
       return true;
+    case "fixed-array":
+      return (
+        field.element.kind !== "struct" ||
+        canWriteFixedArrayStructElement(field.element, layoutMap, hasTailWriterFields)
+      );
     case "vector":
       return (
         field.element.kind !== "struct" ||

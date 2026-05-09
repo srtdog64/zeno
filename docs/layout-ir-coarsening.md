@@ -29,8 +29,10 @@ failures.
 | TypeScript construct | Current IR | Status |
 | --- | --- | --- |
 | `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `u64`, `f32`, `f64`, `bool` | `ScalarFieldLayout` | supported |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | `ScalarFieldLayout` | supported as semantic aliases |
 | `z.fixedBytes<N>` / `fixed_bytes<N>` | `FixedBytesFieldLayout` | supported when `N` is a numeric literal |
 | `z.fixedUtf8<N>`, `z.fixedAscii<N>` / legacy snake_case aliases | `FixedStringFieldLayout` | supported when `N` is a numeric literal |
+| `z.fixedArray<T, N>` / `fixed_array<T, N>` | `FixedArrayFieldLayout` | supported for scalar, fixed bytes/string, and fixed-size struct elements |
 | `string`, `z.utf8`, `z.ascii` | `DynamicStringFieldLayout` with `Span32` | supported |
 | `z.bytes` / `bytes` | `DynamicBytesFieldLayout` with `Span32` | supported |
 | nested interface reference | `StructFieldLayout` | supported for non-recursive local interfaces |

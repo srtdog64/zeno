@@ -190,6 +190,134 @@ describe("analyzeProjectionFile", () => {
     expect(result.layouts[0]?.endianness).toBe("big");
   });
 
+  it("lowers semantic aliases and fixed arrays without adding new ABI primitives", () => {
+    const fixturePath = path.join(fixturesDir, "aliases-fixed-array-schema.ts");
+    const program = createProgramFromRootNames([fixturePath]);
+    const sourceFile = program.getSourceFile(fixturePath);
+
+    expect(sourceFile).toBeDefined();
+
+    const result = analyzeProjectionFile(program, sourceFile!);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.layouts).toEqual([
+      {
+        kind: "struct",
+        name: "Point",
+        alignment: 4,
+        byteLength: 8,
+        endianness: "little",
+        fields: [
+          {
+            kind: "scalar",
+            name: "x",
+            scalar: "f32",
+            offset: 0,
+            alignment: 4,
+            byteLength: 4,
+          },
+          {
+            kind: "scalar",
+            name: "y",
+            scalar: "f32",
+            offset: 4,
+            alignment: 4,
+            byteLength: 4,
+          },
+        ],
+      },
+      {
+        kind: "struct",
+        name: "Metrics",
+        alignment: 8,
+        byteLength: 56,
+        endianness: "little",
+        fields: [
+          {
+            kind: "scalar",
+            name: "kind",
+            scalar: "u8",
+            offset: 0,
+            alignment: 1,
+            byteLength: 1,
+          },
+          {
+            kind: "scalar",
+            name: "mode",
+            scalar: "u16",
+            offset: 2,
+            alignment: 2,
+            byteLength: 2,
+          },
+          {
+            kind: "scalar",
+            name: "flags",
+            scalar: "u32",
+            offset: 4,
+            alignment: 4,
+            byteLength: 4,
+          },
+          {
+            kind: "scalar",
+            name: "createdAt",
+            scalar: "i64",
+            offset: 8,
+            alignment: 8,
+            byteLength: 8,
+          },
+          {
+            kind: "fixed-array",
+            name: "samples",
+            offset: 16,
+            alignment: 4,
+            byteLength: 12,
+            length: 3,
+            element: {
+              kind: "scalar",
+              scalar: "f32",
+              byteLength: 4,
+            },
+          },
+          {
+            kind: "fixed-array",
+            name: "labels",
+            offset: 28,
+            alignment: 1,
+            byteLength: 8,
+            length: 2,
+            element: {
+              kind: "fixed-string",
+              encoding: "ascii",
+              byteLength: 4,
+            },
+          },
+          {
+            kind: "fixed-array",
+            name: "points",
+            offset: 36,
+            alignment: 4,
+            byteLength: 16,
+            length: 2,
+            element: {
+              kind: "struct",
+              typeName: "Point",
+              byteLength: 8,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const metricsViewSource = emitProjectionFile(result.layouts);
+    expect(metricsViewSource).toContain("kind: number;");
+    expect(metricsViewSource).toContain("createdAt: bigint;");
+    expect(metricsViewSource).toContain("samples: readonly number[];");
+    expect(metricsViewSource).toContain("labelsView(): FixedStringArrayView");
+    expect(metricsViewSource).toContain("pointsView(): FixedStructArrayView<PointView>");
+    expect(metricsViewSource).toContain("writeScalar(view, \"f32\"");
+    expect(metricsViewSource).not.toContain("descriptor");
+  });
+
   it("reports ambiguous bare runtime types early", () => {
     const fixturePath = path.join(fixturesDir, "invalid-schema.ts");
     const program = createProgramFromRootNames([fixturePath]);

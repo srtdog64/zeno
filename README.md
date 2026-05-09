@@ -108,7 +108,9 @@ per-record view allocation.
 | `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32` | scalar | stable |
 | `z.i64`, `z.u64` | bigint scalar | stable |
 | `z.f32`, `z.f64`, `z.bool` | scalar | stable |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases | stable |
 | `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>` | inline fixed region | stable |
+| `z.fixedArray<T, N>` | inline fixed array | stable for scalar, fixed bytes/string, and fixed-size struct elements |
 | `z.utf8`, `z.ascii`, `z.bytes` | `Span32` descriptor | stable |
 | `z.vector<T>` | `Vector32` descriptor | stable for supported elements |
 | `z.pointer<T>` | signed relative `pointer32` | stable |

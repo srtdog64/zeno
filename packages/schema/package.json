@@ -1,6 +1,23 @@
 {
   "name": "@zeno/schema",
-  "version": "1.5.0",
+  "version": "1.7.0",
+  "description": "Layout IR and ABI constants for Zeno zero-copy TypeScript binary views.",
+  "keywords": [
+    "typescript",
+    "binary",
+    "schema",
+    "zero-copy",
+    "dataview"
+  ],
+  "homepage": "https://github.com/srtdog64/zeno#readme",
+  "bugs": {
+    "url": "https://github.com/srtdog64/zeno/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srtdog64/zeno.git",
+    "directory": "packages/schema"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,5 +29,8 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

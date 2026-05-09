@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.7.0
+
+Status: v1 completion release for semantic aliases and inline fixed arrays.
+
+- Added semantic scalar aliases: `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`,
+  `z.flags32`, and `z.timestampMs`; these lower to existing scalar ABI kinds.
+- Added `z.fixedArray<T, N>` / `fixed_array<T, N>` for inline fixed-layout
+  arrays over scalar, fixed bytes/string, and fixed-size struct elements.
+- Added runtime fixed-array projection views and object-writer support for
+  supported fixed-array fields.
+- Documented optional fields, unions, packed bitsets, and graph/object
+  serialization as v2 design work.
+- Package manifests and workspace lockfile are aligned at `1.7.0`.
+
 ## 1.5.0
 
 Status: compiler emitter maintainability release with no intended public API changes.

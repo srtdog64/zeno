@@ -13,6 +13,18 @@ export namespace z {
   export type u64 = Brand<bigint, "u64">;
   export type bool = Brand<boolean, "bool">;
 
+  export type enumU8<T extends string | number = string> = Brand<number, "enum_u8"> & {
+    readonly __enum: T;
+  };
+
+  export type enumU16<T extends string | number = string> = Brand<number, "enum_u16"> & {
+    readonly __enum: T;
+  };
+
+  export type flags8 = Brand<number, "flags8">;
+  export type flags32 = Brand<number, "flags32">;
+  export type timestampMs = Brand<bigint, "timestamp_ms">;
+
   export type fixedBytes<N extends number> = Uint8Array & {
     readonly __zeno: "fixed_bytes";
     readonly __length: N;
@@ -39,6 +51,12 @@ export namespace z {
     readonly __element: T;
   };
 
+  export type fixedArray<T, N extends number> = ReadonlyArray<T> & {
+    readonly __zeno: "fixed_array";
+    readonly __element: T;
+    readonly __length: N;
+  };
+
   export type pointer<T> = Brand<number, "pointer32"> & {
     readonly __target: T;
   };
@@ -55,6 +73,11 @@ export type f64 = z.f64;
 export type i64 = z.i64;
 export type u64 = z.u64;
 export type bool = z.bool;
+export type enum_u8<T extends string | number = string> = z.enumU8<T>;
+export type enum_u16<T extends string | number = string> = z.enumU16<T>;
+export type flags8 = z.flags8;
+export type flags32 = z.flags32;
+export type timestamp_ms = z.timestampMs;
 export type fixed_bytes<N extends number> = z.fixedBytes<N>;
 export type fixed_utf8<N extends number> = z.fixedUtf8<N>;
 export type fixed_ascii<N extends number> = z.fixedAscii<N>;
@@ -62,4 +85,5 @@ export type bytes = z.bytes;
 export type utf8 = z.utf8;
 export type ascii = z.ascii;
 export type vector<T> = z.vector<T>;
+export type fixed_array<T, N extends number> = z.fixedArray<T, N>;
 export type pointer<T> = z.pointer<T>;

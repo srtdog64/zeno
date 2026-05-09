@@ -59,7 +59,9 @@ interface-declaration
 field            ::= Identifier ":" field-type ";"
 
 field-type       ::= scalar-type
+                   | scalar-alias-type
                    | fixed-type
+                   | fixed-array-type
                    | dynamic-type
                    | vector-type
                    | pointer-type
@@ -69,9 +71,21 @@ field-type       ::= scalar-type
 scalar-type      ::= z.i8 | z.u8 | z.i16 | z.u16 | z.i32 | z.u32
                    | z.i64 | z.u64 | z.f32 | z.f64 | z.bool
 
+scalar-alias-type
+                 ::= z.enumU8<T> | z.enumU16<T>
+                   | z.flags8 | z.flags32 | z.timestampMs
+
 fixed-type       ::= z.fixedBytes<N>
                    | z.fixedUtf8<N>
                    | z.fixedAscii<N>
+
+fixed-array-type ::= z.fixedArray<fixed-array-element, N>
+
+fixed-array-element
+                 ::= scalar-type
+                   | scalar-alias-type
+                   | fixed-type
+                   | fixed-struct-reference
 
 dynamic-type     ::= z.utf8 | z.ascii | z.bytes
 
@@ -135,6 +149,30 @@ export interface SearchRow {
   tags: z.vector<z.utf8>;
 }
 ```
+
+### 의미 alias와 고정 배열
+
+```ts
+import type { z } from "@zeno/types";
+
+export interface Point {
+  x: z.f32;
+  y: z.f32;
+}
+
+export interface Metrics {
+  kind: z.enumU8<"cpu" | "gpu">;
+  flags: z.flags32;
+  createdAt: z.timestampMs;
+  samples: z.fixedArray<z.f32, 3>;
+  labels: z.fixedArray<z.fixedAscii<4>, 2>;
+  points: z.fixedArray<Point, 2>;
+}
+```
+
+의미 alias는 기존 scalar ABI로 내려갑니다. `fixedArray<T, N>`은
+`Vector32` descriptor가 아니라 head 안에 들어가는 inline fixed-layout
+영역입니다.
 
 ### 중첩 고정 구조체
 

@@ -77,6 +77,41 @@ export interface PointerFieldLayout extends FieldLayoutBase {
   offsetEncoding: "i32";
 }
 
+export interface ScalarFixedArrayElementLayout {
+  kind: "scalar";
+  scalar: ScalarKind;
+  byteLength: number;
+}
+
+export interface FixedBytesFixedArrayElementLayout {
+  kind: "fixed-bytes";
+  byteLength: number;
+}
+
+export interface FixedStringFixedArrayElementLayout {
+  kind: "fixed-string";
+  encoding: Encoding;
+  byteLength: number;
+}
+
+export interface StructFixedArrayElementLayout {
+  kind: "struct";
+  typeName: string;
+  byteLength: number;
+}
+
+export type FixedArrayElementLayout =
+  | ScalarFixedArrayElementLayout
+  | FixedBytesFixedArrayElementLayout
+  | FixedStringFixedArrayElementLayout
+  | StructFixedArrayElementLayout;
+
+export interface FixedArrayFieldLayout extends FieldLayoutBase {
+  kind: "fixed-array";
+  length: number;
+  element: FixedArrayElementLayout;
+}
+
 export interface ScalarVectorElementLayout {
   kind: "scalar";
   scalar: ScalarKind;
@@ -146,6 +181,7 @@ export type FieldLayout =
   | DynamicBytesFieldLayout
   | StructFieldLayout
   | PointerFieldLayout
+  | FixedArrayFieldLayout
   | VectorFieldLayout;
 
 export interface StructLayout {

@@ -137,7 +137,9 @@ already batch their own fixed-field writes.
 | `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32` | scalar | supported |
 | `z.i64`, `z.u64` | bigint scalar | supported |
 | `z.f32`, `z.f64`, `z.bool` | scalar | supported |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases | supported; lower to `u8`, `u16`, `u8`, `u32`, and `i64` |
 | `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>` | inline fixed region | supported |
+| `z.fixedArray<T, N>` | inline fixed array | supported for scalar, fixed bytes/string, and fixed-size struct elements |
 | `z.utf8`, `z.ascii`, `z.bytes` | `Span32` descriptor | read, field-level write, and object-level write supported |
 | `z.vector<T>` | `Vector32` descriptor | read supported for scalar, fixed bytes/string, dynamic bytes/string, fixed struct, and pointer elements; object-level write supported for scalar, fixed bytes/string, dynamic bytes/string, fixed-size struct, and pointer vectors |
 | `z.pointer<T>` | signed `pointer32` field-relative offset, raw `0xffffffff` null | supported for explicit recursive references |

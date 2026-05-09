@@ -176,7 +176,8 @@ project.
 ## Documentation
 
 - [docs/getting-started.md](docs/getting-started.md): detailed walkthrough.
-- [docs/schema-grammar.md](docs/schema-grammar.md): supported `.zeno.ts`
+- [docs/schema-grammar.md](docs/schema-grammar.md) /
+  [docs/schema-grammar.ko.md](docs/schema-grammar.ko.md): supported `.zeno.ts`
   grammar, examples, and rejected forms.
 - [docs/abi.md](docs/abi.md): scalar, `Span32`, `Vector32`, `pointer32`, and
   optional frame ABI.

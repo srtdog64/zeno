@@ -24,8 +24,9 @@
 
 ## Schema authoring
 
-Grammar reference: [schema-grammar.md](schema-grammar.md). Any new accepted or
-rejected schema construct must update that grammar before implementation is
+Grammar references: [schema-grammar.md](schema-grammar.md) and
+[schema-grammar.ko.md](schema-grammar.ko.md). Any new accepted or rejected
+schema construct must update both grammar documents before implementation is
 considered complete.
 
 ### Must support
@@ -204,7 +205,8 @@ Status: local witness only.
 ## Immediate next tasks
 
 - tag and publish `1.1.0` after human release review
-- keep [schema-grammar.md](schema-grammar.md) in sync with every new accepted
+- keep [schema-grammar.md](schema-grammar.md) and
+  [schema-grammar.ko.md](schema-grammar.ko.md) in sync with every new accepted
   or rejected schema construct
 
 ## Deferred tasks

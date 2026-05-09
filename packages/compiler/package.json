@@ -1,0 +1,25 @@
+{
+  "name": "@zeno/compiler",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/",
+    "bin/",
+    "!dist/plugin.*"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "zeno-codegen": "./bin/zeno-codegen.mjs"
+  },
+  "dependencies": {
+    "@zeno/schema": "1.0.0",
+    "typescript": "^5.9.0"
+  }
+}

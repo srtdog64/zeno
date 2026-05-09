@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest";
+
+import * as compiler from "../packages/compiler/src/index.js";
+import * as runtime from "../packages/runtime/src/index.js";
+import * as schema from "../packages/schema/src/index.js";
+
+describe("public package runtime exports", () => {
+  it("keeps the @zeno/runtime root export surface stable", () => {
+    expect(Object.keys(runtime).sort()).toMatchInlineSnapshot(`
+      [
+        "BytesSpanView",
+        "BytesVectorView",
+        "DynamicLayoutWriter",
+        "DynamicStructVectorView",
+        "FixedBytesVectorView",
+        "FixedStringVectorView",
+        "POINTER32_BYTE_LENGTH",
+        "POINTER32_NULL",
+        "PointerVectorView",
+        "ProjectionView",
+        "SCALAR_KINDS",
+        "SPAN32_BYTE_LENGTH",
+        "ScalarVectorView",
+        "StructVectorView",
+        "Utf8SpanView",
+        "Utf8VectorView",
+        "VECTOR32_BYTE_LENGTH",
+        "VectorView",
+        "decodeFixedText",
+        "decodeFixedUtf8",
+        "decodeText",
+        "encodeText",
+        "fixedBytesView",
+        "readScalar",
+        "readSpan32Descriptor",
+        "readVector32Descriptor",
+        "scalarByteLength",
+        "traversePointerChain",
+        "writeFixedBytes",
+        "writeFixedText",
+        "writeFixedUtf8",
+        "writeScalar",
+        "writeSpan32Descriptor",
+        "writeVector32Descriptor",
+      ]
+    `);
+  });
+
+  it("keeps the @zeno/compiler root export surface stable", () => {
+    expect(Object.keys(compiler).sort()).toMatchInlineSnapshot(`
+      [
+        "MEASUREMENT_LAYERS",
+        "ambiguousLayout",
+        "analyzeProjectionFile",
+        "andThen",
+        "createDiagnostic",
+        "createIrDiagnostic",
+        "duplicateDefinition",
+        "emitProjectionFile",
+        "emitStructView",
+        "err",
+        "formatDiagnosticLocation",
+        "insufficientResolution",
+        "isErr",
+        "isOk",
+        "layerCanObserve",
+        "layoutInvariantViolation",
+        "lowerField",
+        "mapResult",
+        "measure",
+        "ok",
+        "unsupportedAtPhase",
+        "validateLayouts",
+      ]
+    `);
+  });
+
+  it("keeps the @zeno/schema runtime helper export surface stable", () => {
+    expect(Object.keys(schema).sort()).toMatchInlineSnapshot(`
+      [
+        "POINTER32_BYTE_LENGTH",
+        "POINTER32_NULL",
+        "SCALAR_KINDS",
+        "SPAN32_BYTE_LENGTH",
+        "VECTOR32_BYTE_LENGTH",
+        "alignTo",
+        "scalarAlignment",
+        "scalarByteLength",
+        "scalarGetterMethod",
+        "scalarSetterMethod",
+        "scalarTsType",
+      ]
+    `);
+  });
+});

@@ -1,0 +1,218 @@
+# Architecture
+
+## Feasibility
+
+This is feasible, but only if the project is precise about what "pure TypeScript types" means.
+
+Possible:
+
+- authoring with `interface` and `type` only
+- compile-time AST and type-checker analysis
+- generated projection classes or factory functions
+- zero-copy scalar reads from a backing `ArrayBuffer`
+- zero object allocation for scalar access paths
+
+Not possible from syntax alone:
+
+- inferring whether `number` means `i32`, `u32`, `f32`, or `f64`
+- inferring fixed-width string or bytes lengths from plain syntax
+- inferring dynamic array boundaries from `T[]`
+- inferring layout/alignment policy for unions and versioned schemas
+
+So the real rule should be:
+
+> No decorators and no runtime schema objects, but binary semantics still need to exist in the type system.
+
+That can be encoded with type aliases such as `z.i32`, `z.u32`, `z.f64`, `z.bytes`, `z.fixedBytes<16>`, and `z.fixedUtf8<32>`. Bare `string` can map to the default UTF-8 dynamic text policy, but schema files should prefer `z.utf8` because it makes the ABI rule visible during review.
+
+## Authoring model
+
+```ts
+import type { z } from "@zeno/types";
+
+export interface User {
+  id: z.u64;
+  age: z.i32;
+  handle: z.fixedUtf8<32>;
+  name: z.utf8;
+  avatar: z.bytes;
+}
+```
+
+The standalone compiler should analyze this and emit something structurally similar to:
+
+```ts
+export class UserView {
+  static readonly byteLength = 44;
+
+  constructor(private readonly view: DataView, private readonly baseOffset = 0) {}
+
+  get id(): bigint {
+    return this.view.getBigUint64(this.baseOffset + 0, true);
+  }
+
+  get age(): number {
+    return this.view.getInt32(this.baseOffset + 8, true);
+  }
+
+  handleText(): string {
+    return decodeFixedUtf8(this.view, this.baseOffset + 12, 32);
+  }
+
+  nameView(): Utf8SpanView {
+    return new Utf8SpanView(this.view, 44, this.baseOffset, true);
+  }
+
+  avatarBytes(): Uint8Array {
+    return new BytesSpanView(this.view, 52, this.baseOffset, true).bytes();
+  }
+}
+```
+
+## Pipeline
+
+1. Source scan
+   Read source files that opt into projection generation.
+2. Type analysis
+   Resolve declarations through the TypeScript type checker.
+3. Layout IR build
+   Convert resolved fields into a compact internal representation.
+4. Validation
+   Reject unsupported constructs early with deterministic diagnostics.
+5. Code emission
+   Generate `.ts` view classes or transformed inline accessors.
+6. Runtime binding
+   Reuse shared ABI, projection view, and writer layers for scalar, slice,
+   vector, pointer, and tail-arena access.
+
+## Core packages
+
+### `packages/schema`
+
+The schema package defines the internal representation shared by the compiler and runtime-adjacent tooling.
+
+The compiler should not directly emit from AST nodes. It should emit from a normalized layout IR:
+
+- stable
+- snapshot-testable
+- independent from TS AST shapes
+- reusable by benchmarks and future binary format backends
+
+### `packages/compiler`
+
+Recommended split:
+
+- `analyzer.ts`: AST and type-checker traversal
+- `lowering.ts`: TypeScript types to layout IR
+- `validator.ts`: unsupported construct checks
+- `emitter.ts`: generate view code
+
+The first supported integration point is the standalone `zeno-codegen` CLI.
+A `tsc` transformer/plugin entrypoint is future work and is not exported as a
+public API until it does real work.
+
+### `packages/runtime`
+
+Contains the runtime ABI and projection layers:
+
+- `range.ts`: integer, `DataView`, buffer, and alignment checks
+- `scalar.ts`: scalar reads/writes
+- `descriptor32.ts`: `Span32` and `Vector32`
+- `pointer32.ts`: relative pointer encoding
+- `view-base.ts`, `spans.ts`, `*-vector.ts`: projection views
+- `writer-*.ts`: tail arena and descriptor writers
+
+The public package still exposes only the root entrypoint. Generated code should
+inline offsets and avoid reflective lookup tables on the hot path.
+
+#### Runtime Failure Policy
+
+The compiler uses `Result<T, E>` and structured diagnostics for recoverable
+schema and IR failures. The runtime is different: it sits on the memory access
+boundary and uses `RangeError` for invalid offsets, truncated descriptors, and
+out-of-bounds payloads.
+
+This is intentional. Runtime projection helpers are hot-path APIs over caller
+provided `ArrayBuffer`/`DataView` values, and returning `Result` from every
+scalar or span read would change the API shape and steady-state cost. Callers
+that accept untrusted buffers should validate or catch at the boundary before
+entering tight projection loops.
+
+Promotion criterion: add a separate safe wrapper API only when there is a
+witness workload that needs recoverable malformed-buffer handling without
+throwing.
+
+## Practical boundaries
+
+### True zero-allocation reads
+
+These are realistic for:
+
+- integer and float scalars
+- booleans
+- fixed sub-views
+- byte slices returned as `Uint8Array` views
+
+These are not zero-allocation unless carefully constrained:
+
+- decoded JavaScript `string`
+- converted JS arrays
+- arbitrary nested object materialization
+
+If the API returns a JS `string`, there is still a decode cost and likely allocation. That is acceptable, but it is not the same as scalar zero-copy projection.
+
+### Variable-length data
+
+A fixed-layout struct model is insufficient for general dynamic fields.
+
+Once the schema contains:
+
+- vectors
+- strings with runtime length
+- optional blobs
+- unions
+
+you need either:
+
+- inline header fields with offsets and lengths
+- a separate table/vtable model
+- or an external framing rule
+
+That is effectively the point where the system stops being "C struct projection" and becomes "FlatBuffers-like table projection".
+
+### Endianness
+
+The Layout IR carries `endianness: "little" | "big"`. Codegen defaults to
+little-endian but accepts `--endian=big`; emitted constructors and static scalar
+accessors use that layout default for their `littleEndian` parameter. Callers can
+still override the generated default per call when needed.
+
+## Suggested phases
+
+### Phase 0
+
+- fixed scalars only
+- generated getters only
+- layout IR snapshot tests
+
+### Phase 1
+
+- setters
+- nested fixed structs
+- fixed bytes and fixed strings
+
+### Phase 2
+
+- arrays with compile-time length
+- zero-copy subview APIs
+- better diagnostics
+
+### Phase 3
+
+- offset-table encoding for dynamic fields
+- vector/string table accessors
+- schema evolution rules
+
+Current v1 status: Phase 3 dynamic descriptors exist for the supported
+`Span32`, `Vector32`, and `pointer32` ABI. Native schema evolution remains an
+explicit non-goal for v1; see [schema-compatibility.md](schema-compatibility.md).

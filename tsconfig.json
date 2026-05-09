@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/schema" },
+    { "path": "./packages/types" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/compiler" },
+    { "path": "./examples/basic" }
+  ]
+}

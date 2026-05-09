@@ -1,0 +1,27 @@
+{
+  "name": "zeno",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean && node ./scripts/clean-dist.mjs",
+    "codegen:basic": "node ./packages/compiler/bin/zeno-codegen.mjs ./examples/basic/src/model.zeno.ts ./examples/basic/src/model.view.ts",
+    "codegen:basic:optimized": "node ./packages/compiler/bin/zeno-codegen.mjs ./examples/basic/src/model.zeno.ts ./examples/basic/src/model.optimized.view.ts --optimize-cursor-offsets",
+    "package:policy": "node ./scripts/package-policy-check.mjs",
+    "version:check": "node ./scripts/version-check.mjs",
+    "check": "npm run version:check && npm run package:policy && npm run clean && npm run build && npm test && npm run codegen:basic && npm run codegen:basic:optimized",
+    "pack:check": "npm pack --dry-run --workspace @zeno/compiler && npm pack --dry-run --workspace @zeno/runtime && npm pack --dry-run --workspace @zeno/schema && npm pack --dry-run --workspace @zeno/types",
+    "consumer:smoke": "node ./scripts/consumer-smoke.mjs",
+    "release:check": "npm run check && npm run pack:check && npm run consumer:smoke",
+    "test": "node --expose-gc ./node_modules/vitest/vitest.mjs run",
+    "bench": "node --expose-gc ./packages/bench/index.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

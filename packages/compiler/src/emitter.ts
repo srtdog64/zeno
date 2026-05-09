@@ -8,14 +8,19 @@ import {
 } from "@exornea/zeno-schema";
 
 import {
-  canWriteFixedArrayStructElement,
-  collectFixedArrayRuntimeImports,
   emitFixedArrayFieldAccessor,
   emitFixedArrayObjectFieldWrite,
-  fixedArrayInputElementType,
 } from "./emitter-fixed-array.js";
 import { emitAstCheckedSource } from "./emitter-ast.js";
+import {
+  canEmitObjectWriter,
+  hasTailWriterFields,
+  isTailWriterField,
+  structFieldHasTailFields,
+} from "./emitter-capabilities.js";
+import { emitInputInterface } from "./emitter-input.js";
 import { encodingLiteral, toLittleEndianLiteral, toPascalCase } from "./emitter-names.js";
+import { collectRuntimeImports } from "./emitter-runtime-imports.js";
 import { method } from "./emitter-template.js";
 import { createProjectionSourceMap, type ProjectionSourceMap } from "./source-map.js";
 
@@ -95,123 +100,6 @@ export function emitProjectionFileWithSourceMap(
     code,
     sourceMap: createProjectionSourceMap(code, layouts, generatedFile),
   };
-}
-
-function collectRuntimeImports(layouts: readonly StructLayout[]): string[] {
-  const imports = new Set<string>(["ProjectionView"]);
-  const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
-
-  for (const layout of layouts) {
-    if (hasTailWriterFields(layout, layoutMap)) {
-      imports.add("DynamicLayoutWriter");
-    }
-
-    for (const field of layout.fields) {
-      collectFieldRuntimeImports(field, imports);
-    }
-  }
-
-  return Array.from(imports).sort();
-}
-
-function collectFieldRuntimeImports(field: FieldLayout, imports: Set<string>): void {
-  switch (field.kind) {
-    case "fixed-bytes":
-      imports.add("fixedBytesView");
-      imports.add("writeFixedBytes");
-      return;
-    case "fixed-string":
-      imports.add("decodeFixedText");
-      imports.add("fixedBytesView");
-      imports.add("writeFixedText");
-      return;
-    case "dynamic-string":
-      imports.add("Utf8SpanView");
-      return;
-    case "dynamic-bytes":
-      imports.add("BytesSpanView");
-      return;
-    case "vector":
-      switch (field.element.kind) {
-        case "scalar":
-          imports.add("ScalarVectorView");
-          return;
-        case "dynamic-string":
-          imports.add("Utf8VectorView");
-          return;
-        case "dynamic-bytes":
-          imports.add("BytesVectorView");
-          return;
-        case "fixed-bytes":
-          imports.add("FixedBytesVectorView");
-          return;
-        case "fixed-string":
-          imports.add("FixedStringVectorView");
-          return;
-        case "struct":
-          imports.add("StructVectorView");
-          return;
-        case "dynamic-struct":
-          imports.add("DynamicStructVectorView");
-          return;
-        case "pointer":
-          imports.add("PointerVectorView");
-          return;
-        default:
-          return;
-      }
-    case "fixed-array":
-      collectFixedArrayRuntimeImports(field.element, imports);
-      return;
-    default:
-      return;
-  }
-}
-
-function emitInputInterface(layout: StructLayout): string[] {
-  const lines = [`export interface ${layout.name}ViewInput {`];
-
-  for (const field of layout.fields) {
-    lines.push(`  readonly ${field.name}: ${fieldInputType(field)};`);
-  }
-
-  lines.push("}");
-  return lines;
-}
-
-function fieldInputType(field: FieldLayout): string {
-  switch (field.kind) {
-    case "scalar":
-      return scalarTsType(field.scalar);
-    case "fixed-bytes":
-    case "dynamic-bytes":
-      return "ArrayLike<number> | Uint8Array";
-    case "fixed-string":
-    case "dynamic-string":
-      return "string";
-    case "struct":
-      return `${field.typeName}ViewInput`;
-    case "pointer":
-      return "number | null";
-    case "fixed-array":
-      return `readonly ${fixedArrayInputElementType(field.element)}[]`;
-    case "vector":
-      switch (field.element.kind) {
-        case "scalar":
-          return `readonly ${scalarTsType(field.element.scalar)}[]`;
-        case "fixed-bytes":
-        case "dynamic-bytes":
-          return "readonly (ArrayLike<number> | Uint8Array)[]";
-        case "fixed-string":
-        case "dynamic-string":
-          return "readonly string[]";
-        case "struct":
-        case "dynamic-struct":
-          return `readonly ${field.element.typeName}ViewInput[]`;
-        case "pointer":
-          return "readonly (number | null)[]";
-      }
-  }
 }
 
 function emitLayoutConstants(layout: StructLayout): string[] {
@@ -982,93 +870,4 @@ ${field.name}Into(out: ${field.targetTypeName}View): boolean {
   out.moveToOffset(targetOffset, ${field.targetTypeName}View.byteLength);
   return true;
 }`;
-}
-
-function hasTailWriterFields(
-  layout: StructLayout,
-  layoutMap: ReadonlyMap<string, StructLayout>,
-): boolean {
-  return layout.fields.some((field) => isTailWriterField(field, layoutMap));
-}
-
-function isTailWriterField(
-  field: FieldLayout,
-  layoutMap: ReadonlyMap<string, StructLayout>,
-): boolean {
-  switch (field.kind) {
-    case "dynamic-string":
-    case "dynamic-bytes":
-      return true;
-    case "vector":
-      return (
-        field.element.kind === "scalar" ||
-        field.element.kind === "fixed-bytes" ||
-        field.element.kind === "fixed-string" ||
-        field.element.kind === "dynamic-string" ||
-        field.element.kind === "dynamic-bytes" ||
-        field.element.kind === "pointer" ||
-        canWriteStructVectorElement(field.element, layoutMap)
-      );
-    default:
-      return false;
-  }
-}
-
-function canEmitObjectWriter(
-  layout: StructLayout,
-  layoutMap: ReadonlyMap<string, StructLayout>,
-): boolean {
-  return layout.fields.every((field) => canWriteObjectField(field, layoutMap));
-}
-
-function canWriteObjectField(
-  field: FieldLayout,
-  layoutMap: ReadonlyMap<string, StructLayout>,
-): boolean {
-  switch (field.kind) {
-    case "scalar":
-    case "fixed-bytes":
-    case "fixed-string":
-    case "dynamic-string":
-    case "dynamic-bytes":
-    case "struct":
-    case "pointer":
-      return true;
-    case "fixed-array":
-      return (
-        field.element.kind !== "struct" ||
-        canWriteFixedArrayStructElement(field.element, layoutMap, hasTailWriterFields)
-      );
-    case "vector":
-      return (
-        (field.element.kind !== "struct" && field.element.kind !== "dynamic-struct") ||
-        canWriteStructVectorElement(field.element, layoutMap)
-      );
-  }
-}
-
-function canWriteStructVectorElement(
-  element: VectorElementLayout,
-  layoutMap: ReadonlyMap<string, StructLayout>,
-): boolean {
-  if (element.kind !== "struct" && element.kind !== "dynamic-struct") {
-    return false;
-  }
-
-  const elementLayout = layoutMap.get(element.typeName);
-  if (elementLayout === undefined) {
-    return false;
-  }
-
-  return element.kind === "dynamic-struct"
-    ? canEmitObjectWriter(elementLayout, layoutMap)
-    : !hasTailWriterFields(elementLayout, layoutMap);
-}
-
-function structFieldHasTailFields(
-  layoutMap: ReadonlyMap<string, StructLayout>,
-  typeName: string,
-): boolean {
-  const layout = layoutMap.get(typeName);
-  return layout !== undefined && hasTailWriterFields(layout, layoutMap);
 }

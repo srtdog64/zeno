@@ -14,9 +14,11 @@
     "package:policy": "node ./scripts/package-policy-check.mjs",
     "version:check": "node ./scripts/version-check.mjs",
     "check": "npm run version:check && npm run package:policy && npm run clean && npm run build && npm test && npm run codegen:basic && npm run codegen:basic:optimized",
-    "pack:check": "npm pack --dry-run --workspace @exornea/zeno-compiler && npm pack --dry-run --workspace @exornea/zeno-runtime && npm pack --dry-run --workspace @exornea/zeno-schema && npm pack --dry-run --workspace @exornea/zeno-types",
+    "pack:check": "npm pack --dry-run --workspace @exornea/zeno-types && npm pack --dry-run --workspace @exornea/zeno-schema && npm pack --dry-run --workspace @exornea/zeno-runtime && npm pack --dry-run --workspace @exornea/zeno-compiler",
     "consumer:smoke": "node ./scripts/consumer-smoke.mjs",
     "release:check": "npm run check && npm run pack:check && npm run consumer:smoke",
+    "release:publish": "npm run release:check && node ./scripts/publish-packages.mjs",
+    "release:publish:dry-run": "node ./scripts/publish-packages.mjs --dry-run",
     "test": "node --expose-gc ./node_modules/vitest/vitest.mjs run",
     "bench": "node --expose-gc ./packages/bench/index.mjs"
   },

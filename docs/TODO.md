@@ -278,6 +278,10 @@ Status: local witness only.
 - packed bool/bitset: reduces memory but adds ABI and accessor complexity
 - graph/object serializer: pointer is a projection primitive; graph allocation
   and serialization is a separate design
+- FP ULP boundaries: keep as a diagnostic schema-migration candidate for future
+  `f64`/`f32` conversion, quantization, or cross-runtime conformance work; do
+  not expose this as a v1 runtime API while Zeno only projects existing
+  `DataView` float bits without numeric transformation
 
 ## v1.8 Candidate Work
 

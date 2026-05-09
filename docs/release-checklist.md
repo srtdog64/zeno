@@ -29,18 +29,52 @@ This runs:
 - package dry-runs
 - packed consumer smoke test
 
-For a scoped public publish, use explicit package order:
+For a scoped public publish, use the release publisher:
 
 ```powershell
-npm publish --workspace @exornea/zeno-types --access public
-npm publish --workspace @exornea/zeno-schema --access public
-npm publish --workspace @exornea/zeno-runtime --access public
-npm publish --workspace @exornea/zeno-compiler --access public
+npm run release:publish
 ```
+
+The publisher uses dependency order, skips packages whose current version is
+already published, and accepts npm OTP when needed:
+
+```powershell
+npm run release:publish -- --otp=123456
+```
+
+For a packaging-only rehearsal:
+
+```powershell
+npm run release:publish:dry-run
+```
+
+## GitHub Actions Publish
+
+The normal release path is `.github/workflows/release.yml`, triggered by a
+`v*` tag or by manual `workflow_dispatch`.
+
+Configure npm Trusted Publishing for each package:
+
+- Provider: GitHub Actions
+- Organization or user: `srtdog64`
+- Repository: `zeno`
+- Workflow filename: `release.yml`
+- Environment: leave blank unless the workflow is changed to use a GitHub
+  environment
+
+The workflow uses OIDC with `id-token: write`, Node 24, and npm 11.5.1 or
+newer. No long-lived `NPM_TOKEN` is required. Already-published package
+versions are skipped by `scripts/publish-packages.mjs`, so a partially completed
+release can be retried safely.
+
+Local publish is only the fallback path for the first package publish,
+recovering a failed release, or testing npm account permissions.
 
 ## Preconditions
 
-- Confirm npm ownership of the `@zeno` scope.
+- Confirm npm ownership of the `@exornea` scope.
+- Confirm npm Trusted Publishing is configured for every already-published
+  package.
 - Confirm `CHANGELOG.md` has an entry for the package version.
 - Confirm README install examples match the package names being published.
 - Confirm `docs/performance-comparison.md` records the latest benchmark witness
@@ -52,4 +86,3 @@ npm publish --workspace @exornea/zeno-compiler --access public
 - `npm pack --dry-run` includes source fixtures, tests, or private scripts.
 - consumer smoke fails on packed tarballs.
 - the package scope has not been reserved by the publisher account.
-

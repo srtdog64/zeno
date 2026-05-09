@@ -12,9 +12,26 @@ import {
 const args = process.argv.slice(2);
 let optimizeCursorOffsets = false;
 let endianness = "little";
-let diagnosticsFormat = "text";
+const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
+let diagnosticsFormat = diagnosticsArg === undefined
+  ? "text"
+  : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
 const usage = "Usage: zeno-codegen <input.ts> <output.view.ts> [--optimize-cursor-offsets] [--endian=little|big] [--diagnostics=text|json]";
+
+function fail(code, message, details = {}) {
+  if (diagnosticsFormat === "json") {
+    console.error(JSON.stringify({
+      event: "Codegen_Failed",
+      code,
+      message,
+      details,
+    }, null, 2));
+  } else {
+    console.error(message);
+  }
+  process.exit(1);
+}
 
 for (const arg of args) {
   if (arg === "--help" || arg === "-h") {
@@ -33,13 +50,11 @@ for (const arg of args) {
   }
 
   if (arg.startsWith("--diagnostics=")) {
-    diagnosticsFormat = arg.slice("--diagnostics=".length);
     continue;
   }
 
   if (arg.startsWith("--")) {
-    console.error(`Unknown option: ${arg}`);
-    process.exit(1);
+    fail("UNKNOWN_OPTION", `Unknown option: ${arg}`, { option: arg });
   }
 
   positionalArgs.push(arg);
@@ -48,13 +63,15 @@ for (const arg of args) {
 const [inputPath, outputPath] = positionalArgs;
 
 if (inputPath === undefined || outputPath === undefined) {
-  console.error(usage);
-  process.exit(1);
+  fail("INVALID_ARGUMENTS", usage);
 }
 
 if (endianness !== "little" && endianness !== "big") {
-  console.error(`Invalid endianness: ${endianness}. Expected "little" or "big".`);
-  process.exit(1);
+  fail(
+    "INVALID_ENDIANNESS",
+    `Invalid endianness: ${endianness}. Expected "little" or "big".`,
+    { endianness },
+  );
 }
 
 if (diagnosticsFormat !== "text" && diagnosticsFormat !== "json") {
@@ -68,8 +85,9 @@ let sourceText;
 try {
   sourceText = await import("node:fs/promises").then((fs) => fs.readFile(rootName, "utf8"));
 } catch {
-  console.error(`Could not read input file: ${rootName}`);
-  process.exit(1);
+  fail("INPUT_READ_FAILED", `Could not read input file: ${rootName}`, {
+    inputPath: rootName,
+  });
 }
 
 const sourceFile = ts.createSourceFile(

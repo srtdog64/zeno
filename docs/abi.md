@@ -94,6 +94,18 @@ Multi-byte reads and writes use the struct's emitted `littleEndian` default.
 Generated code can emit big-endian defaults, but the ABI shape is otherwise the
 same.
 
+## Container Header Policy
+
+Zeno v1 raw records do not include a mandatory magic number, version word,
+endianness marker, or layout hash. Generated views project over a caller-owned
+`DataView` plus `baseOffset`; adding a global header would change that ABI and
+make embedded records harder to compose.
+
+File and network formats that need self-identification should wrap Zeno payloads
+in an application container header. A future optional Zeno frame can define a
+magic/version/endian/layout-hash envelope, but that envelope is not part of the
+v1 wire ABI.
+
 ## Descriptor ABI
 
 ### `Span32`
@@ -161,6 +173,11 @@ Runtime projection APIs throw `RangeError` when:
 This is a runtime memory-boundary policy. Compiler/schema failures use
 structured diagnostics and `Result` internally; hot-path projection reads use
 exceptions for malformed buffers.
+
+Pointer range checks prove only that a target byte range is inside the backing
+`DataView`. They do not prove graph acyclicity or semantic object ownership.
+Generated pointer dereference moves one edge at a time; graph traversal must use
+an explicit caller budget such as `traversePointerChain(...)`.
 
 ## Witness Cases
 

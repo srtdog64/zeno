@@ -35,6 +35,7 @@
 - optional/vtable records,
 - unions without discriminator policy,
 - object graph allocation or pointer graph serialization,
+- mandatory file/network magic headers or container framing,
 - importing package internals through subpaths.
 
 ## Witness Case

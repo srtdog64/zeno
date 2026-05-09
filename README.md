@@ -127,6 +127,7 @@ Zeno v1 does not provide:
 - open-ended plain TypeScript arrays,
 - implicit object graph materialization,
 - pointer graph serialization,
+- mandatory file/network magic headers,
 - generated scan kernels for `i64`, `u64`, or `bool`,
 - callback-based scan kernels.
 

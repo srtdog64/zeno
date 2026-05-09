@@ -200,6 +200,23 @@ if (
 ) {
   throw new Error(`Unexpected JSON diagnostics: ${diagnosticOutput}`);
 }
+const operationalFailureOutput = runCaptureFailure(
+  npxBin,
+  [
+    "zeno-codegen",
+    "./src/missing.zeno.ts",
+    "./src/missing.view.ts",
+    "--diagnostics=json",
+  ],
+  consumerDir,
+);
+const operationalFailureJson = JSON.parse(operationalFailureOutput);
+if (
+  operationalFailureJson.event !== "Codegen_Failed" ||
+  operationalFailureJson.code !== "INPUT_READ_FAILED"
+) {
+  throw new Error(`Unexpected JSON operational failure: ${operationalFailureOutput}`);
+}
 run(npmBin, ["run", "codegen", "--silent"], consumerDir);
 run(npmBin, ["run", "build", "--silent"], consumerDir);
 run(npmBin, ["run", "start", "--silent"], consumerDir);

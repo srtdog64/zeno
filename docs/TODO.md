@@ -24,6 +24,10 @@
 
 ## Schema authoring
 
+Grammar reference: [schema-grammar.md](schema-grammar.md). Any new accepted or
+rejected schema construct must update that grammar before implementation is
+considered complete.
+
 ### Must support
 
 - `interface` and `type` based authoring
@@ -199,11 +203,14 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.0.0` after human release review
+- tag and publish `1.1.0` after human release review
+- keep [schema-grammar.md](schema-grammar.md) in sync with every new accepted
+  or rejected schema construct
 
 ## Deferred tasks
 
 - sparse/versioned records with vtable-style metadata
 - schema evolution guarantees
+- grammar additions for discriminated unions and optional fields
 - browser-focused bundle verification
 - fuzzing and malformed buffer corpus expansion

@@ -32,6 +32,9 @@ export interface User {
 Keep runtime logic out of `.zeno.ts` files. They are TypeScript source files,
 but their job is schema declaration.
 
+For the full schema grammar and rejected examples, see
+[schema-grammar.md](schema-grammar.md).
+
 ## 2. Generate a View
 
 The basic example uses:
@@ -172,6 +175,7 @@ be better for TS-only teams that do not need cross-language schema tooling.
 
 - Schema witness: [examples/basic/src/model.zeno.ts](../examples/basic/src/model.zeno.ts)
 - Runtime witness: [examples/basic/src/main.ts](../examples/basic/src/main.ts)
+- Grammar reference: [schema-grammar.md](schema-grammar.md)
 - Dynamic runtime tests: [tests/runtime/dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)
 - Positioning: [ts-only-positioning.md](ts-only-positioning.md)
 - Dynamic layout model: [dynamic-layout.md](dynamic-layout.md)

@@ -103,7 +103,11 @@ describe("compiler snapshots", () => {
     const result = analyzeProjectionFile(program, sourceFile!);
 
     expect(result.diagnostics).toEqual([]);
-    expect(emitProjectionFile(result.layouts)).toMatchInlineSnapshot(`
+    const emitted = emitProjectionFile(result.layouts);
+    expect(
+      emitted.indexOf("Invalid base offset: ${baseOffset}"),
+    ).toBeLessThan(emitted.indexOf("const start = baseOffset + 8"));
+    expect(emitted).toMatchInlineSnapshot(`
       "import { DynamicLayoutWriter, FixedBytesVectorView, ProjectionView, decodeFixedText, fixedBytesView, writeFixedText } from "@zeno/runtime";
 
       export interface MiniViewInput {
@@ -197,13 +201,16 @@ describe("compiler snapshots", () => {
           if (!Number.isInteger(count) || count < 0) {
             throw new RangeError(\`Invalid record count: \${count}\`);
           }
+          if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+            throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
+          }
           if (count === 0) {
             return 0;
           }
           const start = baseOffset + 8;
           const limit = start + count * 32;
           const lastByte = start + (count - 1) * 32 + 4;
-          if (!Number.isInteger(baseOffset) || baseOffset < 0 || lastByte > view.byteLength) {
+          if (lastByte > view.byteLength) {
             throw new RangeError(\`scan range exceeds DataView length \${view.byteLength}\`);
           }
           let sum = 0;
@@ -334,13 +341,16 @@ describe("compiler snapshots", () => {
           if (!Number.isInteger(count) || count < 0) {
             throw new RangeError(\`Invalid record count: \${count}\`);
           }
+          if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+            throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
+          }
           if (count === 0) {
             return 0;
           }
           const start = baseOffset + 0;
           const limit = start + count * 16;
           const lastByte = start + (count - 1) * 16 + 4;
-          if (!Number.isInteger(baseOffset) || baseOffset < 0 || lastByte > view.byteLength) {
+          if (lastByte > view.byteLength) {
             throw new RangeError(\`scan range exceeds DataView length \${view.byteLength}\`);
           }
           let sum = 0;

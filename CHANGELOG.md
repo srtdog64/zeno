@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+Status: stable v1 surface plus optional container-boundary helpers.
+
+- Optional `ZENO` frame header helpers in `@zeno/runtime`.
+- `analyzeProjectionSourceFile(sourceFile, options)` in `@zeno/compiler`.
+- Schema source validation rejects value declarations in `.zeno.ts` files.
+- Backwards-compatible `analyzeProjectionFile(program?, sourceFile)` wrapper.
+
 ## 1.0.0
 
 Status: stable v1 API for the documented TypeScript-only surface.

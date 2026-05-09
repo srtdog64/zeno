@@ -115,13 +115,16 @@ export class UserView extends ProjectionView {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 8;
     const limit = start + count * 88;
     const lastByte = start + (count - 1) * 88 + 4;
-    if (!Number.isInteger(baseOffset) || baseOffset < 0 || lastByte > view.byteLength) {
+    if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
@@ -154,13 +157,16 @@ export class UserView extends ProjectionView {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 16;
     const limit = start + count * 88;
     const lastByte = start + (count - 1) * 88 + 8;
-    if (!Number.isInteger(baseOffset) || baseOffset < 0 || lastByte > view.byteLength) {
+    if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
@@ -193,13 +199,16 @@ export class UserView extends ProjectionView {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 24;
     const limit = start + count * 88;
     const lastByte = start + (count - 1) * 88 + 4;
-    if (!Number.isInteger(baseOffset) || baseOffset < 0 || lastByte > view.byteLength) {
+    if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;

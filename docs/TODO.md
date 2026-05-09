@@ -204,10 +204,106 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.1.0` after human release review
+- tag and publish `1.5.0` after human release review
+- confirm npm scope ownership for `@zeno/*`; if unavailable, decide the fallback
+  scope before renaming packages
+- keep the publish order explicit: `@zeno/types`, `@zeno/schema`,
+  `@zeno/runtime`, then `@zeno/compiler`
+- keep [performance-comparison.md](performance-comparison.md) synced when
+  benchmark code or generated hot-path code changes
+- use [release-checklist.md](release-checklist.md) as the release gate before
+  tagging or publishing
 - keep [schema-grammar.md](schema-grammar.md) and
   [schema-grammar.ko.md](schema-grammar.ko.md) in sync with every new accepted
   or rejected schema construct
+
+## Completed in 1.3
+
+- `emitter.ts` tagged-template DSL now covers dynamic writers, vector writers,
+  static pointer accessors, and scalar `sum<Field>()` kernels.
+- `lowerTypeNode` is split by semantic boundary: syntax, scalar, fixed,
+  dynamic, vector, pointer, and struct references.
+- `--optimize-cursor-offsets` is marked experimental in CLI usage.
+- optional frame payload boundaries are covered by `assertZenoFramePayload(...)`
+  and `checkedZenoFramePayloadView(...)`.
+- cyclic pointer traversal has an explicit budget failure test.
+- `writePointerVector` requires `targetByteLength`; there is no implicit
+  unchecked raw writer path.
+- optional fields and union fields have rejected grammar witnesses in both
+  grammar documents.
+- optional fields are rejected by the compiler until a schema-evolution ABI
+  exists.
+- [schema-evolution.md](schema-evolution.md) records the optional/union design
+  boundary.
+- [release-checklist.md](release-checklist.md) records scoped public publish
+  order and dry-run gates.
+
+## Completed in 1.4
+
+- `lowerVectorElement` is split by semantic boundary: syntax validation,
+  reference dispatch, scalar, fixed, dynamic, pointer, and struct element
+  lowering.
+- `emitter.ts` tagged-template DSL now covers object writers and non-pointer
+  instance field accessors.
+- generated-code golden snapshots stayed stable through the compiler
+  maintainability refactor.
+
+## Completed in 1.5
+
+- `emitter.ts` tagged-template DSL now covers instance pointer accessors and
+  top-level generated view class scaffolding.
+- generated-code golden snapshots stayed stable through the remaining class
+  scaffold refactor.
+
+## v1.6 Candidate Work
+
+### Compiler maintainability
+
+- continue migrating small `emitter.ts` declaration emitters from manual
+  `lines.push(...)` blocks when the change removes real friction
+- keep large AST switches when they directly mirror TypeScript syntax; do not
+  split them only to satisfy a line-count target
+- add formatting enforcement after the compiler refactor stabilizes, preferably
+  with a minimal Prettier check and no broad lint policy churn
+
+### Performance surface
+
+- document `--optimize-cursor-offsets` as experimental or remove it from the
+  public CLI if repeated witnesses keep showing no stable win plus higher
+  retained memory
+- promote generated scan kernels as the main aggregate hot path, not optimized
+  cursor offsets
+- add generated `min<Field>()`, `max<Field>()`, and `count<Field>Where(...)`
+  candidates only after `sum<Field>()` has repeated benchmark witnesses
+- keep checked cursor APIs for safety and unchecked cursor APIs for caller-proven
+  loops; benchmark them separately
+- add browser benchmark smoke runs for generated static accessors and scan
+  kernels, because Node/V8 local witnesses are not browser guarantees
+
+### Runtime and ABI safety
+
+- keep runtime hot-path range failures as `RangeError`; document any new boundary
+  API separately from projection methods
+- add a malformed-buffer corpus once deterministic inline fixtures become too
+  large for focused unit tests
+
+### Schema and grammar
+
+- design optional fields as a schema-evolution feature, not as nullable inline
+  fields
+- design discriminated unions with an explicit tag field and fixed variant
+  table before accepting any union syntax
+- decide whether bare `string` remains a supported shorthand or becomes a
+  diagnostic hint toward `z.utf8`
+- add witness cases to both grammar docs for every newly rejected construct
+
+### Test and release gates
+
+- add a malformed-buffer corpus directory once fuzz cases exceed deterministic
+  inline fixtures
+- keep generated-code golden snapshots representative rather than exhaustive;
+  add a new golden only when a new ABI family appears
+- add a browser bundle smoke test before claiming browser-ready distribution
 
 ## Deferred tasks
 

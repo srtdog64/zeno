@@ -580,6 +580,42 @@ describe("dynamic layout runtime skeleton", () => {
     ).toThrow(RangeError);
   });
 
+  it("stops cyclic pointer data with the traversal budget", () => {
+    class NodeCursor extends ProjectionView {
+      static readonly byteLength = 8;
+
+      constructor(view: DataView, baseOffset = 0, littleEndian = true) {
+        super(view, baseOffset, littleEndian);
+      }
+
+      nextInto(out: NodeCursor): boolean {
+        const pointerOffset = this.baseOffset + 4;
+        const raw = this.view.getUint32(pointerOffset, this.littleEndian);
+        if (raw === 0xffffffff) {
+          return false;
+        }
+        out.moveToOffset(
+          pointerOffset + this.view.getInt32(pointerOffset, this.littleEndian),
+          NodeCursor.byteLength,
+        );
+        return true;
+      }
+    }
+
+    const view = new DataView(new ArrayBuffer(16));
+    view.setInt32(4, 8 - 4, true);
+    view.setInt32(12, 0 - 12, true);
+
+    expect(() =>
+      traversePointerChain(
+        new NodeCursor(view),
+        (current, out) => current.nextInto(out),
+        () => undefined,
+        4,
+      ),
+    ).toThrow(RangeError);
+  });
+
   it("rejects tail arena writes that exceed the backing view", () => {
     const buffer = new ArrayBuffer(16);
     const view = new DataView(buffer);

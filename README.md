@@ -132,7 +132,9 @@ Zeno 1.1 adds optional file/network boundary helpers:
 - `writeZenoFrameHeader(...)`
 - `readZenoFrameHeader(...)`
 - `assertZenoFrameHeader(...)`
+- `assertZenoFramePayload(...)`
 - `zenoFramePayloadView(...)`
+- `checkedZenoFramePayloadView(...)`
 
 The optional frame carries magic bytes, version, payload endianness, layout hash,
 payload offset, and payload byte length. It does not change the raw record ABI.
@@ -142,9 +144,9 @@ payload offset, and payload byte length. It does not change the raw record ABI.
 Current local Node benchmark:
 
 ```text
-direct DataView age loop   2.29 ns/record
-UserView.sumAge            1.26 ns/record
-pooled noise floor         0.92 ns/record
+direct DataView age loop   5.63 ns/record
+UserView.sumAge            6.06 ns/record
+pooled noise floor         2.48 ns/record
 ```
 
 This is an engineering witness, not a universal performance guarantee. See

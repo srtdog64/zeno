@@ -257,6 +257,35 @@ describe("analyzeProjectionFile", () => {
     ]);
   });
 
+  it("rejects optional fields and unions until schema evolution has an ABI", () => {
+    const fixturePath = path.join(fixturesDir, "rejected-evolution-schema.ts");
+    const program = createProgramFromRootNames([fixturePath]);
+    const sourceFile = program.getSourceFile(fixturePath);
+
+    expect(sourceFile).toBeDefined();
+
+    const result = analyzeProjectionFile(program, sourceFile!);
+
+    expect(result.layouts).toEqual([
+      {
+        kind: "struct",
+        name: "EvolutionBad",
+        alignment: 1,
+        byteLength: 0,
+        endianness: "little",
+        fields: [],
+      },
+    ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "UNSUPPORTED_MEMBER",
+      "UNSUPPORTED_TYPE",
+    ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+      'Field "nickname" uses optional property syntax. Optional fields need a schema-evolution policy.',
+      'Field "value" has an unsupported type expression.',
+    ]);
+  });
+
   it("honors big-endian analysis in emitted accessor defaults", () => {
     const fixturePath = path.join(fixturesDir, "valid-schema.ts");
     const program = createProgramFromRootNames([fixturePath]);

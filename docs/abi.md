@@ -124,7 +124,14 @@ Frame helpers live in the root `@zeno/runtime` export:
 - `writeZenoFrameHeader(...)`
 - `readZenoFrameHeader(...)`
 - `assertZenoFrameHeader(...)`
+- `assertZenoFramePayload(...)`
 - `zenoFramePayloadView(...)`
+- `checkedZenoFramePayloadView(...)`
+
+Use `assertZenoFramePayload(...)` or `checkedZenoFramePayloadView(...)` at file
+or network boundaries when the caller needs to validate layout hash,
+endianness, and minimum/exact payload byte length before constructing generated
+views. Raw generated views remain header-agnostic.
 
 ## Descriptor ABI
 

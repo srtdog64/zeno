@@ -17,7 +17,7 @@ let diagnosticsFormat = diagnosticsArg === undefined
   ? "text"
   : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
-const usage = "Usage: zeno-codegen <input.ts> <output.view.ts> [--optimize-cursor-offsets] [--endian=little|big] [--diagnostics=text|json]";
+const usage = "Usage: zeno-codegen <input.ts> <output.view.ts> [--optimize-cursor-offsets experimental] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {

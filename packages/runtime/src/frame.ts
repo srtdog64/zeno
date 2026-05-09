@@ -38,6 +38,11 @@ export interface ZenoFrameExpectation {
   readonly layoutHash?: bigint;
 }
 
+export interface ZenoFramePayloadExpectation extends ZenoFrameExpectation {
+  readonly payloadByteLength?: number;
+  readonly minPayloadByteLength?: number;
+}
+
 export function writeZenoFrameHeader(
   view: DataView,
   header: WriteZenoFrameHeaderOptions,
@@ -145,8 +150,49 @@ export function assertZenoFrameHeader(
   return header;
 }
 
+export function assertZenoFramePayload(
+  view: DataView,
+  expectation: ZenoFramePayloadExpectation = {},
+  offset = 0,
+): ZenoFrameHeader {
+  const header = assertZenoFrameHeader(view, expectation, offset);
+
+  if (
+    expectation.payloadByteLength !== undefined &&
+    header.payloadByteLength !== expectation.payloadByteLength
+  ) {
+    throw new RangeError(
+      `Zeno frame payload length mismatch: expected ${expectation.payloadByteLength}, got ${header.payloadByteLength}`,
+    );
+  }
+
+  if (
+    expectation.minPayloadByteLength !== undefined &&
+    header.payloadByteLength < expectation.minPayloadByteLength
+  ) {
+    throw new RangeError(
+      `Zeno frame payload is too small: expected at least ${expectation.minPayloadByteLength}, got ${header.payloadByteLength}`,
+    );
+  }
+
+  return header;
+}
+
 export function zenoFramePayloadView(view: DataView, offset = 0): DataView {
   const header = readZenoFrameHeader(view, offset);
+  return new DataView(
+    view.buffer,
+    view.byteOffset + offset + header.payloadOffset,
+    header.payloadByteLength,
+  );
+}
+
+export function checkedZenoFramePayloadView(
+  view: DataView,
+  expectation: ZenoFramePayloadExpectation = {},
+  offset = 0,
+): DataView {
+  const header = assertZenoFramePayload(view, expectation, offset);
   return new DataView(
     view.buffer,
     view.byteOffset + offset + header.payloadOffset,

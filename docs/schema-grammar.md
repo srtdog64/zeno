@@ -204,6 +204,28 @@ export interface BadNode {
 Rejected because direct recursion has infinite inline size. Use
 `z.pointer<BadNode>`.
 
+### Optional Field
+
+```ts
+export interface Bad {
+  nickname?: z.utf8;
+}
+```
+
+Rejected because optional fields need a schema-evolution/vtable policy. Zeno
+does not treat TypeScript optional syntax as an inline nullable field.
+
+### Union Field
+
+```ts
+export interface Bad {
+  value: z.i32 | z.utf8;
+}
+```
+
+Rejected because unions need an explicit discriminator ABI. Future support must
+define a tag field and fixed variant table before accepting union syntax.
+
 ### Runtime Values
 
 ```ts
@@ -223,5 +245,6 @@ Rejected because `.zeno.ts` files are schema-only. Use type-only imports from
 
 - Construct-to-IR mapping: [layout-ir-coarsening.md](layout-ir-coarsening.md)
 - Detailed walkthrough: [getting-started.md](getting-started.md)
+- Schema evolution boundary: [schema-evolution.md](schema-evolution.md)
 - ABI contract: [abi.md](abi.md)
 - Test plan: [TODO.md](TODO.md)

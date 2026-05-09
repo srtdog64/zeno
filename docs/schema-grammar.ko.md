@@ -206,6 +206,28 @@ export interface BadNode {
 직접 재귀는 inline size가 무한대가 되므로 거부됩니다.
 `z.pointer<BadNode>`를 사용해야 합니다.
 
+### Optional Field
+
+```ts
+export interface Bad {
+  nickname?: z.utf8;
+}
+```
+
+거부됩니다. optional field는 schema evolution/vtable 정책이 필요합니다.
+Zeno는 TypeScript optional 문법을 inline nullable field로 해석하지 않습니다.
+
+### Union Field
+
+```ts
+export interface Bad {
+  value: z.i32 | z.utf8;
+}
+```
+
+거부됩니다. union은 명시적인 discriminator ABI가 필요합니다. 향후 지원하려면
+tag field와 fixed variant table을 먼저 정의해야 합니다.
+
 ### 런타임 값
 
 ```ts
@@ -225,5 +247,6 @@ export interface Bad {
 
 - Construct-to-IR mapping: [layout-ir-coarsening.md](layout-ir-coarsening.md)
 - 상세 시작 가이드: [getting-started.md](getting-started.md)
+- Schema evolution boundary: [schema-evolution.md](schema-evolution.md)
 - ABI contract: [abi.md](abi.md)
 - Test plan: [TODO.md](TODO.md)

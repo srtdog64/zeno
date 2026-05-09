@@ -1,7 +1,7 @@
 # API Stability
 
 This document defines which Zeno APIs are public, experimental, or internal in
-`1.0.0`.
+the stable `1.x` surface.
 
 ## Claim Status
 
@@ -35,7 +35,7 @@ behind the root export graph. They are not public subpath APIs.
 
 ## Stable / Experimental Split
 
-Stable for `1.0.x`:
+Stable for `1.x`:
 
 - `.zeno.ts` TypeScript interface input convention
 - `@zeno/types` scalar markers: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`,
@@ -47,12 +47,14 @@ Stable for `1.0.x`:
 - `Span32`, `Vector32`, and `pointer32` descriptor ABI
 - generated view methods for supported dynamic fields and pointer fields
 - generated object writers for supported fields
+- optional frame boundary helpers, including `assertZenoFramePayload(...)` and
+  `checkedZenoFramePayloadView(...)`
 - `zeno-codegen` CLI
 - root `@zeno/runtime` imports used by generated code
 
-Experimental for `1.0.x`:
+Experimental for `1.x`:
 
-- optimized cursor-offset emission mode
+- `--optimize-cursor-offsets` emission mode
 - pointer graph serialization policy
 - vtable/optional-field schema evolution
 

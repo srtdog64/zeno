@@ -30,6 +30,8 @@ describe("public package runtime exports", () => {
         "ZENO_FRAME_LAYOUT_HASH_NONE",
         "ZENO_FRAME_VERSION_MAJOR",
         "assertZenoFrameHeader",
+        "assertZenoFramePayload",
+        "checkedZenoFramePayloadView",
         "decodeFixedText",
         "decodeFixedUtf8",
         "decodeText",

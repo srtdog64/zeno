@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   ZENO_FRAME_HEADER_BYTE_LENGTH,
   assertZenoFrameHeader,
+  assertZenoFramePayload,
+  checkedZenoFramePayloadView,
   readZenoFrameHeader,
   writeZenoFrameHeader,
   zenoFramePayloadView,
@@ -80,6 +82,33 @@ describe("Zeno frame header", () => {
     ).toThrow(RangeError);
     expect(() =>
       assertZenoFrameHeader(view, { layoutHash: 8n }),
+    ).toThrow(RangeError);
+  });
+
+  it("checks payload expectations before constructing boundary payload views", () => {
+    const view = new DataView(new ArrayBuffer(64));
+    writeZenoFrameHeader(view, {
+      endianness: "little",
+      layoutHash: 7n,
+      payloadByteLength: 16,
+    });
+
+    expect(assertZenoFramePayload(view, {
+      endianness: "little",
+      layoutHash: 7n,
+      minPayloadByteLength: 12,
+    }).payloadByteLength).toBe(16);
+
+    const payload = checkedZenoFramePayloadView(view, {
+      payloadByteLength: 16,
+    });
+    expect(payload.byteLength).toBe(16);
+
+    expect(() =>
+      assertZenoFramePayload(view, { payloadByteLength: 12 }),
+    ).toThrow(RangeError);
+    expect(() =>
+      checkedZenoFramePayloadView(view, { minPayloadByteLength: 24 }),
     ).toThrow(RangeError);
   });
 });

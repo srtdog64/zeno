@@ -44,7 +44,9 @@ export {
   ZENO_FRAME_HEADER_BYTE_LENGTH,
   ZENO_FRAME_LAYOUT_HASH_NONE,
   ZENO_FRAME_VERSION_MAJOR,
+  assertZenoFramePayload,
   assertZenoFrameHeader,
+  checkedZenoFramePayloadView,
   readZenoFrameHeader,
   writeZenoFrameHeader,
   zenoFramePayloadView,
@@ -52,4 +54,5 @@ export {
   type ZenoFrameEndianness,
   type ZenoFrameExpectation,
   type ZenoFrameHeader,
+  type ZenoFramePayloadExpectation,
 } from "./frame.js";

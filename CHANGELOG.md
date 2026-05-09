@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.5.0
+
+Status: compiler emitter maintainability release with no intended public API changes.
+
+- Expanded the emitter tagged-template DSL to instance pointer accessors and top-level generated view class scaffolding.
+- Kept generated-code snapshots stable while reducing the remaining large manual `lines.push(...)` blocks in `emitStructClass`.
+- Package manifests and workspace lockfile are aligned at `1.5.0`.
+
+## 1.4.0
+
+Status: compiler maintainability release with no intended public API changes.
+
+- Split vector element lowering into syntax validation, reference dispatch, and focused scalar/fixed/dynamic/pointer/struct element helpers.
+- Expanded the emitter tagged-template DSL to object writers and non-pointer instance field accessors.
+- Kept generated-code snapshots stable while reducing manual `lines.push(...)` blocks in the compiler.
+- Package manifests and workspace lockfile are aligned at `1.4.0`.
+
+## 1.3.0
+
+Status: v1 hardening release for boundary validation, schema rejection, and compiler maintainability.
+
+- Added `assertZenoFramePayload(...)` and `checkedZenoFramePayloadView(...)` for checked file/network payload boundaries.
+- Optional property syntax is now rejected explicitly until schema evolution has a vtable/presence ABI.
+- Added rejected grammar witnesses for optional fields and union fields in English and Korean docs.
+- Added schema evolution notes for optional fields and discriminated unions.
+- Added cyclic pointer traversal budget tests.
+- Expanded the emitter tagged-template DSL to scan kernels and static pointer accessors.
+- Split `lowerTypeNode` into semantic lowering helpers for syntax, scalar, fixed, dynamic, vector, pointer, and struct references.
+- Marked `--optimize-cursor-offsets` as experimental in CLI usage.
+- Added a release checklist for scoped public package publishing.
+
 ## 1.2.0
 
 Status: compiler maintainability release with no intended ABI or generated-code behavior changes.

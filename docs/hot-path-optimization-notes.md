@@ -162,8 +162,8 @@ Reason:
 
 First witness:
 
-- direct `DataView` age loop: `5.70 ns/record`
-- `UserView.sumAge(view, count)`: `5.38 ns/record`
+- direct `DataView` age loop: `5.63 ns/record`
+- `UserView.sumAge(view, count)`: `6.06 ns/record`
 - result: within pooled noise, with a cleaner API boundary
 
 Do not generate v1 sum kernels for `i64`, `u64`, or `bool`. BigInt

@@ -31,6 +31,8 @@ export {
   ZENO_FRAME_LAYOUT_HASH_NONE,
   ZENO_FRAME_VERSION_MAJOR,
   assertZenoFrameHeader,
+  assertZenoFramePayload,
+  checkedZenoFramePayloadView,
   decodeFixedText,
   decodeFixedUtf8,
   decodeText,
@@ -57,6 +59,7 @@ export {
   type ZenoFrameEndianness,
   type ZenoFrameExpectation,
   type ZenoFrameHeader,
+  type ZenoFramePayloadExpectation,
 } from "./abi.js";
 export { DynamicLayoutWriter } from "./writer.js";
 export {

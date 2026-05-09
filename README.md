@@ -10,6 +10,26 @@ without maintaining a separate `.fbs`/IDL file or cross-language codegen flow.
 .zeno.ts interfaces -> Layout IR -> generated DataView views
 ```
 
+## Best Fit
+
+Zeno is strongest when one TypeScript codebase owns both the writer and reader
+and needs to scan many fixed-layout records without materializing objects.
+
+Good fits:
+
+- WebGL/WebGPU instance data and browser-side binary assets
+- game/editor asset tables such as item stats, tiles, skills, nodes, and edges
+- telemetry or analytics rows with a stable fixed schema
+- worker/shared-memory pipelines where JSON serialization is the bottleneck
+
+Poor fits:
+
+- cross-language protocols
+- public network contracts
+- long-lived storage formats that require schema evolution
+- arbitrary nested object serialization
+- security-critical untrusted binary parsing
+
 ## Why
 
 Use Zeno when:
@@ -25,6 +45,17 @@ Use Zeno when:
 
 Do not use Zeno when the schema is a cross-language contract. FlatBuffers,
 Cap'n Proto, protobuf, or MessagePack are better fits there.
+
+## Zeno vs Other Formats
+
+| Need                                  | Zeno | Better fit                                                |
+| ------------------------------------- | ---- | --------------------------------------------------------- |
+| TS-only fixed-layout hot scans        | yes  | handwritten `DataView` when schema codegen is unnecessary |
+| WebGL/game/worker binary projection   | yes  | custom typed arrays for very small schemas                |
+| Cross-language protocol               | no   | FlatBuffers, Cap'n Proto, protobuf                        |
+| Public API contract                   | no   | OpenAPI, protobuf, JSON Schema                            |
+| Schema evolution-heavy storage        | no   | protobuf, FlatBuffers tables, custom versioned format     |
+| Arbitrary nested object serialization | no   | MessagePack, CBOR, JSON                                   |
 
 ## Install
 
@@ -114,6 +145,20 @@ const totalAge = UserView.sumAge(view, count);
 record count and buffer range once, then run a generated stride loop without
 per-record view allocation.
 
+## WebGL Demo
+
+The repository includes a browser demo that compares Zeno binary buffers,
+FlatBuffers JS, and JSON objects for instance-data upload:
+
+```sh
+npm run example:webgl:build
+npm run browser:smoke
+```
+
+The demo is intentionally narrow: it represents the kind of fixed-stride,
+read-mostly browser workload where Zeno's projection-first model is meant to
+earn its keep.
+
 ## Supported Schema Surface
 
 | Type                                                                    | ABI shape                   | Status                                                                |
@@ -191,6 +236,11 @@ npm run release:check
 checks, cleans and builds the workspaces, runs tests, regenerates examples,
 dry-runs package packing, and installs the packed tarballs into a fresh consumer
 project.
+
+The release gate also includes generated-code compile/run fuzzing, hostile
+malformed-descriptor property tests, a frozen layout compatibility fixture,
+SharedArrayBuffer worker stress, and packed consumer import-resolution checks.
+CI adds a Playwright browser smoke matrix for the WebGL demo.
 
 ## Documentation
 

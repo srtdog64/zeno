@@ -13,6 +13,7 @@ the stable `2.x` surface.
 | Fixed-layout scalar accessors          | load-bearing | This is the stable hot path Zeno is built around.                                                                    |
 | Dynamic span/vector APIs               | load-bearing | `Span32` and `Vector32` are part of the v1 ABI and covered by runtime, compiler, and consumer witnesses.             |
 | Pointer APIs                           | load-bearing | `pointer32` is stable as an explicit relative reference primitive; object graph serialization remains out of scope.  |
+| Checked runtime projection by default  | load-bearing | Invalid offsets/descriptors must fail at the projection boundary before unsafe hot loops are allowed.                |
 | Runtime implementation files           | diagnostic   | They keep the codebase layered, but are not public import paths.                                                     |
 
 ## Public Import Rule
@@ -57,6 +58,8 @@ Stable for `2.x`:
   arena shard helpers
 - `zeno-codegen` CLI
 - root `@exornea/zeno-runtime` imports used by generated code
+- checked runtime projection APIs that throw `RangeError` on malformed buffers
+- explicitly named unchecked cursor/pointer APIs for pre-validated hot loops
 
 Experimental for `2.x`:
 
@@ -77,6 +80,10 @@ Internal:
 - Public runtime export snapshots: [public-api.test.ts](../tests/public-api.test.ts)
 - Runtime layer split: [abi.md](abi.md)
 - Generated view shape: [snapshot.test.ts](../tests/compiler/snapshot.test.ts)
+- Generated compile/run fuzzing: [generated-e2e.test.ts](../tests/compiler/generated-e2e.test.ts)
+- Hostile descriptor properties: [property.test.ts](../tests/runtime/property.test.ts)
+- Shared writer worker stress: [shared-writer-stress.mjs](../scripts/shared-writer-stress.mjs)
+- Browser WebGL smoke: [browser-smoke.mjs](../scripts/browser-smoke.mjs)
 
 ## Promotion Criterion
 

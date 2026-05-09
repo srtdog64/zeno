@@ -40,6 +40,43 @@ for command, memory, and promotion criterion.
 
 ## API Layers
 
+## Failure Policy
+
+Zeno separates construction-time/compiler errors from runtime projection errors:
+
+- compiler/analyzer/validator code returns structured diagnostics and `Result`
+  values internally
+- runtime projection code throws `RangeError` for invalid offsets, descriptors,
+  counts, and payload ranges
+- generated unchecked APIs exist only for loops where the caller has already
+  proved bounds outside the hot path
+
+Checked APIs are the default public surface:
+
+```ts
+UserView.at(view, offset);
+user.moveTo(index);
+node.nextInto(out);
+```
+
+Unchecked APIs are deliberately named:
+
+```ts
+user.rebaseUnchecked(offset);
+user.moveToUnchecked(index);
+node.uncheckedNextTargetOffset;
+```
+
+Rules:
+
+- Use checked APIs at trust boundaries, during parsing, and while debugging.
+- Use unchecked APIs only inside loops whose record count and backing buffer
+  range were validated once before the loop.
+- Do not expose unchecked projection over untrusted buffers without a checked
+  boundary first.
+- Malformed buffers must fail closed with `RangeError`, not silently clamp or
+  wrap offsets.
+
 ### Static hot-path API
 
 Use this for scans, filters, aggregates, and tight loops.

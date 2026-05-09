@@ -9,6 +9,7 @@ baselines.
 | --- | --- | --- |
 | Buffer-backed storage avoids per-record JS object materialization | load-bearing | This is the core Zeno runtime thesis. |
 | Static generated scalar access can approach direct `DataView` cost | candidate | Current witness supports it, but more workloads and repeated runs are needed. |
+| Zeno fixed-stride scalar projection can beat FlatBuffers JS table projection on hot scans | candidate | Current witness supports it for a scalar-only table shape, but payload shape and schema features differ. |
 | Cursor reuse is preferable to per-record view allocation | load-bearing | The benchmark shows a large timing difference and avoids retained view arrays. |
 | Per-record retained `UserView` objects still allocate heap | diagnostic | It is useful for API design, but not the intended hot path. |
 | Materialized JS objects retain more heap than view objects | diagnostic | True for this witness, but schema shape can change the exact ratio. |
@@ -88,6 +89,55 @@ Pointer delta: cursor `nextInto` was +3.73 ns/record over direct `DataView`,
 above the pooled noise floor in this run. This is a separate workload from
 fixed-stride scalar projection because it measures pointer chasing and cursor
 rebasing rather than contiguous record scanning.
+
+## FlatBuffers JS Projection Witness
+
+This comparison exists because Zeno is not trying to beat raw `DataView`.
+`DataView` is the lower-level baseline. The more relevant external comparison is
+FlatBuffers JS table projection: a generated-style accessor over a vector of
+tables.
+
+Witness:
+
+- Zeno shape: fixed-stride inline `UserView` record array.
+- FlatBuffers shape: `table User { id: ulong; age: int; score: double; ratio: float; }`
+  plus a root `vector<User>`.
+- Implementation: manual FlatBuffers generated-class equivalent using the
+  official `flatbuffers` npm runtime.
+- Command:
+  `$env:ZENO_BENCH_RECORDS='1000000'; $env:ZENO_BENCH_RUNS='20'; npm run bench:flatbuffers`
+- Date: 2026-05-09
+
+Payload byte counts are diagnostic only. The Zeno fixture currently reuses the
+existing 88-byte example view, which includes non-scalar fields not present in
+the FlatBuffers table. Use the timing comparison as the load-bearing witness,
+not the payload-size comparison.
+
+Timing summary:
+
+| Workload | Direct `DataView` | Zeno static/generated | FlatBuffers JS table vector |
+| --- | ---: | ---: | ---: |
+| `age` single-field scan | 5.04 ns/record | 4.87-4.96 ns/record | 18.88 ns/record |
+| `u64 + i32 + f64 + f32` scalar mix | 33.33 ns/record | 32.14 ns/record | 105.59 ns/record |
+
+Delta interpretation:
+
+| Comparison | Median delta vs direct | Pooled std | Status |
+| --- | ---: | ---: | --- |
+| Zeno static `age` | -0.17 ns/record | 0.65 ns/record | within noise |
+| Zeno `ageAt` | -0.08 ns/record | 0.73 ns/record | within noise |
+| Zeno `sumAge` | -0.10 ns/record | 0.70 ns/record | within noise |
+| FlatBuffers `age` | +13.84 ns/record | 1.06 ns/record | above noise |
+| Zeno scalar mix | -1.20 ns/record | 6.93 ns/record | within noise |
+| FlatBuffers scalar mix | +72.26 ns/record | 10.55 ns/record | above noise |
+
+Current conclusion: in this TS/JS hot-read witness, Zeno keeps named schema
+access inside the raw `DataView` noise floor, while FlatBuffers JS table
+projection is slower by an above-noise margin. This does not make Zeno a
+universal FlatBuffers replacement. FlatBuffers still owns cross-language
+contracts, mature schema evolution, optional/union/table modeling, and ecosystem
+tooling. Zeno's narrow performance claim is fixed-layout TypeScript-only scalar
+scans.
 
 ## Scalar Read Timing
 
@@ -218,6 +268,7 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 ## Cross-References
 
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)
+- FlatBuffers comparison benchmark: [packages/bench/flatbuffers-comparison.mjs](../packages/bench/flatbuffers-comparison.mjs)
 - Generated view witness: [examples/basic/src/model.view.ts](../examples/basic/src/model.view.ts)
 - Runtime cursor support: [packages/runtime/src/index.ts](../packages/runtime/src/index.ts)
 - Allocation test plan: [test-plan.md](test-plan.md)

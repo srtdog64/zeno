@@ -54,24 +54,43 @@ try {
   try {
     await page.goto(`${target}/?count=${recordCount}`);
     await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
+    const browserBenchmarks = [];
+    browserBenchmarks.push(await waitForModeMetrics(page, "zeno", statusTimeoutMs));
     await page.selectOption("[data-testid='record-count']", String(recordCount));
     await page.getByRole("button", { name: "Zeno binary" }).click();
     await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
+    browserBenchmarks.push(await waitForModeMetrics(page, "zeno", statusTimeoutMs));
     await page.getByRole("button", { name: "FlatBuffers" }).click();
     await page.waitForFunction(
       () => document.querySelector("[data-testid='mode']")?.textContent === "FLAT",
     );
     await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
+    browserBenchmarks.push(await waitForModeMetrics(page, "flatbuffers", statusTimeoutMs));
     await page.getByRole("button", { name: "JSON objects" }).click();
     await page.waitForFunction(
       () => document.querySelector("[data-testid='mode']")?.textContent === "JSON",
     );
     await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
+    browserBenchmarks.push(await waitForModeMetrics(page, "json", statusTimeoutMs));
+    await assertVisualRegressionState(page, statusTimeoutMs);
 
     const payload = await page.locator("[data-metric='payload']").textContent();
     if (!payload || payload === "-") {
       throw new Error("Browser smoke did not render payload metrics.");
     }
+
+    console.log(
+      JSON.stringify(
+        {
+          event: "browser_benchmark",
+          browser: browserName,
+          records: recordCount,
+          modes: browserBenchmarks,
+        },
+        null,
+        2,
+      ),
+    );
   } finally {
     await browser.close();
   }
@@ -103,6 +122,47 @@ async function waitForGpuStatus(page, pageErrors, timeout) {
       },
     );
   }
+}
+
+async function waitForModeMetrics(page, mode, timeout) {
+  await page.waitForFunction(
+    (expectedMode) => {
+      const metrics = window.__zenoWebglMetrics;
+      return (
+        metrics?.mode === expectedMode &&
+        metrics.records > 0 &&
+        metrics.payloadBytes > 0 &&
+        metrics.rendered > 0 &&
+        Number.isFinite(metrics.buildMs) &&
+        Number.isFinite(metrics.parseMs) &&
+        Number.isFinite(metrics.packMs) &&
+        Number.isFinite(metrics.uploadMs)
+      );
+    },
+    mode,
+    { timeout },
+  );
+
+  return page.evaluate(() => window.__zenoWebglMetrics);
+}
+
+async function assertVisualRegressionState(page, timeout) {
+  await page.waitForFunction(
+    () => {
+      const visual = window.__zenoWebglVisual;
+      return (
+        visual !== undefined &&
+        visual.frame > 0 &&
+        visual.canvasWidth > 0 &&
+        visual.canvasHeight > 0 &&
+        visual.meshCount > 0 &&
+        visual.maxPixel > 0 &&
+        visual.nonTransparentPixels > 0
+      );
+    },
+    undefined,
+    { timeout },
+  );
 }
 
 async function waitForServer(url) {

@@ -1,4 +1,5 @@
 import type { FieldLayout, SourceLocation, StructLayout } from "@exornea/zeno-schema";
+import ts from "typescript";
 
 export interface ProjectionSourceMap {
   version: 3;
@@ -43,6 +44,11 @@ export function createProjectionSourceMap(
 }
 
 function collectMappingPoints(code: string, layouts: readonly StructLayout[]): MappingPoint[] {
+  const astPoints = collectAstMappingPoints(code, layouts);
+  if (astPoints.length > 0) {
+    return astPoints;
+  }
+
   const lines = code.split("\n");
   const points: MappingPoint[] = [];
 
@@ -61,6 +67,280 @@ function collectMappingPoints(code: string, layouts: readonly StructLayout[]): M
   }
 
   return points;
+}
+
+function collectAstMappingPoints(code: string, layouts: readonly StructLayout[]): MappingPoint[] {
+  const sourceFile = ts.createSourceFile(
+    "generated.view.ts",
+    code,
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const points: MappingPoint[] = [];
+
+  for (const statement of sourceFile.statements) {
+    if (ts.isInterfaceDeclaration(statement)) {
+      pushInterfaceMapping(statement, sourceFile, layouts, points);
+      continue;
+    }
+
+    if (ts.isClassDeclaration(statement)) {
+      pushClassMapping(statement, sourceFile, layouts, points);
+      continue;
+    }
+
+    if (ts.isVariableStatement(statement)) {
+      pushVariableMappings(statement, sourceFile, layouts, points);
+    }
+  }
+
+  return dedupeMappingPoints(points);
+}
+
+function pushInterfaceMapping(
+  declaration: ts.InterfaceDeclaration,
+  sourceFile: ts.SourceFile,
+  layouts: readonly StructLayout[],
+  points: MappingPoint[],
+): void {
+  const layout = layoutForGeneratedName(declaration.name.text, layouts, "ViewInput");
+  if (layout?.source === undefined) {
+    return;
+  }
+
+  pushPoint(points, sourceFile, declaration, layout.source);
+
+  for (const member of declaration.members) {
+    const field = fieldForMemberName(member.name, layout);
+    if (field?.source !== undefined) {
+      pushPoint(points, sourceFile, member, field.source);
+    }
+  }
+}
+
+function pushClassMapping(
+  declaration: ts.ClassDeclaration,
+  sourceFile: ts.SourceFile,
+  layouts: readonly StructLayout[],
+  points: MappingPoint[],
+): void {
+  if (declaration.name === undefined) {
+    return;
+  }
+
+  const layout = layoutForGeneratedName(declaration.name.text, layouts, "View");
+  if (layout === undefined) {
+    return;
+  }
+
+  if (layout.source !== undefined) {
+    pushPoint(points, sourceFile, declaration, layout.source);
+  }
+
+  for (const member of declaration.members) {
+    const source = sourceForClassMember(member, layout);
+    if (source !== undefined) {
+      pushPoint(points, sourceFile, member, source);
+    }
+  }
+}
+
+function pushVariableMappings(
+  statement: ts.VariableStatement,
+  sourceFile: ts.SourceFile,
+  layouts: readonly StructLayout[],
+  points: MappingPoint[],
+): void {
+  for (const declaration of statement.declarationList.declarations) {
+    if (!ts.isIdentifier(declaration.name)) {
+      continue;
+    }
+
+    const source = sourceForVariableName(declaration.name.text, layouts);
+    if (source !== undefined) {
+      pushPoint(points, sourceFile, statement, source);
+    }
+  }
+}
+
+function sourceForClassMember(
+  member: ts.ClassElement,
+  layout: StructLayout,
+): SourceLocation | undefined {
+  if (ts.isPropertyDeclaration(member)) {
+    const field = fieldForMemberName(member.name, layout);
+    if (field?.source !== undefined) {
+      return field.source;
+    }
+
+    if (nameText(member.name) === "byteLength" || nameText(member.name) === "alignment") {
+      return layout.source;
+    }
+  }
+
+  if (
+    ts.isGetAccessorDeclaration(member) ||
+    ts.isSetAccessorDeclaration(member) ||
+    ts.isMethodDeclaration(member)
+  ) {
+    const memberName = nameText(member.name);
+    if (memberName === undefined) {
+      return undefined;
+    }
+
+    for (const field of layout.fields) {
+      if (field.source !== undefined && classMemberMatchesField(memberName, field)) {
+        return field.source;
+      }
+    }
+
+    if (layout.source !== undefined && layoutMemberMatchesLayout(memberName)) {
+      return layout.source;
+    }
+  }
+
+  return undefined;
+}
+
+function sourceForVariableName(
+  variableName: string,
+  layouts: readonly StructLayout[],
+): SourceLocation | undefined {
+  for (const layout of layouts) {
+    if (layout.source !== undefined && variableName === `${layout.name}ViewByteLength`) {
+      return layout.source;
+    }
+
+    for (const field of layout.fields) {
+      const pascalName = toPascalCase(field.name);
+      if (field.source !== undefined && variableName === `${layout.name}View${pascalName}Offset`) {
+        return field.source;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function classMemberMatchesField(memberName: string, field: FieldLayout): boolean {
+  const pascalName = toPascalCase(field.name);
+  const names = new Set([
+    field.name,
+    `${field.name}Offset`,
+    `${field.name}View`,
+    `${field.name}Bytes`,
+    `${field.name}Text`,
+    `get${pascalName}`,
+    `set${pascalName}`,
+    `get${pascalName}At`,
+    `set${pascalName}At`,
+    `sum${pascalName}`,
+    `write${pascalName}`,
+  ]);
+
+  if (field.kind === "pointer") {
+    names.add(`raw${pascalName}RelativeOffset`);
+    names.add(`${field.name}RelativeOffset`);
+    names.add(`${field.name}TargetOffset`);
+    names.add(`${field.name}Into`);
+    names.add(`getRaw${pascalName}RelativeOffset`);
+    names.add(`get${pascalName}RelativeOffset`);
+    names.add(`set${pascalName}RelativeOffset`);
+    names.add(`getUnchecked${pascalName}TargetOffset`);
+    names.add(`setUnchecked${pascalName}TargetOffset`);
+    names.add(`get${pascalName}TargetOffset`);
+    names.add(`set${pascalName}TargetOffset`);
+  }
+
+  return names.has(memberName);
+}
+
+function layoutMemberMatchesLayout(memberName: string): boolean {
+  return memberName === "at" || memberName === "write" || memberName === "writeInto";
+}
+
+function fieldForMemberName(
+  memberName: ts.PropertyName | undefined,
+  layout: StructLayout,
+): FieldLayout | undefined {
+  const text = nameText(memberName);
+  if (text === undefined) {
+    return undefined;
+  }
+
+  return layout.fields.find((field) => field.name === text || text === `${field.name}Offset`);
+}
+
+function layoutForGeneratedName(
+  generatedName: string,
+  layouts: readonly StructLayout[],
+  suffix: string,
+): StructLayout | undefined {
+  if (!generatedName.endsWith(suffix)) {
+    return undefined;
+  }
+
+  const layoutName = generatedName.slice(0, -suffix.length);
+  return layouts.find((layout) => layout.name === layoutName);
+}
+
+function nameText(name: ts.PropertyName | undefined): string | undefined {
+  if (name === undefined) {
+    return undefined;
+  }
+
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+
+  if (ts.isPrivateIdentifier(name)) {
+    return name.text;
+  }
+
+  return undefined;
+}
+
+function pushPoint(
+  points: MappingPoint[],
+  sourceFile: ts.SourceFile,
+  node: ts.Node,
+  source: SourceLocation,
+): void {
+  const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  points.push({
+    generatedLine: position.line,
+    generatedColumn: position.character,
+    source,
+  });
+}
+
+function dedupeMappingPoints(points: readonly MappingPoint[]): MappingPoint[] {
+  const seen = new Set<string>();
+  const result: MappingPoint[] = [];
+
+  for (const point of points) {
+    const key = [
+      point.generatedLine,
+      point.generatedColumn,
+      point.source.fileName,
+      point.source.line,
+      point.source.character,
+    ].join(":");
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(point);
+  }
+
+  return result.sort((left, right) => {
+    if (left.generatedLine !== right.generatedLine) {
+      return left.generatedLine - right.generatedLine;
+    }
+    return left.generatedColumn - right.generatedColumn;
+  });
 }
 
 function findSourceForLine(

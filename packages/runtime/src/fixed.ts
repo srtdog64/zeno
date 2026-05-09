@@ -23,9 +23,7 @@ export function writeFixedBytes(
   assertBufferRange(buffer, offset, length);
 
   if (value.length > length) {
-    throw new RangeError(
-      `Fixed bytes value length ${value.length} exceeds field length ${length}`,
-    );
+    throw new RangeError(`Fixed bytes value length ${value.length} exceeds field length ${length}`);
   }
 
   const target = new Uint8Array(buffer, offset, length);
@@ -55,6 +53,50 @@ export function decodeText(bytes: Uint8Array, encoding: TextEncoding = "utf8"): 
   }
 
   return UTF8_DECODER.decode(bytes);
+}
+
+export function bytesEqual(left: ArrayLike<number>, right: ArrayLike<number>): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function equalsAscii(bytes: ArrayLike<number>, value: string): boolean {
+  if (bytes.length !== value.length) {
+    return false;
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    const codePoint = value.charCodeAt(index);
+    if (codePoint > 0x7f || bytes[index] !== codePoint) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function startsWithAscii(bytes: ArrayLike<number>, prefix: string): boolean {
+  if (prefix.length > bytes.length) {
+    return false;
+  }
+
+  for (let index = 0; index < prefix.length; index += 1) {
+    const codePoint = prefix.charCodeAt(index);
+    if (codePoint > 0x7f || bytes[index] !== codePoint) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function encodeText(value: string, encoding: TextEncoding = "utf8"): Uint8Array {

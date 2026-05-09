@@ -27,11 +27,14 @@ describe("generated projection source maps", () => {
     expect(result.diagnostics).toEqual([]);
 
     const emitted = emitProjectionFileWithSourceMap(result.layouts, "schema.view.ts");
+    const classLine = emitted.code.split("\n").findIndex((line) => line.includes("class UserView"));
     const ageLine = emitted.code.split("\n").findIndex((line) => line.includes("static getAge("));
 
+    expect(classLine).toBeGreaterThan(0);
     expect(ageLine).toBeGreaterThan(0);
     expect(emitted.sourceMap.file).toBe("schema.view.ts");
     expect(emitted.sourceMap.sources).toContain("schema.zeno.ts");
+    expect(emitted.sourceMap.mappings.split(";")[classLine]).not.toBe("");
     expect(emitted.sourceMap.mappings.split(";")[ageLine]).not.toBe("");
   });
 

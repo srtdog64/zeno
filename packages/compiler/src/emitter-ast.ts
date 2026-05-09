@@ -31,6 +31,22 @@ export function emitAstCheckedSource(
   };
 }
 
+export function emitSyntheticSource(
+  sourceText: string,
+  fileName: string,
+): AstCheckedGeneratedSource {
+  const checked = emitAstCheckedSource(sourceText, fileName);
+  const printer = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+    removeComments: false,
+  });
+
+  return {
+    code: `${printer.printFile(checked.sourceFile)}\n`,
+    sourceFile: checked.sourceFile,
+  };
+}
+
 function formatParseDiagnostics(sourceFile: ParsedSourceFile): string {
   const diagnostics = sourceFile.parseDiagnostics.map((diagnostic) => {
     const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");

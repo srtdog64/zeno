@@ -25,21 +25,20 @@ export {
 export {
   UTF8_DECODER,
   UTF8_ENCODER,
+  bytesEqual,
   decodeFixedText,
   decodeFixedUtf8,
   decodeText,
   encodeText,
+  equalsAscii,
   fixedBytesView,
+  startsWithAscii,
   writeFixedText,
   writeFixedBytes,
   writeFixedUtf8,
   type TextEncoding,
 } from "./fixed.js";
-export {
-  POINTER32_BYTE_LENGTH,
-  POINTER32_NULL,
-  pointer32RelativeOffset,
-} from "./pointer32.js";
+export { POINTER32_BYTE_LENGTH, POINTER32_NULL, pointer32RelativeOffset } from "./pointer32.js";
 export {
   ZENO_FRAME_HEADER_BYTE_LENGTH,
   ZENO_FRAME_LAYOUT_HASH_NONE,

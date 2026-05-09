@@ -356,7 +356,21 @@ Status: local witness only.
 - shared arena sharding provides the high-contention path instead of adding
   backoff to synchronous `reserve(...)`
 
-## v2.1 Candidate Work
+## Completed in 2.1
+
+- source maps collect generated class, interface, const, and member mapping
+  points from the generated TypeScript AST instead of substring-scanning lines
+- `bytesEqual`, `equalsAscii`, and `startsWithAscii` provide decode-free text
+  predicate helpers for byte slices
+- `ScalarVectorView.nativeArray()` projects aligned host-endian scalar vectors
+  as native typed arrays and rejects unsafe endian/alignment cases
+- browser smoke records structured per-mode WebGL benchmark metrics
+- WebGL smoke verifies nonblank visual state through an app-exposed pixel sample
+- repeated emitter naming and literal helpers moved into `emitter-names.ts`
+- `emitSyntheticSource(...)` exists as a diagnostic migration utility, while
+  the default emitter keeps stable tagged-template formatting
+
+## v2.2 Candidate Work
 
 ### Compiler maintainability
 
@@ -371,9 +385,9 @@ Status: local witness only.
   style when that reduces local complexity
 - formatting enforcement is active through Prettier and ESLint; keep the policy
   minimal and avoid broad lint churn
-- source maps are now a v2 compiler surface through `--source-map`; keep the
-  current contract coarse and field-level until a fully synthetic AST emitter
-  can justify statement-level mappings
+- source maps are now a v2 compiler surface through `--source-map`; keep
+  statement-level AST mapping covered by tests while full factory-built class
+  emission remains future work
 
 ### Performance surface
 
@@ -389,14 +403,12 @@ Status: local witness only.
     equality predicates
 - keep checked cursor APIs for safety and unchecked cursor APIs for caller-proven
   loops; benchmark them separately
-- add text byte predicate candidates that avoid JS `string` decode and allocation:
-  `equalsAscii`, `startsWithAscii`, and byte-slice comparison helpers for
-  `z.ascii`, `z.utf8`, and bare `string` descriptors
-- add a homogeneous scalar vector fast-path candidate for `z.vector<z.f32>`,
-  `z.vector<z.i32>`, and related scalar vectors using `TypedArray` views only
-  when endian/alignment/browser witnesses are explicit
-- add browser benchmark smoke runs for generated static accessors and scan
-  kernels, because Node/V8 local witnesses are not browser guarantees
+- promote additional text byte predicates only after real call-site witnesses
+  show they avoid decoding in user code
+- promote `ScalarVectorView.nativeArray()` only for browser use cases where the
+  native-endian/alignment preconditions are already true
+- add browser benchmark smoke runs for generated scan kernels beyond the WebGL
+  instance packer, because Node/V8 local witnesses are not browser guarantees
 - `VectorView` caches its descriptor after the first access and exposes
   `refreshDescriptor()` for descriptor rewrite boundaries; keep this contract
   explicit whenever shared-memory publication or live descriptor mutation is

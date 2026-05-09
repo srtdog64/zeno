@@ -13,12 +13,15 @@ import {
   SharedDynamicLayoutWriter,
   Utf8SpanView,
   Utf8VectorView,
+  bytesEqual,
   decodeFixedText,
   encodeText,
+  equalsAscii,
   isSharedDescriptorPublished,
   readScalar,
   resetSharedDescriptor,
   sharedDescriptorStateCell,
+  startsWithAscii,
   traversePointerChain,
   writeFixedText,
   writeFixedBytes,
@@ -81,6 +84,52 @@ describe("dynamic layout runtime skeleton", () => {
     expect(vectorView.at(0)).toBe(10);
     expect(vectorView.at(1)).toBe(20);
     expect(vectorView.at(2)).toBe(30);
+  });
+
+  it("projects aligned scalar vectors as native typed arrays", () => {
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+
+    writeVector32Descriptor(view, 0, {
+      relOffset: 16,
+      count: 3,
+    });
+    view.setFloat32(16, 1.5, true);
+    view.setFloat32(20, 2.5, true);
+    view.setFloat32(24, 3.5, true);
+
+    const vectorView = new ScalarVectorView<number>(view, 0, "f32");
+    const values = vectorView.nativeArray();
+
+    expect(values).toBeInstanceOf(Float32Array);
+    expect(Array.from(values as Float32Array)).toEqual([1.5, 2.5, 3.5]);
+  });
+
+  it("rejects native typed array projection when endian or alignment is unsafe", () => {
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+
+    writeVector32Descriptor(view, 0, {
+      relOffset: 18,
+      count: 1,
+    });
+
+    expect(() => new ScalarVectorView<number>(view, 0, "i32").nativeArray()).toThrow(RangeError);
+    expect(() => new ScalarVectorView<number>(view, 0, "i32", 0, false).nativeArray()).toThrow(
+      RangeError,
+    );
+    expect(() => new ScalarVectorView<boolean>(view, 0, "bool").nativeArray()).toThrow(RangeError);
+  });
+
+  it("compares byte slices to ASCII without decoding strings", () => {
+    const bytes = Uint8Array.of(0x7a, 0x65, 0x6e, 0x6f);
+
+    expect(bytesEqual(bytes, Uint8Array.of(0x7a, 0x65, 0x6e, 0x6f))).toBe(true);
+    expect(bytesEqual(bytes, Uint8Array.of(0x7a, 0x65, 0x6e))).toBe(false);
+    expect(equalsAscii(bytes, "zeno")).toBe(true);
+    expect(equalsAscii(bytes, "제노")).toBe(false);
+    expect(startsWithAscii(bytes, "ze")).toBe(true);
+    expect(startsWithAscii(bytes, "zeno!")).toBe(false);
   });
 
   it("caches vector descriptors until refresh or rebase", () => {

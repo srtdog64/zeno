@@ -7,6 +7,7 @@ import {
   ScalarVectorView,
   Utf8SpanView,
   Utf8VectorView,
+  equalsAscii,
   readSpan32Descriptor,
   readVector32Descriptor,
   writeSpan32Descriptor,
@@ -199,6 +200,14 @@ function zenoUtf8DecodePass(view, count) {
   return checksum;
 }
 
+function zenoUtf8EqualsAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum += equalsAscii(new Utf8SpanView(view, index * SPAN32).bytes(), TEXT) ? 1 : 0;
+  }
+  return checksum;
+}
+
 function makeScalarVectorFixture(count) {
   const buffer = new ArrayBuffer(VECTOR32 + count * 4);
   const view = new DataView(buffer);
@@ -223,6 +232,15 @@ function zenoScalarVectorPass(view, count) {
   let checksum = 0;
   for (let index = 0; index < count; index += 1) {
     checksum += vector.at(index);
+  }
+  return checksum;
+}
+
+function zenoScalarVectorNativeArrayPass(view) {
+  const values = new ScalarVectorView(view, 0, "i32").nativeArray();
+  let checksum = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    checksum += values[index];
   }
   return checksum;
 }
@@ -415,8 +433,12 @@ const directUtf8 = measure("direct UTF-8 decode", () =>
 const zenoUtf8 = measure("Zeno Utf8SpanView.text()", () =>
   zenoUtf8DecodePass(textSpan.view, RECORD_COUNT),
 );
+const zenoUtf8EqualsAscii = measure("Zeno Utf8SpanView.bytes() + equalsAscii", () =>
+  zenoUtf8EqualsAsciiPass(textSpan.view, RECORD_COUNT),
+);
 const jsonParse = measure("JSON.parse string array", () => jsonStringParsePass(jsonTextPayload));
 compareToBaseline("Utf8SpanView.text()", directUtf8.stats, zenoUtf8.stats);
+compareToBaseline("Utf8SpanView.bytes() + equalsAscii", zenoUtf8.stats, zenoUtf8EqualsAscii.stats);
 compareToBaseline("JSON.parse string array", directUtf8.stats, jsonParse.stats);
 
 const directScalarVector = measure("direct scalar vector i32", () =>
@@ -426,6 +448,14 @@ const zenoScalarVector = measure("Zeno ScalarVectorView.at(i)", () =>
   zenoScalarVectorPass(scalarVector.view, RECORD_COUNT),
 );
 compareToBaseline("ScalarVectorView.at(i)", directScalarVector.stats, zenoScalarVector.stats);
+const zenoScalarVectorNative = measure("Zeno ScalarVectorView.nativeArray()", () =>
+  zenoScalarVectorNativeArrayPass(scalarVector.view),
+);
+compareToBaseline(
+  "ScalarVectorView.nativeArray()",
+  directScalarVector.stats,
+  zenoScalarVectorNative.stats,
+);
 
 const directBytesVector = measure("direct bytes vector", () =>
   directBytesVectorPass(bytesVector.view, RECORD_COUNT),
@@ -468,7 +498,13 @@ measureRetainedMemory("BytesSpanView.bytes()", () =>
   zenoSpanBytesPass(bytesSpan.view, RECORD_COUNT),
 );
 measureRetainedMemory("Utf8SpanView.text()", () => zenoUtf8DecodePass(textSpan.view, RECORD_COUNT));
+measureRetainedMemory("Utf8SpanView.bytes() + equalsAscii", () =>
+  zenoUtf8EqualsAsciiPass(textSpan.view, RECORD_COUNT),
+);
 measureRetainedMemory("ScalarVectorView.at(i)", () =>
   zenoScalarVectorPass(scalarVector.view, RECORD_COUNT),
+);
+measureRetainedMemory("ScalarVectorView.nativeArray()", () =>
+  zenoScalarVectorNativeArrayPass(scalarVector.view),
 );
 measureRetainedMemory("DynamicLayoutWriter.writeUtf8", () => writerUtf8Pass(RECORD_COUNT));

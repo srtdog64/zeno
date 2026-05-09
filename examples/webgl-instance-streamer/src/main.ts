@@ -39,6 +39,22 @@ type Metrics = {
   rendered: number;
 };
 
+type VisualState = {
+  frame: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  meshCount: number;
+  maxPixel: number;
+  nonTransparentPixels: number;
+};
+
+declare global {
+  interface Window {
+    __zenoWebglMetrics?: Metrics;
+    __zenoWebglVisual?: VisualState;
+  }
+}
+
 const DEFAULT_COUNT = 250_000;
 const MAX_RENDERED = 250_000;
 const RADIUS = 180;
@@ -137,6 +153,7 @@ let mesh: THREE.InstancedMesh | undefined;
 let activeMode: Mode = "zeno";
 let activeCount = INITIAL_COUNT;
 let running = false;
+let frameCount = 0;
 
 function createMesh(count: number) {
   if (mesh) {
@@ -468,6 +485,7 @@ function setBusy(value: boolean) {
 }
 
 function renderMetrics(metrics: Metrics) {
+  window.__zenoWebglMetrics = metrics;
   modePill.textContent =
     metrics.mode === "zeno" ? "ZENO" : metrics.mode === "flatbuffers" ? "FLAT" : "JSON";
   metricPayload.textContent = formatBytes(metrics.payloadBytes);
@@ -479,6 +497,30 @@ function renderMetrics(metrics: Metrics) {
   for (const button of runButtons) {
     button.dataset.active = String(button.dataset.mode === metrics.mode);
   }
+}
+
+function updateVisualState() {
+  const gl = renderer.getContext();
+  const pixels = new Uint8Array(4 * 4 * 4);
+  gl.readPixels(0, 0, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  let maxPixel = 0;
+  let nonTransparentPixels = 0;
+  for (let index = 0; index < pixels.length; index += 4) {
+    maxPixel = Math.max(maxPixel, pixels[index], pixels[index + 1], pixels[index + 2]);
+    if (pixels[index + 3] !== 0) {
+      nonTransparentPixels += 1;
+    }
+  }
+
+  window.__zenoWebglVisual = {
+    frame: frameCount,
+    canvasWidth: renderer.domElement.width,
+    canvasHeight: renderer.domElement.height,
+    meshCount: mesh?.count ?? 0,
+    maxPixel,
+    nonTransparentPixels,
+  };
 }
 
 async function run(mode: Mode, count: number) {
@@ -556,10 +598,12 @@ for (const button of runButtons) {
 
 function animate() {
   requestAnimationFrame(animate);
+  frameCount += 1;
   group.rotation.y +=
     activeMode === "zeno" ? 0.0018 : activeMode === "flatbuffers" ? 0.0014 : 0.0012;
   group.rotation.x = Math.sin(performance.now() * 0.00018) * 0.08;
   renderer.render(scene, camera);
+  updateVisualState();
 }
 
 void run("zeno", INITIAL_COUNT);

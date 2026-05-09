@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.1.0
+
+Status: browser/runtime/compiler observability minor release.
+
+- Added decode-free text byte predicate helpers:
+  `bytesEqual`, `equalsAscii`, and `startsWithAscii`.
+- Added `ScalarVectorView.nativeArray()` for zero-copy native `TypedArray`
+  projection when scalar kind, host endian, and payload alignment make it safe.
+- Source maps now collect generated class, interface, const, and member mapping
+  points from the generated TypeScript AST instead of substring-scanning lines.
+- Browser smoke now emits structured per-mode benchmark metrics for the WebGL
+  demo and verifies a nonblank WebGL visual sample.
+- Added a synthetic AST emitter utility for future emitter migration work while
+  keeping the default generated view formatting stable.
+- Split repeated emitter naming/literal helpers into `emitter-names.ts`.
+- Package manifests and workspace lockfile are aligned at `2.1.0`.
+
 ## 2.0.0
 
 Status: v2 API cleanup release.

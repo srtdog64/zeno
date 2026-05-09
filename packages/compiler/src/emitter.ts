@@ -15,6 +15,7 @@ import {
   fixedArrayInputElementType,
 } from "./emitter-fixed-array.js";
 import { emitAstCheckedSource } from "./emitter-ast.js";
+import { encodingLiteral, toLittleEndianLiteral, toPascalCase } from "./emitter-names.js";
 import { method } from "./emitter-template.js";
 import { createProjectionSourceMap, type ProjectionSourceMap } from "./source-map.js";
 
@@ -981,18 +982,6 @@ ${field.name}Into(out: ${field.targetTypeName}View): boolean {
   out.moveToOffset(targetOffset, ${field.targetTypeName}View.byteLength);
   return true;
 }`;
-}
-
-function toPascalCase(name: string): string {
-  return name.slice(0, 1).toUpperCase() + name.slice(1);
-}
-
-function toLittleEndianLiteral(layout: StructLayout): "true" | "false" {
-  return layout.endianness === "little" ? "true" : "false";
-}
-
-function encodingLiteral(encoding: "ascii" | "utf8"): '"ascii"' | '"utf8"' {
-  return encoding === "ascii" ? '"ascii"' : '"utf8"';
 }
 
 function hasTailWriterFields(

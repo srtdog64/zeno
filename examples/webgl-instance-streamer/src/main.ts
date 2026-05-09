@@ -43,6 +43,8 @@ const DEFAULT_COUNT = 250_000;
 const MAX_RENDERED = 250_000;
 const RADIUS = 180;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const RECORD_OPTIONS = [10_000, 100_000, 250_000, 1_000_000] as const;
+const INITIAL_COUNT = readInitialCount();
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
@@ -60,9 +62,10 @@ app.innerHTML = `
         </div>
         <div class="toolbar">
           <select class="record-select" data-testid="record-count" aria-label="record count">
-            <option value="100000">100,000 instances</option>
-            <option value="250000" selected>250,000 instances</option>
-            <option value="1000000">1,000,000 instances</option>
+            ${RECORD_OPTIONS.map(
+              (count) =>
+                `<option value="${count}"${count === INITIAL_COUNT ? " selected" : ""}>${count.toLocaleString("en-US")} instances</option>`,
+            ).join("")}
           </select>
           <button class="run-button" data-mode="zeno" data-active="true">Zeno binary</button>
           <button class="run-button" data-mode="flatbuffers">FlatBuffers</button>
@@ -97,6 +100,14 @@ const metricBuild = app.querySelector<HTMLDivElement>("[data-metric='build']")!;
 const metricParse = app.querySelector<HTMLDivElement>("[data-metric='parse']")!;
 const metricPack = app.querySelector<HTMLDivElement>("[data-metric='pack']")!;
 
+function readInitialCount() {
+  const rawCount = new URLSearchParams(window.location.search).get("count");
+  const parsedCount = rawCount === null ? DEFAULT_COUNT : Number(rawCount);
+  return RECORD_OPTIONS.includes(parsedCount as (typeof RECORD_OPTIONS)[number])
+    ? parsedCount
+    : DEFAULT_COUNT;
+}
+
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x071014, 1);
@@ -124,7 +135,7 @@ scene.add(fill);
 
 let mesh: THREE.InstancedMesh | undefined;
 let activeMode: Mode = "zeno";
-let activeCount = DEFAULT_COUNT;
+let activeCount = INITIAL_COUNT;
 let running = false;
 
 function createMesh(count: number) {
@@ -551,5 +562,5 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-void run("zeno", DEFAULT_COUNT);
+void run("zeno", INITIAL_COUNT);
 animate();

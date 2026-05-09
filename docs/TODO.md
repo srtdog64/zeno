@@ -222,7 +222,8 @@ Status: local witness only.
   static pointer accessors, and scalar `sum<Field>()` kernels.
 - `lowerTypeNode` is split by semantic boundary: syntax, scalar, fixed,
   dynamic, vector, pointer, and struct references.
-- `--optimize-cursor-offsets` is marked experimental in CLI usage.
+- `--optimize-cursor-offsets` is marked as a retired diagnostic in CLI usage and
+  kept out of the default release and benchmark paths.
 - optional frame payload boundaries are covered by `assertZenoFramePayload(...)`
   and `checkedZenoFramePayloadView(...)`.
 - cyclic pointer traversal has an explicit budget failure test.
@@ -288,13 +289,19 @@ Status: local witness only.
   `emitProjectionFileWithSourceMap(...)`
 - WebGL instance streaming demo compares Zeno binary, FlatBuffers JS, and JSON
   browser payloads at larger record counts
+- dynamic-layout benchmark separates byte-slice access, UTF-8 decode, vector
+  indexing, and dynamic writer throughput
 - `SharedDynamicLayoutWriter` uses a shared atomic tail cursor instead of a
   per-instance local cursor
 - shared descriptor publication uses explicit `Int32Array` ready cells and
-  `*Published(...)` writer methods; plain descriptor writes are rejected on the
-  shared writer
+  `*Published(...)` writer methods; plain descriptor-writing methods are not
+  exposed on the shared writer
 - shared atomic control cells are documented as host-native control words,
   separate from serialized Zeno ABI fields
+- the shared writer public surface uses composition instead of overriding
+  normal `DynamicLayoutWriter` methods with runtime throws
+- shared arena sharding provides the high-contention path instead of adding
+  backoff to synchronous `reserve(...)`
 
 ## v2.1 Candidate Work
 
@@ -317,9 +324,8 @@ Status: local witness only.
 
 ### Performance surface
 
-- document `--optimize-cursor-offsets` as experimental or remove it from the
-  public CLI if repeated witnesses keep showing no stable win plus higher
-  retained memory
+- keep `--optimize-cursor-offsets` out of the default release and benchmark
+  paths; remove it from the public CLI if the diagnostic stops paying for itself
 - current status: `--optimize-cursor-offsets` is a retired diagnostic mode, not
   a recommended public optimization
 - promote generated scan kernels as the main aggregate hot path, not optimized
@@ -340,9 +346,10 @@ Status: local witness only.
   when endian/alignment/browser witnesses are explicit
 - add browser benchmark smoke runs for generated static accessors and scan
   kernels, because Node/V8 local witnesses are not browser guarantees
-- measure whether `VectorView.length` plus `at(i)` double descriptor reads are
-  visible in vector hot paths before adding descriptor caching; any cache needs
-  an explicit immutable-descriptor invariant
+- `VectorView` caches its descriptor after the first access and exposes
+  `refreshDescriptor()` for descriptor rewrite boundaries; keep this contract
+  explicit whenever shared-memory publication or live descriptor mutation is
+  discussed
 - keep the WebGL instance demo benchmark in
   [performance-comparison.md](performance-comparison.md), not only as a TODO;
   rerun it when the demo schema or render cap changes

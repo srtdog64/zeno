@@ -18,20 +18,55 @@ export abstract class VectorView<T> extends ProjectionView {
     super(view, baseOffset, littleEndian);
   }
 
+  private descriptorCache:
+    | {
+        readonly relOffset: number;
+        readonly count: number;
+      }
+    | undefined;
+
+  override rebase(baseOffset: number): this {
+    super.rebase(baseOffset);
+    this.clearDescriptorCache();
+    return this;
+  }
+
+  override rebaseUnchecked(baseOffset: number): this {
+    super.rebaseUnchecked(baseOffset);
+    this.clearDescriptorCache();
+    return this;
+  }
+
+  override moveToOffset(baseOffset: number, byteLength: number): this {
+    super.moveToOffset(baseOffset, byteLength);
+    this.clearDescriptorCache();
+    return this;
+  }
+
+  override moveToOffsetUnchecked(baseOffset: number, byteLength: number): this {
+    super.moveToOffsetUnchecked(baseOffset, byteLength);
+    this.clearDescriptorCache();
+    return this;
+  }
+
+  protected override moveToIndexUnchecked(index: number, byteLength: number): this {
+    super.moveToIndexUnchecked(index, byteLength);
+    this.clearDescriptorCache();
+    return this;
+  }
+
+  refreshDescriptor(): this {
+    this.clearDescriptorCache();
+    this.descriptor();
+    return this;
+  }
+
   get length(): number {
-    return readVector32Descriptor(
-      this.view,
-      this.absoluteOffset(this.descriptorOffset),
-      this.littleEndian,
-    ).count;
+    return this.descriptor().count;
   }
 
   protected payloadOffset(): number {
-    return readVector32Descriptor(
-      this.view,
-      this.absoluteOffset(this.descriptorOffset),
-      this.littleEndian,
-    ).relOffset;
+    return this.descriptor().relOffset;
   }
 
   abstract at(index: number): T;
@@ -46,9 +81,17 @@ export abstract class VectorView<T> extends ProjectionView {
     }
   }
 
+  protected elementOffsetAt(index: number, elementByteLength: number): number {
+    const descriptor = this.descriptor();
+    if (!Number.isInteger(index) || index < 0 || index >= descriptor.count) {
+      throw new RangeError(`Vector index out of bounds: ${index}`);
+    }
+
+    return descriptor.relOffset + index * elementByteLength;
+  }
+
   protected spanBytesAt(index: number): Uint8Array {
-    this.assertIndex(index);
-    const descriptorOffset = this.payloadOffset() + index * SPAN32_BYTE_LENGTH;
+    const descriptorOffset = this.elementOffsetAt(index, SPAN32_BYTE_LENGTH);
     const descriptor = readSpan32Descriptor(
       this.view,
       this.absoluteOffset(descriptorOffset),
@@ -60,5 +103,24 @@ export abstract class VectorView<T> extends ProjectionView {
       this.backingOffset(descriptor.relOffset),
       descriptor.byteLength,
     );
+  }
+
+  private descriptor(): {
+    readonly relOffset: number;
+    readonly count: number;
+  } {
+    if (this.descriptorCache === undefined) {
+      this.descriptorCache = readVector32Descriptor(
+        this.view,
+        this.absoluteOffset(this.descriptorOffset),
+        this.littleEndian,
+      );
+    }
+
+    return this.descriptorCache;
+  }
+
+  private clearDescriptorCache(): void {
+    this.descriptorCache = undefined;
   }
 }

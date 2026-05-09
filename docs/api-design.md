@@ -8,16 +8,16 @@ Runtime code imports generated `.view.ts` classes.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Static scalar accessors are the scan hot path | load-bearing | They avoid per-record view allocation and are close to direct `DataView` timing. |
-| Generated numeric scan kernels are the aggregate hot path | load-bearing | They give TS callers direct aggregate loops without handwritten offset math or per-record views. |
-| Cursor views are the ergonomic record API | load-bearing | They support named properties, nested views, and dynamic fields with one reusable object. |
-| Per-record view allocation is discouraged | load-bearing | Current benchmark shows it is much slower and retains heap if stored. |
-| Offset APIs are lower-level than index APIs | load-bearing | Offset APIs are the fastest hot path; index APIs trade some speed for safer call sites. |
-| Materialization should be explicit | load-bearing | Implicit object graphs would erase the main projection benefit. |
-| Pointer target APIs separate checked and unchecked offsets | candidate | Recursive links need low-level inspection, but normal dereference must prove the target record range. |
-| Object writers are construction helpers, not materializers | candidate | `UserView.write(view, value)` writes into caller-owned memory and returns the tail writer for dynamic records. |
+| Property                                                   | Status       | Reason                                                                                                         |
+| ---------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Static scalar accessors are the scan hot path              | load-bearing | They avoid per-record view allocation and are close to direct `DataView` timing.                               |
+| Generated numeric scan kernels are the aggregate hot path  | load-bearing | They give TS callers direct aggregate loops without handwritten offset math or per-record views.               |
+| Cursor views are the ergonomic record API                  | load-bearing | They support named properties, nested views, and dynamic fields with one reusable object.                      |
+| Per-record view allocation is discouraged                  | load-bearing | Current benchmark shows it is much slower and retains heap if stored.                                          |
+| Offset APIs are lower-level than index APIs                | load-bearing | Offset APIs are the fastest hot path; index APIs trade some speed for safer call sites.                        |
+| Materialization should be explicit                         | load-bearing | Implicit object graphs would erase the main projection benefit.                                                |
+| Pointer target APIs separate checked and unchecked offsets | candidate    | Recursive links need low-level inspection, but normal dereference must prove the target record range.          |
+| Object writers are construction helpers, not materializers | candidate    | `UserView.write(view, value)` writes into caller-owned memory and returns the tail writer for dynamic records. |
 
 ## Witness Case
 
@@ -70,9 +70,10 @@ Rules:
   semantics are different.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
-- Cursor offset caching is an experimental emit mode, not the default API.
-- Do not enable cursor offset caching globally until its timing benefit exceeds
-  its retained heap cost.
+- Cursor offset caching is a retired diagnostic emit mode, not a recommended
+  API.
+- Do not enable cursor offset caching globally; repeated witnesses show no
+  stable timing win and higher retained heap.
 
 ### Cursor projection API
 
@@ -100,16 +101,47 @@ Rules:
 - In hot scans, prefer static accessors first. If a cursor is required, use
   unchecked cursor movement only when the loop bounds are already checked.
 
+### Shared-memory writer API
+
+Use this when browser workers need to append dynamic payloads into a shared
+arena without JSON serialization or object materialization.
+
+```ts
+const shardOptions = {
+  shardCount: workerCount,
+  shardIndex: workerId,
+  payloadByteOffset: 0,
+  payloadByteLength: payloadBytes,
+  cursorTableByteOffset: payloadBytes,
+};
+
+SharedDynamicLayoutWriter.initializeShard(sharedBuffer, shardOptions);
+const writer = SharedDynamicLayoutWriter.fromSharedShard(sharedBuffer, shardOptions);
+```
+
+Rules:
+
+- Use a single shared cursor only for low-contention append paths.
+- For high-contention worker pipelines, prefer `fromSharedShard(...)` or
+  `initializeShard(...)` so each worker writes mostly inside its own payload
+  range and cursor cell.
+- Descriptor publication must use `*Published(...)` methods plus an
+  `Int32Array` ready cell.
+- The ready cell and cursor table are host-native control words, not serialized
+  Zeno ABI fields.
+- Backoff or async waiting belongs in a future async writer, not in the
+  synchronous `reserve(...)` API.
+
 ### Pointer API
 
 Generated `z.pointer<T>` fields expose three layers:
 
 ```ts
-node.rawNextRelativeOffset;      // raw uint32 wire word
-node.nextRelativeOffset;         // signed i32 or null
-node.nextTargetOffset;           // checked DataView byte offset or null
-node.uncheckedNextTargetOffset;  // unchecked DataView byte offset or null
-node.nextInto(out);              // checked zero-allocation cursor rebase
+node.rawNextRelativeOffset; // raw uint32 wire word
+node.nextRelativeOffset; // signed i32 or null
+node.nextTargetOffset; // checked DataView byte offset or null
+node.uncheckedNextTargetOffset; // unchecked DataView byte offset or null
+node.nextInto(out); // checked zero-allocation cursor rebase
 ```
 
 Rules:

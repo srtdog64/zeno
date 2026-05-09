@@ -27,9 +27,20 @@ export abstract class ProjectionView {
     return this.moveToOffset(baseOffset, byteLength);
   }
 
+  protected moveToIndexUnchecked(index: number, byteLength: number): this {
+    const baseOffset = index * byteLength;
+    this.baseOffset = baseOffset;
+    return this;
+  }
+
   moveToOffset(baseOffset: number, byteLength: number): this {
     assertDataViewRange(this.view, baseOffset, 0);
     assertDataViewRange(this.view, baseOffset, byteLength);
+    this.baseOffset = baseOffset;
+    return this;
+  }
+
+  moveToOffsetUnchecked(baseOffset: number, _byteLength: number): this {
     this.baseOffset = baseOffset;
     return this;
   }

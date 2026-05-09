@@ -76,13 +76,16 @@ export {
 } from "./writer.js";
 export {
   DynamicLayoutArena,
+  initializeSharedArenaShard,
   isSharedDescriptorPublished,
   publishSharedDescriptor,
   resetSharedDescriptor,
   sharedArenaCursorCell,
+  sharedArenaShard,
   sharedArenaView,
   sharedDescriptorStateCell,
   type SharedArenaOptions,
+  type SharedArenaShardOptions,
   type SharedArenaViewOptions,
 } from "./writer-arena.js";
 export {
@@ -91,11 +94,11 @@ export {
   DynamicStructVectorView,
   FixedArrayView,
   FixedBytesArrayView,
+  FixedBytesVectorView,
   FixedScalarArrayView,
   FixedStringArrayView,
-  FixedStructArrayView,
-  FixedBytesVectorView,
   FixedStringVectorView,
+  FixedStructArrayView,
   PointerVectorView,
   ProjectionView,
   ScalarVectorView,

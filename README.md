@@ -68,6 +68,9 @@ originating `.zeno.ts` field during debugging.
 tail cursor is atomic, and descriptor publication uses explicit `Int32Array`
 ready cells through the `*Published(...)` writer methods. Browser apps still
 need cross-origin isolation headers before `SharedArrayBuffer` is available.
+For higher-contention worker pipelines, use `fromSharedShard(...)` so each
+worker owns a payload range and cursor cell instead of spinning on one shared
+cursor.
 
 Use the generated API:
 

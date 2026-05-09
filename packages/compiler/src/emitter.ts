@@ -41,6 +41,10 @@ type VectorWriterEmitter<K extends VectorElementLayout["kind"]> = (
 ) => string[];
 
 export interface EmitOptions {
+  /**
+   * @deprecated Retired diagnostic mode. Static accessors and scan kernels are
+   * the supported hot path; keep this only for regression experiments.
+   */
   readonly optimizeCursorOffsets?: boolean;
 }
 
@@ -527,11 +531,72 @@ function emitObjectFieldWrite(layout: StructLayout, field: FieldLayout): string[
 
 function emitStaticFieldAccessor(layout: StructLayout, field: FieldLayout): string[] {
   if (field.kind === "pointer") {
-    const pascalName = toPascalCase(field.name);
-    const littleEndianDefault = toLittleEndianLiteral(layout);
-    const indexOffset = `index * ${layout.byteLength} + ${field.offset}`;
-    const pointerPosition = `baseOffset + ${field.offset}`;
-    return method`
+    return emitStaticPointerAccessor(layout, field);
+  }
+
+  return field.kind === "scalar" ? emitStaticScalarAccessor(layout, field) : [];
+}
+
+function emitStaticScalarAccessor(
+  layout: StructLayout,
+  field: Extract<FieldLayout, { kind: "scalar" }>,
+): string[] {
+  const getterMethod = scalarGetterMethod(field.scalar);
+  const setterMethod = scalarSetterMethod(field.scalar);
+  const typeName = scalarTsType(field.scalar);
+  const littleEndianDefault = toLittleEndianLiteral(layout);
+  const endianArg = field.byteLength === 1 || field.scalar === "bool" ? "" : ", littleEndian";
+  const indexOffset = `index * ${layout.byteLength} + ${field.offset}`;
+  const pascalName = toPascalCase(field.name);
+
+  return [
+    `  static get${pascalName}(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault}): ${typeName} {`,
+    emitStaticScalarReadBody(field, getterMethod, `baseOffset + ${field.offset}`, endianArg),
+    "  }",
+    `  static set${pascalName}(view: DataView, value: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): void {`,
+    emitStaticScalarWriteBody(field, setterMethod, `baseOffset + ${field.offset}`, endianArg),
+    "  }",
+    `  static get${pascalName}At(view: DataView, index: number, littleEndian = ${littleEndianDefault}): ${typeName} {`,
+    emitStaticScalarReadBody(field, getterMethod, indexOffset, endianArg),
+    "  }",
+    `  static set${pascalName}At(view: DataView, value: ${typeName}, index: number, littleEndian = ${littleEndianDefault}): void {`,
+    emitStaticScalarWriteBody(field, setterMethod, indexOffset, endianArg),
+    "  }",
+    ...emitScalarSumKernel(layout, field, getterMethod, littleEndianDefault, pascalName),
+  ];
+}
+
+function emitStaticScalarReadBody(
+  field: Extract<FieldLayout, { kind: "scalar" }>,
+  getterMethod: string,
+  offsetExpr: string,
+  endianArg: string,
+): string {
+  return field.scalar === "bool"
+    ? `    return view.${getterMethod}(${offsetExpr}) !== 0;`
+    : `    return view.${getterMethod}(${offsetExpr}${endianArg});`;
+}
+
+function emitStaticScalarWriteBody(
+  field: Extract<FieldLayout, { kind: "scalar" }>,
+  setterMethod: string,
+  offsetExpr: string,
+  endianArg: string,
+): string {
+  return field.scalar === "bool"
+    ? `    view.${setterMethod}(${offsetExpr}, value ? 1 : 0);`
+    : `    view.${setterMethod}(${offsetExpr}, value${endianArg});`;
+}
+
+function emitStaticPointerAccessor(
+  layout: StructLayout,
+  field: Extract<FieldLayout, { kind: "pointer" }>,
+): string[] {
+  const pascalName = toPascalCase(field.name);
+  const littleEndianDefault = toLittleEndianLiteral(layout);
+  const indexOffset = `index * ${layout.byteLength} + ${field.offset}`;
+  const pointerPosition = `baseOffset + ${field.offset}`;
+  return method`
 static getRaw${pascalName}RelativeOffset(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
   return view.getUint32(baseOffset + ${field.offset}, littleEndian);
 }
@@ -594,51 +659,6 @@ static set${pascalName}RelativeOffsetAt(view: DataView, value: number | null, in
   ${layout.name}View.assertPointer32Payload(value);
   view.setInt32(${indexOffset}, value, littleEndian);
 }`;
-  }
-
-  if (field.kind !== "scalar") {
-    return [];
-  }
-
-  const getterMethod = scalarGetterMethod(field.scalar);
-  const setterMethod = scalarSetterMethod(field.scalar);
-  const typeName = scalarTsType(field.scalar);
-  const littleEndianDefault = toLittleEndianLiteral(layout);
-  const endianArg = field.byteLength === 1 || field.scalar === "bool" ? "" : ", littleEndian";
-  const getterBody =
-    field.scalar === "bool"
-      ? `    return view.${getterMethod}(baseOffset + ${field.offset}) !== 0;`
-      : `    return view.${getterMethod}(baseOffset + ${field.offset}${endianArg});`;
-  const setterBody =
-    field.scalar === "bool"
-      ? `    view.${setterMethod}(baseOffset + ${field.offset}, value ? 1 : 0);`
-      : `    view.${setterMethod}(baseOffset + ${field.offset}, value${endianArg});`;
-  const indexOffset = `index * ${layout.byteLength} + ${field.offset}`;
-  const indexGetterBody =
-    field.scalar === "bool"
-      ? `    return view.${getterMethod}(${indexOffset}) !== 0;`
-      : `    return view.${getterMethod}(${indexOffset}${endianArg});`;
-  const indexSetterBody =
-    field.scalar === "bool"
-      ? `    view.${setterMethod}(${indexOffset}, value ? 1 : 0);`
-      : `    view.${setterMethod}(${indexOffset}, value${endianArg});`;
-  const pascalName = toPascalCase(field.name);
-
-  return [
-    `  static get${pascalName}(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault}): ${typeName} {`,
-    getterBody,
-    "  }",
-    `  static set${pascalName}(view: DataView, value: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): void {`,
-    setterBody,
-    "  }",
-    `  static get${pascalName}At(view: DataView, index: number, littleEndian = ${littleEndianDefault}): ${typeName} {`,
-    indexGetterBody,
-    "  }",
-    `  static set${pascalName}At(view: DataView, value: ${typeName}, index: number, littleEndian = ${littleEndianDefault}): void {`,
-    indexSetterBody,
-    "  }",
-    ...emitScalarSumKernel(layout, field, getterMethod, littleEndianDefault, pascalName),
-  ];
 }
 
 function emitScalarSumKernel(
@@ -743,8 +763,57 @@ ${field.name}View(): ${field.typeName}View {
   return new ${field.typeName}View(this.view, this.absoluteOffset(${field.offset}), this.littleEndian);
 }`;
     case "pointer": {
-      const pascalName = toPascalCase(field.name);
-      return method`
+      return emitPointerField(layout, field);
+    }
+    case "fixed-array":
+      return emitFixedArrayFieldAccessor(field, encodingLiteral);
+    case "vector":
+      switch (field.element.kind) {
+        case "scalar":
+          return method`
+${field.name}View(): ScalarVectorView<${scalarTsType(field.element.scalar)}> {
+  return new ScalarVectorView(this.view, ${field.offset}, "${field.element.scalar}", this.baseOffset, this.littleEndian);
+}`;
+        case "dynamic-string":
+          return method`
+${field.name}View(): Utf8VectorView {
+  return new Utf8VectorView(this.view, ${field.offset}, this.baseOffset, this.littleEndian, ${encodingLiteral(field.element.encoding)});
+}`;
+        case "dynamic-bytes":
+          return method`
+${field.name}View(): BytesVectorView {
+  return new BytesVectorView(this.view, ${field.offset}, this.baseOffset, this.littleEndian);
+}`;
+        case "fixed-bytes":
+          return method`
+${field.name}View(): FixedBytesVectorView {
+  return new FixedBytesVectorView(this.view, ${field.offset}, ${field.element.byteLength}, this.baseOffset, this.littleEndian);
+}`;
+        case "fixed-string":
+          return method`
+${field.name}View(): FixedStringVectorView {
+  return new FixedStringVectorView(this.view, ${field.offset}, ${field.element.byteLength}, this.baseOffset, this.littleEndian, ${encodingLiteral(field.element.encoding)});
+}`;
+        case "struct":
+          return method`
+${field.name}View(): StructVectorView<${field.element.typeName}View> {
+  return new StructVectorView(this.view, ${field.offset}, ${field.element.byteLength}, (view, baseOffset, littleEndian) => new ${field.element.typeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
+}`;
+        case "pointer":
+          return method`
+${field.name}View(): PointerVectorView<${field.element.targetTypeName}View> {
+  return new PointerVectorView(this.view, ${field.offset}, ${field.element.targetTypeName}View.byteLength, (view, baseOffset, littleEndian) => new ${field.element.targetTypeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
+}`;
+      }
+  }
+}
+
+function emitPointerField(
+  layout: StructLayout,
+  field: Extract<FieldLayout, { kind: "pointer" }>,
+): string[] {
+  const pascalName = toPascalCase(field.name);
+  return method`
 get raw${pascalName}RelativeOffset(): number {
   return this.view.getUint32(this.baseOffset + ${field.offset}, this.littleEndian);
 }
@@ -811,48 +880,6 @@ ${field.name}Into(out: ${field.targetTypeName}View): boolean {
   out.moveToOffset(targetOffset, ${field.targetTypeName}View.byteLength);
   return true;
 }`;
-    }
-    case "fixed-array":
-      return emitFixedArrayFieldAccessor(field, encodingLiteral);
-    case "vector":
-      switch (field.element.kind) {
-        case "scalar":
-          return method`
-${field.name}View(): ScalarVectorView<${scalarTsType(field.element.scalar)}> {
-  return new ScalarVectorView(this.view, ${field.offset}, "${field.element.scalar}", this.baseOffset, this.littleEndian);
-}`;
-        case "dynamic-string":
-          return method`
-${field.name}View(): Utf8VectorView {
-  return new Utf8VectorView(this.view, ${field.offset}, this.baseOffset, this.littleEndian, ${encodingLiteral(field.element.encoding)});
-}`;
-        case "dynamic-bytes":
-          return method`
-${field.name}View(): BytesVectorView {
-  return new BytesVectorView(this.view, ${field.offset}, this.baseOffset, this.littleEndian);
-}`;
-        case "fixed-bytes":
-          return method`
-${field.name}View(): FixedBytesVectorView {
-  return new FixedBytesVectorView(this.view, ${field.offset}, ${field.element.byteLength}, this.baseOffset, this.littleEndian);
-}`;
-        case "fixed-string":
-          return method`
-${field.name}View(): FixedStringVectorView {
-  return new FixedStringVectorView(this.view, ${field.offset}, ${field.element.byteLength}, this.baseOffset, this.littleEndian, ${encodingLiteral(field.element.encoding)});
-}`;
-        case "struct":
-          return method`
-${field.name}View(): StructVectorView<${field.element.typeName}View> {
-  return new StructVectorView(this.view, ${field.offset}, ${field.element.byteLength}, (view, baseOffset, littleEndian) => new ${field.element.typeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
-}`;
-        case "pointer":
-          return method`
-${field.name}View(): PointerVectorView<${field.element.targetTypeName}View> {
-  return new PointerVectorView(this.view, ${field.offset}, ${field.element.targetTypeName}View.byteLength, (view, baseOffset, littleEndian) => new ${field.element.targetTypeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
-}`;
-      }
-  }
 }
 
 function toPascalCase(name: string): string {

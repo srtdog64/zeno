@@ -45,7 +45,10 @@ The standalone compiler should analyze this and emit something structurally simi
 export class UserView {
   static readonly byteLength = 44;
 
-  constructor(private readonly view: DataView, private readonly baseOffset = 0) {}
+  constructor(
+    private readonly view: DataView,
+    private readonly baseOffset = 0,
+  ) {}
 
   get id(): bigint {
     return this.view.getBigUint64(this.baseOffset + 0, true);
@@ -84,6 +87,55 @@ export class UserView {
 6. Runtime binding
    Reuse shared ABI, projection view, and writer layers for scalar, slice,
    vector, pointer, and tail-arena access.
+
+## Package Architecture
+
+The package layering is load-bearing. Each package owns one level of the binary
+projection stack, and dependencies should move from schema facts toward emitted
+runtime code rather than back upward.
+
+```txt
+schema (Layout IR + ABI constants)
+   |
+   v
+types (schema-author marker types)
+   |
+   v
+runtime (range -> scalar -> descriptor32 -> fixed -> pointer32 -> views -> writer)
+   |
+   v
+compiler (analyzer -> lowering -> validator -> emitter)
+```
+
+`@exornea/zeno-schema` defines the normalized Layout IR and ABI facts that all
+other packages must agree on: scalar widths, descriptor shapes, pointer policy,
+field offsets, byte lengths, alignment, source locations, and endianness. It is
+the internal contract between analysis, validation, emitted code, and runtime
+helpers.
+
+`@exornea/zeno-types` is the schema-authoring surface. It provides type-only
+brand aliases such as `z.i32`, `z.u64`, `z.fixedUtf8<32>`, `z.vector<T>`, and
+`z.pointer<T>`. These marker types carry ABI intent in TypeScript without
+introducing decorators, runtime schema objects, or application-level values.
+
+`@exornea/zeno-runtime` owns memory projection. Its source files are split by ABI
+responsibility:
+
+- `range`: integer, `ArrayBuffer`, `DataView`, and alignment checks
+- `scalar`: endian-aware scalar read/write primitives
+- `descriptor32`: `Span32` and `Vector32` dynamic payload descriptors
+- `fixed`: fixed byte/string views and text codecs
+- `pointer32`: relative pointer encoding
+- `views`: projection view barrels used by generated code
+- `writer`: dynamic tail arenas, vectors, shared-memory publication, and frame
+  helpers
+
+`@exornea/zeno-compiler` turns schema-only TypeScript into generated view code.
+It reads TypeScript syntax and types in `analyzer`, lowers them to Layout IR in
+`lowering`, enforces ABI invariants in `validator`, and emits `.view.ts` code in
+`emitter`. The compiler uses `Result<T, E>` and structured diagnostics because
+schema failures are recoverable authoring errors; runtime projection failures
+remain `RangeError` at the memory boundary.
 
 ## Core packages
 

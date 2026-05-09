@@ -160,19 +160,21 @@ describe("analyzeProjectionFile", () => {
     expect(playerViewSource).toContain("static writeChunks(writer: DynamicLayoutWriter");
     expect(playerViewSource).toContain("static writeCodes(writer: DynamicLayoutWriter");
     expect(playerViewSource).toContain("static writePayload(writer: DynamicLayoutWriter");
-    expect(playerViewSource).toContain('writeFixedText(view.buffer');
+    expect(playerViewSource).toContain("writeFixedText(view.buffer");
     expect(playerViewSource).not.toContain("emitter is not implemented");
     expect(emitProjectionFile(result.layouts)).toContain("class StatsView extends ProjectionView");
     expect(emitProjectionFile(result.layouts)).toContain("statsView(): StatsView");
 
-    const optimizedPlayerViewSource = emitStructView(result.layouts[1]!, {
+    const diagnosticCursorOffsetViewSource = emitStructView(result.layouts[1]!, {
       optimizeCursorOffsets: true,
     });
-    expect(optimizedPlayerViewSource).toContain("private $idOffset = 0");
-    expect(optimizedPlayerViewSource).toContain("private $refreshOffsets(): void");
-    expect(optimizedPlayerViewSource).toContain("override rebase(baseOffset: number): this");
-    expect(optimizedPlayerViewSource).toContain("this.$idOffset = this.baseOffset + 0");
-    expect(optimizedPlayerViewSource).toContain("return this.view.getBigUint64(this.$idOffset");
+    expect(diagnosticCursorOffsetViewSource).toContain("private $idOffset = 0");
+    expect(diagnosticCursorOffsetViewSource).toContain("private $refreshOffsets(): void");
+    expect(diagnosticCursorOffsetViewSource).toContain("override rebase(baseOffset: number): this");
+    expect(diagnosticCursorOffsetViewSource).toContain("this.$idOffset = this.baseOffset + 0");
+    expect(diagnosticCursorOffsetViewSource).toContain(
+      "return this.view.getBigUint64(this.$idOffset",
+    );
   });
 
   it("analyzes a source file without requiring a TypeScript program", () => {
@@ -314,7 +316,7 @@ describe("analyzeProjectionFile", () => {
     expect(metricsViewSource).toContain("samples: readonly number[];");
     expect(metricsViewSource).toContain("labelsView(): FixedStringArrayView");
     expect(metricsViewSource).toContain("pointsView(): FixedStructArrayView<PointView>");
-    expect(metricsViewSource).toContain("writeScalar(view, \"f32\"");
+    expect(metricsViewSource).toContain('writeScalar(view, "f32"');
     expect(metricsViewSource).not.toContain("descriptor");
   });
 
@@ -467,11 +469,19 @@ describe("analyzeProjectionFile", () => {
     expect(source).toContain("decodeFixedText");
     expect(source).toContain("writeFixedText");
     expect(source).toContain('writeText(LabelsView.dynamicOffset, value, "ascii")');
-    expect(source).toContain('writeFixedTextVector(LabelsView.fixedCodesOffset, values, 4, "ascii")');
+    expect(source).toContain(
+      'writeFixedTextVector(LabelsView.fixedCodesOffset, values, 4, "ascii")',
+    );
     expect(source).toContain('writeTextVector(LabelsView.dynamicCodesOffset, values, "ascii")');
-    expect(source).toContain('new Utf8SpanView(this.view, 8, this.baseOffset, this.littleEndian, "ascii")');
-    expect(source).toContain('new FixedStringVectorView(this.view, 16, 4, this.baseOffset, this.littleEndian, "ascii")');
-    expect(source).toContain('new Utf8VectorView(this.view, 24, this.baseOffset, this.littleEndian, "ascii")');
+    expect(source).toContain(
+      'new Utf8SpanView(this.view, 8, this.baseOffset, this.littleEndian, "ascii")',
+    );
+    expect(source).toContain(
+      'new FixedStringVectorView(this.view, 16, 4, this.baseOffset, this.littleEndian, "ascii")',
+    );
+    expect(source).toContain(
+      'new Utf8VectorView(this.view, 24, this.baseOffset, this.littleEndian, "ascii")',
+    );
   });
 
   it("emits object writers for fixed-size struct vectors", () => {
@@ -542,11 +552,13 @@ describe("analyzeProjectionFile", () => {
 
     const result = analyzeProjectionFile(program, sourceFile!);
 
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
-      "LAYOUT_INVARIANT",
-    );
-    expect(result.diagnostics.some((diagnostic) => diagnostic.message.includes("dynamic tail fields"))).toBe(true);
-    expect(result.diagnostics.some((diagnostic) => diagnostic.message.includes("vector<pointer<T>>"))).toBe(true);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain("LAYOUT_INVARIANT");
+    expect(
+      result.diagnostics.some((diagnostic) => diagnostic.message.includes("dynamic tail fields")),
+    ).toBe(true);
+    expect(
+      result.diagnostics.some((diagnostic) => diagnostic.message.includes("vector<pointer<T>>")),
+    ).toBe(true);
   });
 
   it("reports recursive struct references", () => {
@@ -558,9 +570,7 @@ describe("analyzeProjectionFile", () => {
 
     const result = analyzeProjectionFile(program, sourceFile!);
 
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
-      "RECURSIVE_STRUCT",
-    );
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain("RECURSIVE_STRUCT");
     expect(result.diagnostics.map((diagnostic) => diagnostic.error?.kind)).toContain(
       "UnsupportedAtPhase",
     );
@@ -635,7 +645,9 @@ describe("analyzeProjectionFile", () => {
     expect(source).toContain("get rawNextRelativeOffset(): number");
     expect(source).toContain("get uncheckedNextTargetOffset(): number | null");
     expect(source).toContain("static writeChildren(writer: DynamicLayoutWriter");
-    expect(source).toContain("writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength)");
+    expect(source).toContain(
+      "writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength)",
+    );
     expect(source).toContain("childrenView(): PointerVectorView<NodeView>");
     expect(source).toContain("nextView(): NodeView | null");
     expect(source).toContain("nextInto(out: NodeView): boolean");

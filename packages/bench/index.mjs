@@ -8,16 +8,24 @@ import {
   UserViewRatioOffset,
   UserViewScoreOffset,
 } from "../../examples/basic/dist/model.view.js";
-import { UserView as OptimizedUserView } from "../../examples/basic/dist/model.optimized.view.js";
 
 const RECORD_COUNT = Number(process.env.ZENO_BENCH_RECORDS ?? 200_000);
 const WARMUP_RUNS = Number(process.env.ZENO_BENCH_WARMUP ?? 3);
 const MEASURE_RUNS = Number(process.env.ZENO_BENCH_RUNS ?? 30);
+const INCLUDE_CURSOR_DIAGNOSTICS =
+  process.argv.includes("--cursor-diagnostics") ||
+  process.env.ZENO_BENCH_CURSOR_DIAGNOSTICS === "1";
 const STRIDE = UserView.byteLength;
 const POINTER_NODE_STRIDE = 8;
 const POINTER_NODE_VALUE_OFFSET = 0;
 const POINTER_NODE_NEXT_OFFSET = 4;
 const POINTER32_NULL = 0xffffffff;
+let OptimizedUserView = null;
+
+if (INCLUDE_CURSOR_DIAGNOSTICS) {
+  ({ UserView: OptimizedUserView } =
+    await import("../../examples/basic/dist/model.optimized.view.js"));
+}
 
 if (typeof globalThis.gc !== "function") {
   console.error("Run with --expose-gc so retained memory measurements are meaningful.");
@@ -99,8 +107,7 @@ function standardDeviation(values) {
 
   const average = mean(values);
   const variance =
-    values.reduce((sum, value) => sum + (value - average) ** 2, 0) /
-    (values.length - 1);
+    values.reduce((sum, value) => sum + (value - average) ** 2, 0) / (values.length - 1);
   return Math.sqrt(variance);
 }
 
@@ -159,6 +166,13 @@ function timeOnce(label, run) {
   const elapsed = performance.now() - started;
   console.log(`${label}: ${elapsed.toFixed(2)} ms`);
   return result;
+}
+
+function optimizedUserViewClass() {
+  if (OptimizedUserView === null) {
+    throw new Error("Run bench with --cursor-diagnostics to load the retired optimized view.");
+  }
+  return OptimizedUserView;
 }
 
 function makeFixture(count) {
@@ -279,7 +293,7 @@ function cursorAgeAtUncheckedPass(view, count) {
 
 function optimizedCursorAgePass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     sum += user.rebase(index * STRIDE).age;
   }
@@ -288,7 +302,7 @@ function optimizedCursorAgePass(view, count) {
 
 function optimizedCursorAgeUncheckedPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     sum += user.rebaseUnchecked(index * STRIDE).age;
   }
@@ -297,7 +311,7 @@ function optimizedCursorAgeUncheckedPass(view, count) {
 
 function optimizedCursorAgeAtPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     sum += user.moveTo(index).age;
   }
@@ -306,7 +320,7 @@ function optimizedCursorAgeAtPass(view, count) {
 
 function optimizedCursorAgeAtUncheckedPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     sum += user.moveToUnchecked(index).age;
   }
@@ -497,7 +511,7 @@ function cursorScalarMixUncheckedPass(view, count) {
 
 function optimizedCursorScalarMixPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     user.rebase(index * STRIDE);
     sum += Number(user.id & 0xffffn);
@@ -510,7 +524,7 @@ function optimizedCursorScalarMixPass(view, count) {
 
 function optimizedCursorScalarMixUncheckedPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     user.rebaseUnchecked(index * STRIDE);
     sum += Number(user.id & 0xffffn);
@@ -523,7 +537,7 @@ function optimizedCursorScalarMixUncheckedPass(view, count) {
 
 function optimizedCursorScalarMixAtPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     user.moveTo(index);
     sum += Number(user.id & 0xffffn);
@@ -536,7 +550,7 @@ function optimizedCursorScalarMixAtPass(view, count) {
 
 function optimizedCursorScalarMixAtUncheckedPass(view, count) {
   let sum = 0;
-  const user = new OptimizedUserView(view);
+  const user = new (optimizedUserViewClass())(view);
   for (let index = 0; index < count; index += 1) {
     user.moveToUnchecked(index);
     sum += Number(user.id & 0xffffn);
@@ -696,7 +710,7 @@ function retainViews(view, count) {
 function retainOptimizedViews(view, count) {
   const views = new Array(count);
   for (let index = 0; index < count; index += 1) {
-    views[index] = new OptimizedUserView(view, index * STRIDE);
+    views[index] = new (optimizedUserViewClass())(view, index * STRIDE);
   }
   return views;
 }
@@ -738,18 +752,14 @@ const directAgeOffsetLoop = measure("direct DataView age offset-loop pass", () =
 const boundDataViewAge = measure("bound DataView age pass", () =>
   boundDataViewAgePass(fixture.view, RECORD_COUNT),
 );
-const staticAge = measure("Zeno static age pass", () =>
-  staticAgePass(fixture.view, RECORD_COUNT),
-);
+const staticAge = measure("Zeno static age pass", () => staticAgePass(fixture.view, RECORD_COUNT));
 const staticAgeAt = measure("Zeno static ageAt pass", () =>
   staticAgeAtPass(fixture.view, RECORD_COUNT),
 );
 const staticSumAgeKernel = measure("Zeno sumAge kernel pass", () =>
   staticSumAgeKernelPass(fixture.view, RECORD_COUNT),
 );
-const cursorAge = measure("Zeno cursor age pass", () =>
-  cursorAgePass(fixture.view, RECORD_COUNT),
-);
+const cursorAge = measure("Zeno cursor age pass", () => cursorAgePass(fixture.view, RECORD_COUNT));
 const cursorAgeUnchecked = measure("Zeno cursor unchecked age pass", () =>
   cursorAgeUncheckedPass(fixture.view, RECORD_COUNT),
 );
@@ -759,18 +769,26 @@ const cursorAgeAt = measure("Zeno cursor moveTo age pass", () =>
 const cursorAgeAtUnchecked = measure("Zeno cursor moveToUnchecked age pass", () =>
   cursorAgeAtUncheckedPass(fixture.view, RECORD_COUNT),
 );
-const optimizedCursorAge = measure("Zeno optimized cursor age pass", () =>
-  optimizedCursorAgePass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorAgeUnchecked = measure("Zeno optimized cursor unchecked age pass", () =>
-  optimizedCursorAgeUncheckedPass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorAgeAt = measure("Zeno optimized cursor moveTo age pass", () =>
-  optimizedCursorAgeAtPass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorAgeAtUnchecked = measure("Zeno optimized cursor moveToUnchecked age pass", () =>
-  optimizedCursorAgeAtUncheckedPass(fixture.view, RECORD_COUNT),
-);
+const optimizedCursorAge = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor age pass", () =>
+      optimizedCursorAgePass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorAgeUnchecked = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor unchecked age pass", () =>
+      optimizedCursorAgeUncheckedPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorAgeAt = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor moveTo age pass", () =>
+      optimizedCursorAgeAtPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorAgeAtUnchecked = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor moveToUnchecked age pass", () =>
+      optimizedCursorAgeAtUncheckedPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
 const boundCursorAge = measure("bound-method cursor age pass", () =>
   boundCursorAgePass(fixture.view, RECORD_COUNT),
 );
@@ -781,7 +799,7 @@ const perRecordAge = measure("Zeno per-record view age pass", () =>
   perRecordViewAgePass(fixture.view, RECORD_COUNT),
 );
 console.log(
-  `age checksums: direct=${directAge.checksum}, offsetLoop=${directAgeOffsetLoop.checksum}, bound=${boundDataViewAge.checksum}, static=${staticAge.checksum}, staticAt=${staticAgeAt.checksum}, sumKernel=${staticSumAgeKernel.checksum}, cursor=${cursorAge.checksum}, cursorUnchecked=${cursorAgeUnchecked.checksum}, cursorAt=${cursorAgeAt.checksum}, cursorAtUnchecked=${cursorAgeAtUnchecked.checksum}, optimizedCursor=${optimizedCursorAge.checksum}, optimizedCursorUnchecked=${optimizedCursorAgeUnchecked.checksum}, optimizedCursorAt=${optimizedCursorAgeAt.checksum}, optimizedCursorAtUnchecked=${optimizedCursorAgeAtUnchecked.checksum}, boundCursor=${boundCursorAge.checksum}, precomputedCursor=${precomputedCursorAge.checksum}, perRecord=${perRecordAge.checksum}`,
+  `age checksums: direct=${directAge.checksum}, offsetLoop=${directAgeOffsetLoop.checksum}, bound=${boundDataViewAge.checksum}, static=${staticAge.checksum}, staticAt=${staticAgeAt.checksum}, sumKernel=${staticSumAgeKernel.checksum}, cursor=${cursorAge.checksum}, cursorUnchecked=${cursorAgeUnchecked.checksum}, cursorAt=${cursorAgeAt.checksum}, cursorAtUnchecked=${cursorAgeAtUnchecked.checksum}${INCLUDE_CURSOR_DIAGNOSTICS ? `, optimizedCursor=${optimizedCursorAge.checksum}, optimizedCursorUnchecked=${optimizedCursorAgeUnchecked.checksum}, optimizedCursorAt=${optimizedCursorAgeAt.checksum}, optimizedCursorAtUnchecked=${optimizedCursorAgeAtUnchecked.checksum}` : ""}, boundCursor=${boundCursorAge.checksum}, precomputedCursor=${precomputedCursorAge.checksum}, perRecord=${perRecordAge.checksum}`,
 );
 console.log("age delta vs direct DataView");
 compareToBaseline("direct offset loop", directAge.stats, directAgeOffsetLoop.stats);
@@ -793,14 +811,40 @@ compareToBaseline("cursor rebase", directAge.stats, cursorAge.stats);
 compareToBaseline("cursor unchecked rebase", directAge.stats, cursorAgeUnchecked.stats);
 compareToBaseline("cursor moveTo", directAge.stats, cursorAgeAt.stats);
 compareToBaseline("cursor moveToUnchecked", directAge.stats, cursorAgeAtUnchecked.stats);
-compareToBaseline("optimized cursor rebase", directAge.stats, optimizedCursorAge.stats);
-compareToBaseline("optimized cursor unchecked rebase", directAge.stats, optimizedCursorAgeUnchecked.stats);
-compareToBaseline("optimized cursor moveTo", directAge.stats, optimizedCursorAgeAt.stats);
-compareToBaseline("optimized cursor moveToUnchecked", directAge.stats, optimizedCursorAgeAtUnchecked.stats);
-compareToBaseline("optimized vs current cursor rebase", cursorAge.stats, optimizedCursorAge.stats);
-compareToBaseline("optimized vs current cursor unchecked rebase", cursorAgeUnchecked.stats, optimizedCursorAgeUnchecked.stats);
-compareToBaseline("optimized vs current cursor moveTo", cursorAgeAt.stats, optimizedCursorAgeAt.stats);
-compareToBaseline("optimized vs current cursor moveToUnchecked", cursorAgeAtUnchecked.stats, optimizedCursorAgeAtUnchecked.stats);
+if (INCLUDE_CURSOR_DIAGNOSTICS) {
+  compareToBaseline("optimized cursor rebase", directAge.stats, optimizedCursorAge.stats);
+  compareToBaseline(
+    "optimized cursor unchecked rebase",
+    directAge.stats,
+    optimizedCursorAgeUnchecked.stats,
+  );
+  compareToBaseline("optimized cursor moveTo", directAge.stats, optimizedCursorAgeAt.stats);
+  compareToBaseline(
+    "optimized cursor moveToUnchecked",
+    directAge.stats,
+    optimizedCursorAgeAtUnchecked.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor rebase",
+    cursorAge.stats,
+    optimizedCursorAge.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor unchecked rebase",
+    cursorAgeUnchecked.stats,
+    optimizedCursorAgeUnchecked.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor moveTo",
+    cursorAgeAt.stats,
+    optimizedCursorAgeAt.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor moveToUnchecked",
+    cursorAgeAtUnchecked.stats,
+    optimizedCursorAgeAtUnchecked.stats,
+  );
+}
 compareToBaseline("bound-method cursor", directAge.stats, boundCursorAge.stats);
 compareToBaseline("precomputed-offset cursor", directAge.stats, precomputedCursorAge.stats);
 compareToBaseline("per-record view", directAge.stats, perRecordAge.stats);
@@ -815,8 +859,9 @@ const directMixOffsetLoop = measure("direct DataView scalar mix offset-loop pass
 const zenoOffsetConstantMix = measure("Zeno offset-constant scalar mix pass", () =>
   zenoOffsetConstantScalarMixPass(fixture.view, RECORD_COUNT),
 );
-const zenoTopLevelOffsetConstantMix = measure("Zeno top-level offset-constant scalar mix pass", () =>
-  zenoTopLevelOffsetConstantScalarMixPass(fixture.view, RECORD_COUNT),
+const zenoTopLevelOffsetConstantMix = measure(
+  "Zeno top-level offset-constant scalar mix pass",
+  () => zenoTopLevelOffsetConstantScalarMixPass(fixture.view, RECORD_COUNT),
 );
 const zenoHoistedOffsetConstantMix = measure("Zeno hoisted offset-constant scalar mix pass", () =>
   zenoHoistedOffsetConstantScalarMixPass(fixture.view, RECORD_COUNT),
@@ -836,18 +881,26 @@ const cursorMix = measure("Zeno cursor scalar mix pass", () =>
 const cursorMixUnchecked = measure("Zeno cursor unchecked scalar mix pass", () =>
   cursorScalarMixUncheckedPass(fixture.view, RECORD_COUNT),
 );
-const optimizedCursorMix = measure("Zeno optimized cursor scalar mix pass", () =>
-  optimizedCursorScalarMixPass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorMixUnchecked = measure("Zeno optimized cursor unchecked scalar mix pass", () =>
-  optimizedCursorScalarMixUncheckedPass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorMixAt = measure("Zeno optimized cursor moveTo scalar mix pass", () =>
-  optimizedCursorScalarMixAtPass(fixture.view, RECORD_COUNT),
-);
-const optimizedCursorMixAtUnchecked = measure("Zeno optimized cursor moveToUnchecked scalar mix pass", () =>
-  optimizedCursorScalarMixAtUncheckedPass(fixture.view, RECORD_COUNT),
-);
+const optimizedCursorMix = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor scalar mix pass", () =>
+      optimizedCursorScalarMixPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorMixUnchecked = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor unchecked scalar mix pass", () =>
+      optimizedCursorScalarMixUncheckedPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorMixAt = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor moveTo scalar mix pass", () =>
+      optimizedCursorScalarMixAtPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
+const optimizedCursorMixAtUnchecked = INCLUDE_CURSOR_DIAGNOSTICS
+  ? measure("Zeno optimized cursor moveToUnchecked scalar mix pass", () =>
+      optimizedCursorScalarMixAtUncheckedPass(fixture.view, RECORD_COUNT),
+    )
+  : null;
 const precomputedCursorMix = measure("precomputed-offset cursor scalar mix pass", () =>
   precomputedCursorScalarMixPass(fixture.view, RECORD_COUNT),
 );
@@ -860,26 +913,56 @@ const cursorMixAtUnchecked = measure("Zeno cursor moveToUnchecked scalar mix pas
 const afterScalarPass = memorySnapshot();
 printMemoryDelta("after scalar passes over buffer-only", afterScalarPass, bufferOnly);
 console.log(
-  `mix checksums: direct=${directMix.checksum}, offsetLoop=${directMixOffsetLoop.checksum}, offsetConstant=${zenoOffsetConstantMix.checksum}, topLevelOffsetConstant=${zenoTopLevelOffsetConstantMix.checksum}, hoistedOffsetConstant=${zenoHoistedOffsetConstantMix.checksum}, static=${staticMix.checksum}, staticOffsetLoop=${staticMixOffsetLoop.checksum}, staticAt=${staticMixAt.checksum}, cursor=${cursorMix.checksum}, cursorUnchecked=${cursorMixUnchecked.checksum}, optimizedCursor=${optimizedCursorMix.checksum}, optimizedCursorUnchecked=${optimizedCursorMixUnchecked.checksum}, optimizedCursorAt=${optimizedCursorMixAt.checksum}, optimizedCursorAtUnchecked=${optimizedCursorMixAtUnchecked.checksum}, precomputedCursor=${precomputedCursorMix.checksum}, cursorAt=${cursorMixAt.checksum}, cursorAtUnchecked=${cursorMixAtUnchecked.checksum}`,
+  `mix checksums: direct=${directMix.checksum}, offsetLoop=${directMixOffsetLoop.checksum}, offsetConstant=${zenoOffsetConstantMix.checksum}, topLevelOffsetConstant=${zenoTopLevelOffsetConstantMix.checksum}, hoistedOffsetConstant=${zenoHoistedOffsetConstantMix.checksum}, static=${staticMix.checksum}, staticOffsetLoop=${staticMixOffsetLoop.checksum}, staticAt=${staticMixAt.checksum}, cursor=${cursorMix.checksum}, cursorUnchecked=${cursorMixUnchecked.checksum}${INCLUDE_CURSOR_DIAGNOSTICS ? `, optimizedCursor=${optimizedCursorMix.checksum}, optimizedCursorUnchecked=${optimizedCursorMixUnchecked.checksum}, optimizedCursorAt=${optimizedCursorMixAt.checksum}, optimizedCursorAtUnchecked=${optimizedCursorMixAtUnchecked.checksum}` : ""}, precomputedCursor=${precomputedCursorMix.checksum}, cursorAt=${cursorMixAt.checksum}, cursorAtUnchecked=${cursorMixAtUnchecked.checksum}`,
 );
 console.log("scalar mix delta vs direct DataView");
 compareToBaseline("direct offset loop", directMix.stats, directMixOffsetLoop.stats);
 compareToBaseline("offset constants", directMix.stats, zenoOffsetConstantMix.stats);
-compareToBaseline("top-level offset constants", directMix.stats, zenoTopLevelOffsetConstantMix.stats);
+compareToBaseline(
+  "top-level offset constants",
+  directMix.stats,
+  zenoTopLevelOffsetConstantMix.stats,
+);
 compareToBaseline("hoisted offset constants", directMix.stats, zenoHoistedOffsetConstantMix.stats);
 compareToBaseline("static offset", directMix.stats, staticMix.stats);
 compareToBaseline("static offset loop", directMix.stats, staticMixOffsetLoop.stats);
 compareToBaseline("static index", directMix.stats, staticMixAt.stats);
 compareToBaseline("cursor rebase", directMix.stats, cursorMix.stats);
 compareToBaseline("cursor unchecked rebase", directMix.stats, cursorMixUnchecked.stats);
-compareToBaseline("optimized cursor rebase", directMix.stats, optimizedCursorMix.stats);
-compareToBaseline("optimized cursor unchecked rebase", directMix.stats, optimizedCursorMixUnchecked.stats);
-compareToBaseline("optimized cursor moveTo", directMix.stats, optimizedCursorMixAt.stats);
-compareToBaseline("optimized cursor moveToUnchecked", directMix.stats, optimizedCursorMixAtUnchecked.stats);
-compareToBaseline("optimized vs current cursor rebase", cursorMix.stats, optimizedCursorMix.stats);
-compareToBaseline("optimized vs current cursor unchecked rebase", cursorMixUnchecked.stats, optimizedCursorMixUnchecked.stats);
-compareToBaseline("optimized vs current cursor moveTo", cursorMixAt.stats, optimizedCursorMixAt.stats);
-compareToBaseline("optimized vs current cursor moveToUnchecked", cursorMixAtUnchecked.stats, optimizedCursorMixAtUnchecked.stats);
+if (INCLUDE_CURSOR_DIAGNOSTICS) {
+  compareToBaseline("optimized cursor rebase", directMix.stats, optimizedCursorMix.stats);
+  compareToBaseline(
+    "optimized cursor unchecked rebase",
+    directMix.stats,
+    optimizedCursorMixUnchecked.stats,
+  );
+  compareToBaseline("optimized cursor moveTo", directMix.stats, optimizedCursorMixAt.stats);
+  compareToBaseline(
+    "optimized cursor moveToUnchecked",
+    directMix.stats,
+    optimizedCursorMixAtUnchecked.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor rebase",
+    cursorMix.stats,
+    optimizedCursorMix.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor unchecked rebase",
+    cursorMixUnchecked.stats,
+    optimizedCursorMixUnchecked.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor moveTo",
+    cursorMixAt.stats,
+    optimizedCursorMixAt.stats,
+  );
+  compareToBaseline(
+    "optimized vs current cursor moveToUnchecked",
+    cursorMixAtUnchecked.stats,
+    optimizedCursorMixAtUnchecked.stats,
+  );
+}
 compareToBaseline("precomputed-offset cursor", directMix.stats, precomputedCursorMix.stats);
 compareToBaseline("cursor moveTo", directMix.stats, cursorMixAt.stats);
 compareToBaseline("cursor moveToUnchecked", directMix.stats, cursorMixAtUnchecked.stats);
@@ -894,14 +977,20 @@ globalThis.__zenoBenchRetained = undefined;
 forceGc();
 console.log("");
 
-globalThis.__zenoBenchRetained = timeOnce("retain optimized UserView objects", () =>
-  retainOptimizedViews(fixture.view, RECORD_COUNT),
-);
-const retainedOptimizedViews = memorySnapshot();
-printMemoryDelta("retained optimized UserView objects over buffer-only", retainedOptimizedViews, bufferOnly);
-globalThis.__zenoBenchRetained = undefined;
-forceGc();
-console.log("");
+if (INCLUDE_CURSOR_DIAGNOSTICS) {
+  globalThis.__zenoBenchRetained = timeOnce("retain optimized UserView objects", () =>
+    retainOptimizedViews(fixture.view, RECORD_COUNT),
+  );
+  const retainedOptimizedViews = memorySnapshot();
+  printMemoryDelta(
+    "retained optimized UserView objects over buffer-only",
+    retainedOptimizedViews,
+    bufferOnly,
+  );
+  globalThis.__zenoBenchRetained = undefined;
+  forceGc();
+  console.log("");
+}
 
 globalThis.__zenoBenchRetained = timeOnce("retain materialized JS objects", () =>
   materializeObjects(fixture.view, RECORD_COUNT),

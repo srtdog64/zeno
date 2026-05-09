@@ -1,16 +1,17 @@
 type CodeValue = string | number | boolean | readonly string[];
 
-export function method(
-  strings: TemplateStringsArray,
-  ...values: CodeValue[]
-): string[] {
+/**
+ * Small template helper for compiler-owned TypeScript fragments.
+ *
+ * Values passed to this tag must already be code fragments produced by the
+ * emitter. Do not pass unchecked user strings here; schema-derived text must be
+ * validated as an identifier/type name or encoded with a literal helper first.
+ */
+export function method(strings: TemplateStringsArray, ...values: CodeValue[]): string[] {
   return indentLines("  ", code(strings, ...values));
 }
 
-export function code(
-  strings: TemplateStringsArray,
-  ...values: CodeValue[]
-): string[] {
+export function code(strings: TemplateStringsArray, ...values: CodeValue[]): string[] {
   let source = strings[0] ?? "";
   for (let index = 0; index < values.length; index += 1) {
     source += stringifyCodeValue(values[index]!) + strings[index + 1];
@@ -40,9 +41,7 @@ function trimBlankEdges(source: string): string {
 }
 
 function commonIndent(lines: readonly string[]): number {
-  const indents = lines
-    .filter((line) => line.trim().length > 0)
-    .map((line) => leadingSpaces(line));
+  const indents = lines.filter((line) => line.trim().length > 0).map((line) => leadingSpaces(line));
   return indents.length === 0 ? 0 : Math.min(...indents);
 }
 

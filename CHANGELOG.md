@@ -10,12 +10,19 @@ Status: browser/data-pipeline minor release for shared-memory arenas and generat
 - Added shared descriptor state cells and `*Published(...)` writer methods so
   `span32`/`vector32` descriptors are published after payload writes with an
   explicit atomic ready flag.
+- Kept plain descriptor-writing methods off the shared writer public surface;
+  shared writers coordinate tail reservation and published descriptors only.
+- Added shared arena shard helpers for low-contention worker append paths
+  without changing the synchronous `reserve(...)` contract.
 - Added compiler `--source-map` support and
   `emitProjectionFileWithSourceMap(...)` for field-level generated `.view.ts`
   source maps back to `.zeno.ts` schema fields.
 - Added a WebGL instance streaming demo comparing Zeno binary, FlatBuffers JS,
   and JSON object payloads at larger browser-facing record counts.
 - Documented WebGL demo benchmark results in the performance comparison notes.
+- Added a dynamic-layout benchmark for byte slices, UTF-8 decode, vector access,
+  and writer throughput; current dynamic performance remains diagnostic rather
+  than a promoted hot-path claim.
 - Package manifests and workspace lockfile are aligned at `1.8.0`.
 
 ## 1.7.0

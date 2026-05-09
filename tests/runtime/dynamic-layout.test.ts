@@ -82,6 +82,51 @@ describe("dynamic layout runtime skeleton", () => {
     expect(vectorView.at(2)).toBe(30);
   });
 
+  it("caches vector descriptors until refresh or rebase", () => {
+    const buffer = new ArrayBuffer(128);
+    const view = new DataView(buffer);
+
+    writeVector32Descriptor(view, 0, {
+      relOffset: 16,
+      count: 3,
+    });
+    view.setInt32(16, 10, true);
+    view.setInt32(20, 20, true);
+    view.setInt32(24, 30, true);
+
+    writeVector32Descriptor(view, 32, {
+      relOffset: 16,
+      count: 2,
+    });
+    view.setInt32(48, 40, true);
+    view.setInt32(52, 50, true);
+
+    const vectorView = new ScalarVectorView<number>(view, 0, "i32");
+
+    expect(vectorView.length).toBe(3);
+    writeVector32Descriptor(view, 0, {
+      relOffset: 48,
+      count: 2,
+    });
+
+    expect(vectorView.length).toBe(3);
+    expect(vectorView.at(0)).toBe(10);
+
+    vectorView.refreshDescriptor();
+
+    expect(vectorView.length).toBe(2);
+    expect(vectorView.at(0)).toBe(40);
+
+    writeVector32Descriptor(view, 0, {
+      relOffset: 16,
+      count: 3,
+    });
+    vectorView.rebase(32);
+
+    expect(vectorView.length).toBe(2);
+    expect(vectorView.at(1)).toBe(50);
+  });
+
   it("reads a vector of dynamic strings through span descriptors in the tail", () => {
     const buffer = new ArrayBuffer(128);
     const view = new DataView(buffer);
@@ -224,7 +269,7 @@ describe("dynamic layout runtime skeleton", () => {
     const readerView = new DataView(buffer);
 
     expect(isSharedDescriptorPublished(state)).toBe(false);
-    expect(() => writer.writeBytes(0, [5, 8, 13, 21])).toThrow(Error);
+    expect("writeBytes" in writer).toBe(false);
 
     writer.writeBytesPublished(0, [5, 8, 13, 21], state);
 
@@ -258,6 +303,61 @@ describe("dynamic layout runtime skeleton", () => {
     expect(Array.from(new BytesSpanView(readerView, 8).bytes())).toEqual([5, 6, 7, 8]);
     expect(left.tailOffset).toBe(32);
     expect(right.tailOffset).toBe(32);
+  });
+
+  it("splits SharedArrayBuffer payload space into low-contention writer shards", () => {
+    const buffer = new SharedArrayBuffer(256);
+    const shardCount = 4;
+    const shardOptions = Array.from({ length: shardCount }, (_, shardIndex) => ({
+      shardCount,
+      shardIndex,
+      payloadByteOffset: 0,
+      payloadByteLength: 240,
+      cursorTableByteOffset: 240,
+    }));
+
+    const shards = shardOptions.map((options) =>
+      SharedDynamicLayoutWriter.initializeShard(buffer, options),
+    );
+    const writers = shardOptions.map((options) =>
+      SharedDynamicLayoutWriter.fromSharedShard(buffer, options),
+    );
+
+    for (let index = 0; index < writers.length; index += 1) {
+      const descriptor = writers[index]!.appendBytes([index + 1, index + 11]);
+      expect(descriptor).toEqual({ relOffset: 0, byteLength: 2 });
+      expect(writers[index]!.tailOffset).toBe(2);
+    }
+
+    for (let index = 0; index < shards.length; index += 1) {
+      expect(Array.from(new Uint8Array(buffer, shards[index]!.byteOffset!, 2))).toEqual([
+        index + 1,
+        index + 11,
+      ]);
+    }
+  });
+
+  it("rejects invalid SharedArrayBuffer writer shard configuration", () => {
+    const buffer = new SharedArrayBuffer(32);
+
+    expect(() =>
+      SharedDynamicLayoutWriter.initializeShard(buffer, {
+        shardCount: 4,
+        shardIndex: 4,
+        payloadByteOffset: 0,
+        payloadByteLength: 16,
+        cursorTableByteOffset: 16,
+      }),
+    ).toThrow(RangeError);
+    expect(() =>
+      SharedDynamicLayoutWriter.initializeShard(buffer, {
+        shardCount: 8,
+        shardIndex: 0,
+        payloadByteOffset: 0,
+        payloadByteLength: 4,
+        cursorTableByteOffset: 16,
+      }),
+    ).toThrow(RangeError);
   });
 
   it("keeps SharedArrayBuffer writer reservations inside the configured sub-view", () => {

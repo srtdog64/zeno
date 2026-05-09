@@ -2,12 +2,7 @@ import { decodeText, type TextEncoding } from "./fixed.js";
 import { VectorView } from "./vector-base.js";
 
 export class BytesVectorView extends VectorView<Uint8Array> {
-  constructor(
-    view: DataView,
-    descriptorOffset: number,
-    baseOffset = 0,
-    littleEndian = true,
-  ) {
+  constructor(view: DataView, descriptorOffset: number, baseOffset = 0, littleEndian = true) {
     super(view, descriptorOffset, baseOffset, littleEndian);
   }
 
@@ -32,8 +27,7 @@ export class FixedBytesVectorView extends VectorView<Uint8Array> {
   }
 
   bytesAt(index: number): Uint8Array {
-    this.assertIndex(index);
-    const localOffset = this.payloadOffset() + index * this.elementByteLength;
+    const localOffset = this.elementOffsetAt(index, this.elementByteLength);
     this.assertRange(localOffset, this.elementByteLength);
     return new Uint8Array(
       this.backingBuffer(),
@@ -60,8 +54,7 @@ export class FixedStringVectorView extends VectorView<string> {
   }
 
   bytesAt(index: number): Uint8Array {
-    this.assertIndex(index);
-    const localOffset = this.payloadOffset() + index * this.elementByteLength;
+    const localOffset = this.elementOffsetAt(index, this.elementByteLength);
     this.assertRange(localOffset, this.elementByteLength);
     return new Uint8Array(
       this.backingBuffer(),

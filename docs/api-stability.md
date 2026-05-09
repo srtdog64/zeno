@@ -5,15 +5,15 @@ the stable `1.x` surface.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Root package imports | load-bearing | Consumers must import only package roots such as `@exornea/zeno-runtime`; package subpaths are intentionally closed. |
-| Generated view class shape | load-bearing | This is the user-facing runtime API produced by the compiler. |
-| `@exornea/zeno-types` ABI marker names | load-bearing | Schema authors depend on these names in `.zeno.ts` files. |
-| Fixed-layout scalar accessors | load-bearing | This is the stable hot path Zeno is built around. |
-| Dynamic span/vector APIs | load-bearing | `Span32` and `Vector32` are part of the v1 ABI and covered by runtime, compiler, and consumer witnesses. |
-| Pointer APIs | load-bearing | `pointer32` is stable as an explicit relative reference primitive; object graph serialization remains out of scope. |
-| Runtime implementation files | diagnostic | They keep the codebase layered, but are not public import paths. |
+| Property                               | Status       | Reason                                                                                                               |
+| -------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Root package imports                   | load-bearing | Consumers must import only package roots such as `@exornea/zeno-runtime`; package subpaths are intentionally closed. |
+| Generated view class shape             | load-bearing | This is the user-facing runtime API produced by the compiler.                                                        |
+| `@exornea/zeno-types` ABI marker names | load-bearing | Schema authors depend on these names in `.zeno.ts` files.                                                            |
+| Fixed-layout scalar accessors          | load-bearing | This is the stable hot path Zeno is built around.                                                                    |
+| Dynamic span/vector APIs               | load-bearing | `Span32` and `Vector32` are part of the v1 ABI and covered by runtime, compiler, and consumer witnesses.             |
+| Pointer APIs                           | load-bearing | `pointer32` is stable as an explicit relative reference primitive; object graph serialization remains out of scope.  |
+| Runtime implementation files           | diagnostic   | They keep the codebase layered, but are not public import paths.                                                     |
 
 ## Public Import Rule
 
@@ -53,14 +53,19 @@ Stable for `1.x`:
 - generated object writers for supported fields
 - optional frame boundary helpers, including `assertZenoFramePayload(...)` and
   `checkedZenoFramePayloadView(...)`
+- `SharedDynamicLayoutWriter` plus shared cursor, descriptor publication, and
+  arena shard helpers
 - `zeno-codegen` CLI
 - root `@exornea/zeno-runtime` imports used by generated code
 
 Experimental for `1.x`:
 
-- `--optimize-cursor-offsets` emission mode
 - pointer graph serialization policy
 - vtable/optional-field schema evolution
+
+Retired diagnostic for `1.x`:
+
+- `--optimize-cursor-offsets` emission mode
 
 Internal:
 

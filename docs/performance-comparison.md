@@ -170,6 +170,73 @@ contiguous fixed-stride binary buffer. JSON pays parse and object materializatio
 cost. FlatBuffers JS pays table/vector indirection cost. The demo does not claim
 better cross-language tooling or schema evolution than FlatBuffers.
 
+## Dynamic Layout Timing
+
+Dynamic descriptors are supported, but the current performance witness does not
+promote dynamic string/vector access as a hot-path claim. This benchmark
+separates byte-slice access, explicit UTF-8 decode, vector indexing, and writer
+throughput.
+
+Command:
+
+```sh
+npm run bench:dynamic
+```
+
+Run parameters:
+
+- Date: 2026-05-09
+- Records: 100,000
+- Warmup: 3 runs
+- Measured: 25 runs
+- Text payload: 20 bytes
+- Raw byte payload: 32 bytes
+
+Local Node result:
+
+| Workload                         |   Median |      p95 |      p99 |     Std | Median ns/record |
+| -------------------------------- | -------: | -------: | -------: | ------: | ---------------: |
+| Direct span bytes `DataView`     |  2.89 ms | 15.03 ms | 15.17 ms | 3.39 ms |         28.92 ns |
+| Direct span bytes `Uint8Array`   |  4.40 ms | 15.80 ms | 16.70 ms | 3.31 ms |         44.03 ns |
+| Zeno `BytesSpanView.bytes()`     |  7.60 ms | 18.37 ms | 21.11 ms | 4.01 ms |         76.01 ns |
+| Direct UTF-8 decode              | 13.62 ms | 16.58 ms | 16.72 ms | 1.96 ms |        136.19 ns |
+| Zeno `Utf8SpanView.text()`       | 27.31 ms | 41.06 ms | 43.97 ms | 6.75 ms |        273.08 ns |
+| `JSON.parse` string array        |  5.78 ms | 10.53 ms | 20.87 ms | 3.46 ms |         57.81 ns |
+| Direct scalar vector `i32`       |  0.13 ms |  0.18 ms |  1.57 ms | 0.29 ms |          1.31 ns |
+| Zeno `ScalarVectorView.at(i)`    |  3.48 ms |  4.36 ms |  6.96 ms | 0.83 ms |         34.85 ns |
+| Direct bytes vector              |  5.63 ms | 17.54 ms | 17.72 ms | 3.48 ms |         56.31 ns |
+| Zeno `BytesVectorView.bytesAt()` |  6.11 ms | 18.87 ms | 23.49 ms | 4.32 ms |         61.07 ns |
+| Direct UTF-8 vector decode       | 11.38 ms | 14.50 ms | 15.15 ms | 1.54 ms |        113.79 ns |
+| Zeno `Utf8VectorView.at(i)`      | 20.32 ms | 22.12 ms | 25.13 ms | 1.62 ms |        203.17 ns |
+| Manual `writeUtf8`               | 65.84 ms | 75.85 ms | 79.52 ms | 5.23 ms |        658.41 ns |
+| `DynamicLayoutWriter.writeUtf8`  | 77.00 ms | 82.72 ms | 82.74 ms | 3.62 ms |        770.00 ns |
+| Manual `writeBytes`              |  3.98 ms |  7.81 ms | 10.17 ms | 1.71 ms |         39.81 ns |
+| `DynamicLayoutWriter.writeBytes` | 10.05 ms | 11.39 ms | 16.67 ms | 1.71 ms |        100.47 ns |
+| Manual `writeScalarVector`       |  6.38 ms |  7.71 ms |  8.10 ms | 0.88 ms |         63.80 ns |
+| `writeScalarVector`              |  9.25 ms | 11.31 ms | 13.23 ms | 1.20 ms |         92.53 ns |
+
+Delta interpretation:
+
+| Comparison                          | Median delta vs direct |      Pooled std | Status       |
+| ----------------------------------- | ---------------------: | --------------: | ------------ |
+| `BytesSpanView.bytes()` vs DataView |       +47.09 ns/record | 52.47 ns/record | within noise |
+| `BytesSpanView.bytes()`             |       +31.97 ns/record | 51.98 ns/record | within noise |
+| `Utf8SpanView.text()`               |      +136.89 ns/record | 70.30 ns/record | above noise  |
+| `JSON.parse` string array           |       -78.39 ns/record | 39.78 ns/record | above noise  |
+| `ScalarVectorView.at(i)`            |       +33.54 ns/record |  8.81 ns/record | above noise  |
+| `BytesVectorView.bytesAt(i)`        |        +4.76 ns/record | 55.49 ns/record | within noise |
+| `Utf8VectorView.at(i)`              |       +89.38 ns/record | 22.31 ns/record | above noise  |
+| `DynamicLayoutWriter.writeUtf8`     |      +111.59 ns/record | 63.64 ns/record | above noise  |
+| `DynamicLayoutWriter.writeBytes`    |       +60.65 ns/record | 24.18 ns/record | above noise  |
+| `writeScalarVector`                 |       +28.73 ns/record | 14.86 ns/record | above noise  |
+
+Current conclusion: the dynamic runtime API is correctness-first and ergonomic,
+not yet a promoted hot path. Caching each vector descriptor after the first view
+access moves byte vector indexing to within the direct baseline noise, but
+string decode and dynamic writer UTF-8 encoding still dominate. Promote dynamic
+performance only after byte-slice predicates, generated dynamic scan helpers,
+or immutable descriptor snapshot APIs have repeated benchmark witnesses.
+
 ## Scalar Read Timing
 
 | Access mode                                     |   Median |      p95 |      p99 |     Std | Median ns/record | Relative median | Allocation shape            |
@@ -266,9 +333,9 @@ load-bearing when:
 Do not promote dynamic string/vector performance claims yet. They need separate
 witness cases for byte-slice access, explicit text decode, and vector indexing.
 
-Do not promote cursor offset caching by default until the experimental
-`--optimize-cursor-offsets` emitter mode has repeated benchmark and retained
-heap witnesses.
+Do not promote cursor offset caching by default. The retired diagnostic
+`--optimize-cursor-offsets` emitter mode has not produced repeated benchmark and
+retained-heap witnesses.
 
 The latest generated optimized-view witness still does not clear that bar:
 

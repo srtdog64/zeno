@@ -1,13 +1,7 @@
-import {
-  readScalar,
-  scalarByteLength,
-  type ScalarKind,
-} from "./scalar.js";
+import { readScalar, scalarByteLength, type ScalarKind } from "./scalar.js";
 import { VectorView } from "./vector-base.js";
 
-export class ScalarVectorView<
-  T extends number | bigint | boolean,
-> extends VectorView<T> {
+export class ScalarVectorView<T extends number | bigint | boolean> extends VectorView<T> {
   constructor(
     view: DataView,
     descriptorOffset: number,
@@ -19,9 +13,8 @@ export class ScalarVectorView<
   }
 
   at(index: number): T {
-    this.assertIndex(index);
     const stride = scalarByteLength(this.scalarKind);
-    const localOffset = this.payloadOffset() + index * stride;
+    const localOffset = this.elementOffsetAt(index, stride);
     this.assertRange(localOffset, stride);
     return readScalar(
       this.view,

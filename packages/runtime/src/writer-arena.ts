@@ -11,6 +11,14 @@ export interface SharedArenaOptions extends SharedArenaViewOptions {
   readonly cursorByteOffset: number;
 }
 
+export interface SharedArenaShardOptions {
+  readonly shardCount: number;
+  readonly shardIndex: number;
+  readonly payloadByteOffset: number;
+  readonly payloadByteLength: number;
+  readonly cursorTableByteOffset: number;
+}
+
 /**
  * Create a `DataView` over a caller-owned `SharedArrayBuffer`.
  *
@@ -57,6 +65,47 @@ export function sharedArenaCursorCell(
   cursorByteOffset: number,
 ): Int32Array {
   return sharedInt32Cell(buffer, cursorByteOffset, "shared arena cursor");
+}
+
+/**
+ * Compute the single-writer shard owned by one worker.
+ *
+ * This is the preferred high-contention shape: give each worker a different
+ * shard so most appends use a different cursor cell and payload range instead
+ * of spinning on one shared CAS loop.
+ */
+export function sharedArenaShard(
+  buffer: SharedArrayBuffer,
+  options: SharedArenaShardOptions,
+): SharedArenaOptions {
+  assertShardOptions(buffer, options);
+
+  const shardBaseLength = Math.floor(options.payloadByteLength / options.shardCount);
+  const byteOffset = options.payloadByteOffset + options.shardIndex * shardBaseLength;
+  const byteEnd =
+    options.shardIndex === options.shardCount - 1
+      ? options.payloadByteOffset + options.payloadByteLength
+      : byteOffset + shardBaseLength;
+  const byteLength = byteEnd - byteOffset;
+  const cursorByteOffset =
+    options.cursorTableByteOffset + options.shardIndex * Int32Array.BYTES_PER_ELEMENT;
+
+  sharedArenaView(buffer, { byteOffset, byteLength });
+  sharedArenaCursorCell(buffer, cursorByteOffset);
+  return { byteOffset, byteLength, cursorByteOffset };
+}
+
+export function initializeSharedArenaShard(
+  buffer: SharedArrayBuffer,
+  options: SharedArenaShardOptions,
+  tailOffset = 0,
+): SharedArenaOptions {
+  const shard = sharedArenaShard(buffer, options);
+  if (!Number.isInteger(tailOffset) || tailOffset < 0 || tailOffset > shard.byteLength!) {
+    throw new RangeError(`Invalid shard tail offset: ${tailOffset}`);
+  }
+  Atomics.store(sharedArenaCursorCell(buffer, shard.cursorByteOffset), 0, tailOffset);
+  return shard;
 }
 
 /**
@@ -168,5 +217,40 @@ function assertSharedStateCell(state: Int32Array): void {
 function assertSharedStateValue(value: number): void {
   if (!Number.isInteger(value) || value <= 0 || value > 0x7fffffff) {
     throw new RangeError(`Shared descriptor ready value must be a positive i32: ${value}`);
+  }
+}
+
+function assertShardOptions(buffer: SharedArrayBuffer, options: SharedArenaShardOptions): void {
+  if (!Number.isInteger(options.shardCount) || options.shardCount <= 0) {
+    throw new RangeError(`Invalid shared arena shard count: ${options.shardCount}`);
+  }
+  if (
+    !Number.isInteger(options.shardIndex) ||
+    options.shardIndex < 0 ||
+    options.shardIndex >= options.shardCount
+  ) {
+    throw new RangeError(`Invalid shared arena shard index: ${options.shardIndex}`);
+  }
+  if (!Number.isInteger(options.payloadByteOffset) || options.payloadByteOffset < 0) {
+    throw new RangeError(`Invalid shared arena payload byte offset: ${options.payloadByteOffset}`);
+  }
+  if (!Number.isInteger(options.payloadByteLength) || options.payloadByteLength <= 0) {
+    throw new RangeError(`Invalid shared arena payload byte length: ${options.payloadByteLength}`);
+  }
+  if (options.payloadByteLength < options.shardCount) {
+    throw new RangeError("Shared arena payload must provide at least one byte per shard.");
+  }
+  if (options.payloadByteOffset + options.payloadByteLength > buffer.byteLength) {
+    throw new RangeError(
+      `Shared arena payload exceeds SharedArrayBuffer length ${buffer.byteLength}.`,
+    );
+  }
+
+  const cursorTableByteLength = options.shardCount * Int32Array.BYTES_PER_ELEMENT;
+  sharedInt32Cell(buffer, options.cursorTableByteOffset, "shared arena cursor table");
+  if (options.cursorTableByteOffset + cursorTableByteLength > buffer.byteLength) {
+    throw new RangeError(
+      `Shared arena cursor table exceeds SharedArrayBuffer length ${buffer.byteLength}.`,
+    );
   }
 }

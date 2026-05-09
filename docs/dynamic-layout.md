@@ -274,6 +274,7 @@ That keeps the hot path simple and still leaves room for FlatBuffers-like evolut
 | `pointer32` relative pointer fields                                         | supported | [recursive-pointer-schema.ts](../tests/compiler/fixtures/recursive-pointer-schema.ts) |
 | `SharedArrayBuffer`-backed arena initialization                             | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Shared tail cursor with atomic reservation                                  | supported | [writer.ts](../packages/runtime/src/writer.ts)                                        |
+| Shared arena sharding for low-contention worker append paths                | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Shared descriptor ready cells for SWMR publication                          | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Schema versioning through optional vtables                                  | future    | not implemented                                                                       |
 
@@ -283,6 +284,22 @@ Vectors of structs with nested dynamic tail fields are still rejected in the
 stable ABI surface; use `vector<pointer<T>>` for dynamic or graph-shaped
 elements.
 
+`VectorView` instances cache their `vector32` descriptor after the first
+`length`, `payloadOffset`, or indexed access. This is load-bearing for hot loops:
+
+```ts
+for (let index = 0; index < vector.length; index += 1) {
+  consume(vector.at(index));
+}
+```
+
+The loop does not reread the same descriptor on every `length` and `at(...)`
+call. This means vector views are live over payload bytes, but not continuously
+live over descriptor rewrites. If a writer patches the descriptor after a view
+has observed it, call `refreshDescriptor()` or rebase the view before reading
+the new logical vector. Shared-memory readers must still wait for the descriptor
+ready cell before the first descriptor read.
+
 `SharedDynamicLayoutWriter` is the boundary helper for browser pipelines where a
 WebGL/main-thread producer and an AI/worker consumer share the same backing
 memory. Its tail cursor lives in the `SharedArrayBuffer` and is claimed with
@@ -291,12 +308,23 @@ range.
 
 Descriptor publication is an explicit synchronization boundary. Zeno writes
 `span32` and `vector32` descriptors as two 32-bit ABI fields, so
-`SharedDynamicLayoutWriter` rejects the plain descriptor-writing methods and
-requires the `*Published(...)` variants with an `Int32Array` state cell. Payload
-bytes and descriptor fields are written first; the ready cell is then published
-with `Atomics.store(...)`. Readers must wait until
+`SharedDynamicLayoutWriter` does not expose the plain descriptor-writing
+methods. Use the `*Published(...)` variants with an `Int32Array` state cell.
+Payload bytes and descriptor fields are written first; the ready cell is then
+published with `Atomics.store(...)`. Readers must wait until
 `isSharedDescriptorPublished(...)` observes that ready value before reading the
 descriptor.
+
+The shared writer only coordinates tail reservation and descriptor publication.
+Two writers that publish to the same descriptor offset still race at the schema
+level, and fixed-position writes performed outside this helper remain the
+caller's responsibility.
+
+For high-contention append pipelines, prefer sharding over adding backoff to the
+single shared cursor. `SharedDynamicLayoutWriter.fromSharedShard(...)` computes
+a per-worker payload range and cursor cell from one `SharedArrayBuffer`; each
+worker writes mostly inside its own shard, so normal appends do not spin on the
+same `Atomics.compareExchange` loop.
 
 The atomic cursor and ready cells are host-native `Int32Array` control words,
 not serialized Zeno ABI fields. The payload descriptors remain `DataView`

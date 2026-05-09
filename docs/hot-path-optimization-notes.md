@@ -23,9 +23,9 @@ Command:
 
 ```powershell
 npm run codegen:basic
-npm run codegen:basic:optimized
+npm run codegen:diagnostic:cursor-offsets
 npm run build
-npm run bench
+npm run bench:cursor-diagnostics
 ```
 
 Parameters:
@@ -99,7 +99,8 @@ emit switch for regression experiments:
 node .\packages\compiler\bin\zeno-codegen.mjs .\examples\basic\src\model.zeno.ts .\examples\basic\src\model.optimized.view.ts --optimize-cursor-offsets
 ```
 
-The default emitter does not enable it, and new users should not start from it.
+The default emitter, release gate, and default `npm run bench` do not enable it.
+New users should not start from it.
 
 Latest generated-view witness:
 

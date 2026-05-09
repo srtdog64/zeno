@@ -60,7 +60,7 @@ const policies = [
       typescript: "^5.9.0",
     },
     bin: {
-      "zeno-codegen": "./bin/zeno-codegen.mjs",
+      "zeno-codegen": "bin/zeno-codegen.mjs",
     },
   },
   {

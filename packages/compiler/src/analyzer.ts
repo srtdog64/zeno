@@ -84,7 +84,7 @@ function validateSchemaSource(sourceFile: ts.SourceFile): LayoutDiagnostic[] {
   for (const statement of sourceFile.statements) {
     if (ts.isImportDeclaration(statement)) {
       if (!isAllowedTypeOnlyImport(statement)) {
-        diagnostics.push(schemaStatementDiagnostic(sourceFile, statement, "import"));
+        diagnostics.push(schemaImportDiagnostic(sourceFile, statement));
       }
       continue;
     }
@@ -122,16 +122,43 @@ function schemaStatementDiagnostic(
   node: ts.Node,
   construct: string,
 ): LayoutDiagnostic {
+  const message =
+    construct === "value export"
+      ? ".zeno.ts schema files must not export runtime values."
+      : "Zeno schema files only support type-only imports plus interface/type declarations.";
+  return createDiagnostic(sourceFile, node, "UNSUPPORTED_SCHEMA_STATEMENT", message, {
+    measurement: measure(`schema ${construct}`, "typescript-syntax", "phase-0"),
+    error: unsupportedAtPhase(`schema ${construct}`, "phase-0"),
+  });
+}
+
+function schemaImportDiagnostic(
+  sourceFile: ts.SourceFile,
+  node: ts.ImportDeclaration,
+): LayoutDiagnostic {
   return createDiagnostic(
     sourceFile,
     node,
     "UNSUPPORTED_SCHEMA_STATEMENT",
-    "Zeno schema files only support type-only imports plus interface/type declarations.",
+    schemaImportMessage(node),
     {
-      measurement: measure(`schema ${construct}`, "typescript-syntax", "phase-0"),
-      error: unsupportedAtPhase(`schema ${construct}`, "phase-0"),
+      measurement: measure("schema import", "typescript-syntax", "phase-0"),
+      error: unsupportedAtPhase("schema import", "phase-0"),
     },
   );
+}
+
+function schemaImportMessage(node: ts.ImportDeclaration): string {
+  const moduleName = node.moduleSpecifier;
+  if (!ts.isStringLiteral(moduleName)) {
+    return "Zeno schema imports must use a string literal module specifier.";
+  }
+
+  if (moduleName.text === "@exornea/zeno-runtime") {
+    return ".zeno.ts schema files must not import runtime values.";
+  }
+
+  return "Zeno schema files must use type-only imports.";
 }
 
 function statementKind(statement: ts.Statement): string {

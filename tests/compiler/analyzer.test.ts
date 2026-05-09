@@ -375,6 +375,10 @@ describe("analyzeProjectionFile", () => {
       "UNSUPPORTED_SCHEMA_STATEMENT",
       "UNSUPPORTED_SCHEMA_STATEMENT",
     ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+      ".zeno.ts schema files must not import runtime values.",
+      ".zeno.ts schema files must not export runtime values.",
+    ]);
     expect(result.diagnostics.map((diagnostic) => diagnostic.error?.kind)).toEqual([
       "UnsupportedAtPhase",
       "UnsupportedAtPhase",

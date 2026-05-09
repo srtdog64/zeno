@@ -93,6 +93,10 @@ describe("schema grammar examples", () => {
     );
 
     expect(unsupportedSchemaStatements).toHaveLength(2);
+    expect(unsupportedSchemaStatements.map((diagnostic) => diagnostic.message)).toEqual([
+      ".zeno.ts schema files must not import runtime values.",
+      ".zeno.ts schema files must not export runtime values.",
+    ]);
     expect(messages).toContain('Recursive struct "BadNode" is not supported yet.');
     expect(messages.some((message) => message.includes('Field "value" uses bare "number"'))).toBe(
       true,

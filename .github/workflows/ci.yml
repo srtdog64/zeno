@@ -61,6 +61,8 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Browser smoke
-        run: npm run browser:smoke
+        run: xvfb-run -a npm run browser:smoke
         env:
           ZENO_BROWSER: ${{ matrix.browser }}
+          ZENO_BROWSER_HEADLESS: "0"
+          LIBGL_ALWAYS_SOFTWARE: "1"

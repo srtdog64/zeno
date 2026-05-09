@@ -13,6 +13,7 @@ const statusTimeoutMs = Number(
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const browserTypes = { chromium, firefox, webkit };
 const browserType = browserTypes[browserName];
+const headless = process.env.ZENO_BROWSER_HEADLESS === "0" ? false : undefined;
 
 if (!browserType) {
   throw new Error(`Unsupported ZENO_BROWSER: ${browserName}`);
@@ -46,7 +47,7 @@ const preview = spawn(
 
 try {
   await waitForServer(target);
-  const browser = await browserType.launch();
+  const browser = await browserType.launch(browserLaunchOptions(browserName));
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -98,6 +99,34 @@ try {
   console.log(`browser smoke passed: ${browserName}`);
 } finally {
   preview.kill();
+}
+
+function browserLaunchOptions(name) {
+  if (name === "chromium") {
+    return {
+      args: [
+        "--enable-unsafe-swiftshader",
+        "--ignore-gpu-blocklist",
+        "--use-angle=swiftshader",
+        "--use-gl=angle",
+      ],
+      headless,
+    };
+  }
+
+  if (name === "firefox") {
+    return {
+      firefoxUserPrefs: {
+        "webgl.disabled": false,
+        "webgl.enable-webgl2": true,
+        "webgl.force-enabled": true,
+        "webgl.msaa-force": false,
+      },
+      headless,
+    };
+  }
+
+  return { headless };
 }
 
 async function waitForGpuStatus(page, pageErrors, timeout) {

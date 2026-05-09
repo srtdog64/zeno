@@ -259,22 +259,47 @@ That keeps the hot path simple and still leaves room for FlatBuffers-like evolut
 
 ## Current Implementation Status
 
-| Capability | Status | Witness |
-| --- | --- | --- |
-| `Span32` descriptor read/write helpers | supported | [runtime index](../packages/runtime/src/index.ts) |
-| `Vector32` descriptor read/write helpers | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts) |
-| Generated `z.utf8`, `z.bytes`, `z.vector<T>` view accessors | supported | [model.view.ts](../examples/basic/src/model.view.ts) |
-| Fixed-size byte/string vector views | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts) |
-| Pointer vector views and writers | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts) |
-| Malformed descriptor and payload bounds checks | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts) |
-| Bump-arena writer that reserves head, appends tail, and patches descriptors | supported | [DynamicLayoutWriter](../packages/runtime/src/index.ts) |
-| Generated field-level dynamic writer helpers | supported | [model.view.ts](../examples/basic/src/model.view.ts) |
-| Generated object-level writer for fixed fields plus dynamic tail fields | supported | [model.view.ts](../examples/basic/src/model.view.ts) |
-| Fixed-size `vector<struct>` writer | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts) |
-| `pointer32` relative pointer fields | supported | [recursive-pointer-schema.ts](../tests/compiler/fixtures/recursive-pointer-schema.ts) |
-| Schema versioning through optional vtables | future | not implemented |
+| Capability                                                                  | Status    | Witness                                                                               |
+| --------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------- |
+| `Span32` descriptor read/write helpers                                      | supported | [runtime index](../packages/runtime/src/index.ts)                                     |
+| `Vector32` descriptor read/write helpers                                    | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Generated `z.utf8`, `z.bytes`, `z.vector<T>` view accessors                 | supported | [model.view.ts](../examples/basic/src/model.view.ts)                                  |
+| Fixed-size byte/string vector views                                         | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Pointer vector views and writers                                            | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Malformed descriptor and payload bounds checks                              | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Bump-arena writer that reserves head, appends tail, and patches descriptors | supported | [DynamicLayoutWriter](../packages/runtime/src/index.ts)                               |
+| Generated field-level dynamic writer helpers                                | supported | [model.view.ts](../examples/basic/src/model.view.ts)                                  |
+| Generated object-level writer for fixed fields plus dynamic tail fields     | supported | [model.view.ts](../examples/basic/src/model.view.ts)                                  |
+| Fixed-size `vector<struct>` writer                                          | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| `pointer32` relative pointer fields                                         | supported | [recursive-pointer-schema.ts](../tests/compiler/fixtures/recursive-pointer-schema.ts) |
+| `SharedArrayBuffer`-backed arena initialization                             | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Shared tail cursor with atomic reservation                                  | supported | [writer.ts](../packages/runtime/src/writer.ts)                                        |
+| Shared descriptor ready cells for SWMR publication                          | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Schema versioning through optional vtables                                  | future    | not implemented                                                                       |
 
 The read-side model exists now. The write-side model has a low-level runtime
 writer, generated field-level helpers, and a first object-level serializer path.
-Vectors of structs with nested dynamic tail fields are rejected in v1; use
-`vector<pointer<T>>` for dynamic or graph-shaped elements.
+Vectors of structs with nested dynamic tail fields are still rejected in the
+stable ABI surface; use `vector<pointer<T>>` for dynamic or graph-shaped
+elements.
+
+`SharedDynamicLayoutWriter` is the boundary helper for browser pipelines where a
+WebGL/main-thread producer and an AI/worker consumer share the same backing
+memory. Its tail cursor lives in the `SharedArrayBuffer` and is claimed with
+`Atomics.compareExchange`, so multiple writers do not reserve the same payload
+range.
+
+Descriptor publication is an explicit synchronization boundary. Zeno writes
+`span32` and `vector32` descriptors as two 32-bit ABI fields, so
+`SharedDynamicLayoutWriter` rejects the plain descriptor-writing methods and
+requires the `*Published(...)` variants with an `Int32Array` state cell. Payload
+bytes and descriptor fields are written first; the ready cell is then published
+with `Atomics.store(...)`. Readers must wait until
+`isSharedDescriptorPublished(...)` observes that ready value before reading the
+descriptor.
+
+The atomic cursor and ready cells are host-native `Int32Array` control words,
+not serialized Zeno ABI fields. The payload descriptors remain `DataView`
+fields using the schema endianness. Do not persist or transmit the control
+cells as part of a portable Zeno frame. Browsers also require cross-origin
+isolation headers before `SharedArrayBuffer` is available to application code.

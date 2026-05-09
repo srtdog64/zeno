@@ -39,7 +39,7 @@ type Metrics = {
   rendered: number;
 };
 
-const DEFAULT_COUNT = 100_000;
+const DEFAULT_COUNT = 250_000;
 const MAX_RENDERED = 250_000;
 const RADIUS = 180;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
@@ -60,9 +60,9 @@ app.innerHTML = `
         </div>
         <div class="toolbar">
           <select class="record-select" data-testid="record-count" aria-label="record count">
-            <option value="50000">50,000 instances</option>
-            <option value="100000" selected>100,000 instances</option>
-            <option value="250000">250,000 instances</option>
+            <option value="100000">100,000 instances</option>
+            <option value="250000" selected>250,000 instances</option>
+            <option value="1000000">1,000,000 instances</option>
           </select>
           <button class="run-button" data-mode="zeno" data-active="true">Zeno binary</button>
           <button class="run-button" data-mode="flatbuffers">FlatBuffers</button>
@@ -371,11 +371,10 @@ function uploadZeno(buffer: ArrayBuffer, count: number) {
 
   const packStarted = performance.now();
   for (let index = 0; index < visibleCount; index += 1) {
-    const offset = index * InstanceViewByteLength;
-    const x = InstanceView.getX(view, offset);
-    const y = InstanceView.getY(view, offset);
-    const z = InstanceView.getZ(view, offset);
-    const scale = InstanceView.getScale(view, offset);
+    const x = InstanceView.getXAt(view, index);
+    const y = InstanceView.getYAt(view, index);
+    const z = InstanceView.getZAt(view, index);
+    const scale = InstanceView.getScaleAt(view, index);
     writeMatrix(matrixArray, index, x, y, z, scale);
   }
   const packMs = performance.now() - packStarted;

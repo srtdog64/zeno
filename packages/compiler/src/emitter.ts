@@ -15,6 +15,7 @@ import {
   fixedArrayInputElementType,
 } from "./emitter-fixed-array.js";
 import { method } from "./emitter-template.js";
+import { createProjectionSourceMap, type ProjectionSourceMap } from "./source-map.js";
 
 type VectorFieldLayout = Extract<FieldLayout, { kind: "vector" }>;
 type VectorWriterElement<K extends VectorElementLayout["kind"]> = Extract<
@@ -43,6 +44,11 @@ export interface EmitOptions {
   readonly optimizeCursorOffsets?: boolean;
 }
 
+export interface EmitProjectionFileResult {
+  readonly code: string;
+  readonly sourceMap: ProjectionSourceMap;
+}
+
 export function emitStructView(layout: StructLayout, options: EmitOptions = {}): string {
   return emitProjectionFile([layout], options);
 }
@@ -69,6 +75,19 @@ export function emitProjectionFile(
   return lines.join("\n");
 }
 
+export function emitProjectionFileWithSourceMap(
+  layouts: readonly StructLayout[],
+  generatedFile: string,
+  options: EmitOptions = {},
+): EmitProjectionFileResult {
+  const sourceMapUrl = `${generatedFile.split(/[\\/]/).pop() ?? generatedFile}.map`;
+  const code = `${emitProjectionFile(layouts, options)}\n//# sourceMappingURL=${sourceMapUrl}\n`;
+  return {
+    code,
+    sourceMap: createProjectionSourceMap(code, layouts, generatedFile),
+  };
+}
+
 function collectRuntimeImports(layouts: readonly StructLayout[]): string[] {
   const imports = new Set<string>(["ProjectionView"]);
   const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
@@ -86,10 +105,7 @@ function collectRuntimeImports(layouts: readonly StructLayout[]): string[] {
   return Array.from(imports).sort();
 }
 
-function collectFieldRuntimeImports(
-  field: FieldLayout,
-  imports: Set<string>,
-): void {
+function collectFieldRuntimeImports(field: FieldLayout, imports: Set<string>): void {
   switch (field.kind) {
     case "fixed-bytes":
       imports.add("fixedBytesView");
@@ -666,11 +682,7 @@ function isNumberSumScalar(kind: string): boolean {
   return kind !== "i64" && kind !== "u64" && kind !== "bool";
 }
 
-function emitField(
-  layout: StructLayout,
-  field: FieldLayout,
-  options: EmitOptions,
-): string[] {
+function emitField(layout: StructLayout, field: FieldLayout, options: EmitOptions): string[] {
   // This switch intentionally mirrors the Layout IR field-kind surface.
   // Split it only when a dispatch table removes real emitter complexity.
   switch (field.kind) {
@@ -678,16 +690,19 @@ function emitField(
       const getterMethod = scalarGetterMethod(field.scalar);
       const setterMethod = scalarSetterMethod(field.scalar);
       const typeName = scalarTsType(field.scalar);
-      const getterArgs = field.byteLength === 1 || field.scalar === "bool" ? "" : ", this.littleEndian";
+      const getterArgs =
+        field.byteLength === 1 || field.scalar === "bool" ? "" : ", this.littleEndian";
       const instanceOffset = options.optimizeCursorOffsets
         ? `this.$${field.name}Offset`
         : `this.baseOffset + ${field.offset}`;
-      const getterBody = field.scalar === "bool"
-        ? `return this.view.${getterMethod}(${instanceOffset}) !== 0;`
-        : `return this.view.${getterMethod}(${instanceOffset}${getterArgs});`;
-      const setterBody = field.scalar === "bool"
-        ? `this.view.${setterMethod}(${instanceOffset}, value ? 1 : 0);`
-        : `this.view.${setterMethod}(${instanceOffset}, value${getterArgs});`;
+      const getterBody =
+        field.scalar === "bool"
+          ? `return this.view.${getterMethod}(${instanceOffset}) !== 0;`
+          : `return this.view.${getterMethod}(${instanceOffset}${getterArgs});`;
+      const setterBody =
+        field.scalar === "bool"
+          ? `this.view.${setterMethod}(${instanceOffset}, value ? 1 : 0);`
+          : `this.view.${setterMethod}(${instanceOffset}, value${getterArgs});`;
       return method`
 get ${field.name}(): ${typeName} {
   ${getterBody}
@@ -848,8 +863,8 @@ function toLittleEndianLiteral(layout: StructLayout): "true" | "false" {
   return layout.endianness === "little" ? "true" : "false";
 }
 
-function encodingLiteral(encoding: "ascii" | "utf8"): "\"ascii\"" | "\"utf8\"" {
-  return encoding === "ascii" ? "\"ascii\"" : "\"utf8\"";
+function encodingLiteral(encoding: "ascii" | "utf8"): '"ascii"' | '"utf8"' {
+  return encoding === "ascii" ? '"ascii"' : '"utf8"';
 }
 
 function hasTailWriterFields(
@@ -909,8 +924,7 @@ function canWriteObjectField(
       );
     case "vector":
       return (
-        field.element.kind !== "struct" ||
-        canWriteStructVectorElement(field.element, layoutMap)
+        field.element.kind !== "struct" || canWriteStructVectorElement(field.element, layoutMap)
       );
   }
 }

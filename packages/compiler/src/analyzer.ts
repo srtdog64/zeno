@@ -2,13 +2,10 @@ import ts from "typescript";
 
 import { alignTo, type Endianness, type StructLayout } from "@exornea/zeno-schema";
 
-import {
-  createDiagnostic,
-  type LayoutDiagnostic,
-} from "./diagnostics.js";
+import { createDiagnostic, type LayoutDiagnostic } from "./diagnostics.js";
 import { measure, unsupportedAtPhase } from "./measurement.js";
 import { err, ok, type Result } from "./result.js";
-import { lowerField } from "./lowering.js";
+import { attachSourceLocation, lowerField, sourceLocation } from "./lowering.js";
 import { validateLayouts } from "./validator.js";
 
 export interface AnalyzeOptions {
@@ -171,16 +168,10 @@ function lowerStruct(
   const declaration = state.declarations.get(name);
   if (declaration === undefined) {
     return err(
-      createDiagnostic(
-        state.sourceFile,
-        node,
-        "UNKNOWN_STRUCT",
-        `Unknown struct type "${name}".`,
-        {
-          structName: name,
-          error: unsupportedAtPhase(`type reference "${name}"`, "phase-0"),
-        },
-      ),
+      createDiagnostic(state.sourceFile, node, "UNKNOWN_STRUCT", `Unknown struct type "${name}".`, {
+        structName: name,
+        error: unsupportedAtPhase(`type reference "${name}"`, "phase-0"),
+      }),
     );
   }
 
@@ -240,14 +231,17 @@ function lowerStruct(
     alignment = Math.max(alignment, lowered.value.alignment);
   }
 
-  const layout: StructLayout = {
-    kind: "struct",
-    name,
-    fields,
-    alignment,
-    byteLength: alignTo(runningOffset, alignment),
-    endianness: state.endianness,
-  };
+  const layout = attachSourceLocation<StructLayout>(
+    {
+      kind: "struct",
+      name,
+      fields,
+      alignment,
+      byteLength: alignTo(runningOffset, alignment),
+      endianness: state.endianness,
+    },
+    sourceLocation(state.sourceFile, declaration.name),
+  );
 
   state.layouts.set(name, layout);
   state.activeStack.delete(name);

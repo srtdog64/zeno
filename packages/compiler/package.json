@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-compiler",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "TypeScript schema analyzer and code generator for Zeno zero-copy binary views.",
   "keywords": [
     "typescript",
@@ -41,7 +41,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@exornea/zeno-schema": "1.7.0",
+    "@exornea/zeno-schema": "1.8.0",
     "typescript": "^5.9.0"
   }
 }

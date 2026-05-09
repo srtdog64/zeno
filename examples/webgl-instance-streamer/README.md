@@ -1,7 +1,7 @@
 # Zeno WebGL Instance Streamer
 
 This example renders a large instanced WebGL scene from the same synthetic
-dataset through two browser-side data paths:
+dataset through three browser-side data paths:
 
 - Zeno binary records backed by one `ArrayBuffer`
 - FlatBuffers JS table/vector projection
@@ -17,4 +17,12 @@ npm run dev --workspace @exornea/zeno-example-webgl-instance-streamer
 ```
 
 The schema lives in `src/schema.zeno.ts`; the generated view is
-`src/schema.view.ts`.
+`src/schema.view.ts`, with a sibling source map emitted by `zeno-codegen
+--source-map`.
+
+The default workload is 250,000 records. The UI also exposes a 1,000,000-record
+payload option while capping rendered instances at 250,000 to keep GPU pressure
+separate from source payload size.
+
+The current benchmark witness is recorded in
+[docs/performance-comparison.md](../../docs/performance-comparison.md).

@@ -19,6 +19,8 @@ Use Zeno when:
 - You want named generated accessors instead of handwritten byte offsets.
 - You need fast read-mostly indexes, graph metadata, telemetry rows, or browser
   side binary assets.
+- You want browser workers to read `SharedArrayBuffer`-backed arena data without
+  JSON serialization or object materialization.
 - Cross-language codegen is not required.
 
 Do not use Zeno when the schema is a cross-language contract. FlatBuffers,
@@ -58,6 +60,14 @@ Generate a view:
 ```sh
 zeno-codegen ./src/model.zeno.ts ./src/model.view.ts
 ```
+
+Use `--source-map` when you want generated accessors to map back to the
+originating `.zeno.ts` field during debugging.
+
+`SharedArrayBuffer` support is exposed through `SharedDynamicLayoutWriter`. Its
+tail cursor is atomic, and descriptor publication uses explicit `Int32Array`
+ready cells through the `*Published(...)` writer methods. Browser apps still
+need cross-origin isolation headers before `SharedArrayBuffer` is available.
 
 Use the generated API:
 
@@ -192,4 +202,6 @@ project.
 - [docs/release-v1.md](docs/release-v1.md): stable v1 surface.
 - [docs/release-v1.1.md](docs/release-v1.1.md): optional frame and source-file
   analyzer additions.
+- [docs/release-v1.8.md](docs/release-v1.8.md): shared-memory arena, source
+  map, and WebGL demo additions.
 - [CHANGELOG.md](CHANGELOG.md): release history.

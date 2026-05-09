@@ -9,11 +9,15 @@ import {
   PointerVectorView,
   ProjectionView,
   ScalarVectorView,
+  SharedDynamicLayoutWriter,
   Utf8SpanView,
   Utf8VectorView,
   decodeFixedText,
   encodeText,
+  isSharedDescriptorPublished,
   readScalar,
+  resetSharedDescriptor,
+  sharedDescriptorStateCell,
   traversePointerChain,
   writeFixedText,
   writeFixedBytes,
@@ -191,10 +195,7 @@ describe("dynamic layout runtime skeleton", () => {
     expect(() => writer.writeText(16, "é", "ascii")).toThrow(RangeError);
 
     expect(new Utf8SpanView(view, 0, 0, true, "ascii").text()).toBe("ascii");
-    expect(new Utf8VectorView(view, 8, 0, true, "ascii").toArray()).toEqual([
-      "aa",
-      "bb",
-    ]);
+    expect(new Utf8VectorView(view, 8, 0, true, "ascii").toArray()).toEqual(["aa", "bb"]);
   });
 
   it("writes dynamic spans and vectors through a tail arena writer", () => {
@@ -212,6 +213,70 @@ describe("dynamic layout runtime skeleton", () => {
     expect(tagsView.toArray()).toEqual(["ts", "view"]);
   });
 
+  it("writes dynamic payloads into a SharedArrayBuffer-backed tail arena", () => {
+    const buffer = new SharedArrayBuffer(64);
+    SharedDynamicLayoutWriter.initializeCursor(buffer, 16, { cursorByteOffset: 60 });
+    const state = sharedDescriptorStateCell(buffer, 56);
+    resetSharedDescriptor(state);
+    const writer = SharedDynamicLayoutWriter.fromSharedBuffer(buffer, {
+      cursorByteOffset: 60,
+    });
+    const readerView = new DataView(buffer);
+
+    expect(isSharedDescriptorPublished(state)).toBe(false);
+    expect(() => writer.writeBytes(0, [5, 8, 13, 21])).toThrow(Error);
+
+    writer.writeBytesPublished(0, [5, 8, 13, 21], state);
+
+    expect(isSharedDescriptorPublished(state)).toBe(true);
+    const bytesView = new BytesSpanView(readerView, 0);
+    expect(Array.from(bytesView.bytes())).toEqual([5, 8, 13, 21]);
+    expect(writer.tailOffset).toBe(20);
+  });
+
+  it("reserves unique tail ranges for multiple SharedArrayBuffer-backed writers", () => {
+    const buffer = new SharedArrayBuffer(128);
+    SharedDynamicLayoutWriter.initializeCursor(buffer, 24, { cursorByteOffset: 124 });
+    const leftState = sharedDescriptorStateCell(buffer, 116);
+    const rightState = sharedDescriptorStateCell(buffer, 120);
+    resetSharedDescriptor(leftState);
+    resetSharedDescriptor(rightState);
+    const left = SharedDynamicLayoutWriter.fromSharedBuffer(buffer, {
+      cursorByteOffset: 124,
+    });
+    const right = SharedDynamicLayoutWriter.fromSharedBuffer(buffer, {
+      cursorByteOffset: 124,
+    });
+    const readerView = new DataView(buffer);
+
+    left.writeBytesPublished(0, [1, 2, 3, 4], leftState);
+    right.writeBytesPublished(8, [5, 6, 7, 8], rightState);
+
+    expect(isSharedDescriptorPublished(leftState)).toBe(true);
+    expect(isSharedDescriptorPublished(rightState)).toBe(true);
+    expect(Array.from(new BytesSpanView(readerView, 0).bytes())).toEqual([1, 2, 3, 4]);
+    expect(Array.from(new BytesSpanView(readerView, 8).bytes())).toEqual([5, 6, 7, 8]);
+    expect(left.tailOffset).toBe(32);
+    expect(right.tailOffset).toBe(32);
+  });
+
+  it("keeps SharedArrayBuffer writer reservations inside the configured sub-view", () => {
+    const buffer = new SharedArrayBuffer(64);
+    SharedDynamicLayoutWriter.initializeCursor(buffer, 8, { cursorByteOffset: 60 });
+    const state = sharedDescriptorStateCell(buffer, 56);
+    const writer = SharedDynamicLayoutWriter.fromSharedBuffer(buffer, {
+      byteOffset: 16,
+      byteLength: 16,
+      cursorByteOffset: 60,
+    });
+
+    writer.writeBytesPublished(0, [1, 2, 3, 4], state);
+
+    expect(Array.from(new Uint8Array(buffer, 24, 4))).toEqual([1, 2, 3, 4]);
+    expect(writer.tailOffset).toBe(12);
+    expect(() => writer.writeBytesPublished(8, new Uint8Array(20), state)).toThrow(RangeError);
+  });
+
   it("writes fixed inline regions and fixed vectors with zero padding", () => {
     const buffer = new ArrayBuffer(128);
     const view = new DataView(buffer);
@@ -225,7 +290,9 @@ describe("dynamic layout runtime skeleton", () => {
     const textVector = new FixedStringVectorView(view, 16, 4);
     const bytesVector = new FixedBytesVectorView(view, 24, 3);
 
-    expect(new TextDecoder().decode(new Uint8Array(buffer, 0, 8)).replaceAll("\u0000", "")).toBe("id");
+    expect(new TextDecoder().decode(new Uint8Array(buffer, 0, 8)).replaceAll("\u0000", "")).toBe(
+      "id",
+    );
     expect(Array.from(new Uint8Array(buffer, 8, 4))).toEqual([1, 2, 0, 0]);
     expect(textVector.at(0).replaceAll("\u0000", "")).toBe("aa");
     expect(textVector.at(1).replaceAll("\u0000", "")).toBe("b");
@@ -293,8 +360,7 @@ describe("dynamic layout runtime skeleton", () => {
       view,
       0,
       NodeView.byteLength,
-      (targetView, baseOffset, littleEndian) =>
-        new NodeView(targetView, baseOffset, littleEndian),
+      (targetView, baseOffset, littleEndian) => new NodeView(targetView, baseOffset, littleEndian),
     );
     const out = new NodeView(view);
 
@@ -314,8 +380,7 @@ describe("dynamic layout runtime skeleton", () => {
       view,
       8,
       NodeView.byteLength,
-      (targetView, baseOffset, littleEndian) =>
-        new NodeView(targetView, baseOffset, littleEndian),
+      (targetView, baseOffset, littleEndian) => new NodeView(targetView, baseOffset, littleEndian),
     );
 
     expect(backwardPointers.targetOffsetAt(0)).toBe(40);
@@ -344,18 +409,16 @@ describe("dynamic layout runtime skeleton", () => {
     scalarVectorDataView.setUint32(0, 60, true);
     scalarVectorDataView.setUint32(4, 2, true);
 
-    expect(() =>
-      new ScalarVectorView<number>(scalarVectorDataView, 0, "i32").at(1),
-    ).toThrow(RangeError);
+    expect(() => new ScalarVectorView<number>(scalarVectorDataView, 0, "i32").at(1)).toThrow(
+      RangeError,
+    );
 
     const dynamicVectorBuffer = new ArrayBuffer(64);
     const dynamicVectorDataView = new DataView(dynamicVectorBuffer);
     dynamicVectorDataView.setUint32(0, 60, true);
     dynamicVectorDataView.setUint32(4, 1, true);
 
-    expect(() => new Utf8VectorView(dynamicVectorDataView, 0).at(0)).toThrow(
-      RangeError,
-    );
+    expect(() => new Utf8VectorView(dynamicVectorDataView, 0).at(0)).toThrow(RangeError);
 
     const pointerVectorBuffer = new ArrayBuffer(64);
     const pointerVectorDataView = new DataView(pointerVectorBuffer);
@@ -496,9 +559,9 @@ describe("dynamic layout runtime skeleton", () => {
         count: 1 + (next() % 8),
       });
 
-      expect(() =>
-        new ScalarVectorView<number>(scalarVectorView, 0, "i32").at(0),
-      ).toThrow(RangeError);
+      expect(() => new ScalarVectorView<number>(scalarVectorView, 0, "i32").at(0)).toThrow(
+        RangeError,
+      );
 
       const pointerVectorBuffer = new ArrayBuffer(64);
       const pointerVectorView = new DataView(pointerVectorBuffer);
@@ -506,9 +569,7 @@ describe("dynamic layout runtime skeleton", () => {
         relOffset: 16,
         count: 1,
       });
-      const pointerPayload = index % 2 === 0
-        ? 96 + (next() % 256)
-        : -32 - (next() % 256);
+      const pointerPayload = index % 2 === 0 ? 96 + (next() % 256) : -32 - (next() % 256);
       pointerVectorView.setInt32(16, pointerPayload, true);
 
       expect(() =>

@@ -67,7 +67,24 @@ export {
   type ZenoFrameHeader,
   type ZenoFramePayloadExpectation,
 } from "./abi.js";
-export { DynamicLayoutWriter } from "./writer.js";
+export {
+  DynamicLayoutWriter,
+  SharedDynamicLayoutWriter,
+  type SharedDescriptorState,
+  type SharedDynamicLayoutWriterInitOptions,
+  type SharedDynamicLayoutWriterOptions,
+} from "./writer.js";
+export {
+  DynamicLayoutArena,
+  isSharedDescriptorPublished,
+  publishSharedDescriptor,
+  resetSharedDescriptor,
+  sharedArenaCursorCell,
+  sharedArenaView,
+  sharedDescriptorStateCell,
+  type SharedArenaOptions,
+  type SharedArenaViewOptions,
+} from "./writer-arena.js";
 export {
   BytesSpanView,
   BytesVectorView,

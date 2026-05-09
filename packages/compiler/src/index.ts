@@ -26,19 +26,14 @@ export {
   type Resolution,
   type ValidationError,
 } from "./measurement.js";
-export {
-  andThen,
-  err,
-  isErr,
-  isOk,
-  mapResult,
-  ok,
-  type Result,
-} from "./result.js";
+export { andThen, err, isErr, isOk, mapResult, ok, type Result } from "./result.js";
 export {
   emitProjectionFile,
+  emitProjectionFileWithSourceMap,
   emitStructView,
+  type EmitProjectionFileResult,
   type EmitOptions,
 } from "./emitter.js";
 export { lowerField, type LoweringContext } from "./lowering.js";
+export { type ProjectionSourceMap } from "./source-map.js";
 export { validateLayouts } from "./validator.js";

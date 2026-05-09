@@ -204,9 +204,8 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.7.0` after human release review
-- publish under the owned `@exornea/zeno-*` package family
-  scope before renaming packages
+- tag and publish `1.8.0` after human release review
+- keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
 - keep [performance-comparison.md](performance-comparison.md) synced when
@@ -271,7 +270,7 @@ Status: local witness only.
 - analyzer, validator, emitter, runtime view/writer, grammar, and test witnesses
   cover the new fixed-array ABI surface.
 
-## v2 Deferred Design
+## V2 Deferred Design
 
 - optional fields: needs vtable/schema-evolution ABI
 - unions: needs discriminant and fixed variant table ABI
@@ -280,10 +279,24 @@ Status: local witness only.
   and serialization is a separate design
 - FP ULP boundaries: keep as a diagnostic schema-migration candidate for future
   `f64`/`f32` conversion, quantization, or cross-runtime conformance work; do
-  not expose this as a v1 runtime API while Zeno only projects existing
+  not expose this as a runtime API while Zeno only projects existing
   `DataView` float bits without numeric transformation
 
-## v1.8 Candidate Work
+## Completed in 1.8
+
+- source maps are a compiler surface through `--source-map` and
+  `emitProjectionFileWithSourceMap(...)`
+- WebGL instance streaming demo compares Zeno binary, FlatBuffers JS, and JSON
+  browser payloads at larger record counts
+- `SharedDynamicLayoutWriter` uses a shared atomic tail cursor instead of a
+  per-instance local cursor
+- shared descriptor publication uses explicit `Int32Array` ready cells and
+  `*Published(...)` writer methods; plain descriptor writes are rejected on the
+  shared writer
+- shared atomic control cells are documented as host-native control words,
+  separate from serialized Zeno ABI fields
+
+## v2.1 Candidate Work
 
 ### Compiler maintainability
 
@@ -298,9 +311,9 @@ Status: local witness only.
   style when that reduces local complexity
 - formatting enforcement is active through Prettier and ESLint; keep the policy
   minimal and avoid broad lint churn
-- add generated source maps only after the source-position contract is written:
-  map generated `.view.ts` members back to the originating `.zeno.ts` field and
-  avoid a runtime `source-map-support` dependency in hot-path packages
+- source maps are now a v2 compiler surface through `--source-map`; keep the
+  current contract coarse and field-level until a generated AST emitter can
+  justify statement-level mappings
 
 ### Performance surface
 
@@ -330,11 +343,17 @@ Status: local witness only.
 - measure whether `VectorView.length` plus `at(i)` double descriptor reads are
   visible in vector hot paths before adding descriptor caching; any cache needs
   an explicit immutable-descriptor invariant
+- keep the WebGL instance demo benchmark in
+  [performance-comparison.md](performance-comparison.md), not only as a TODO;
+  rerun it when the demo schema or render cap changes
 
 ### Runtime and ABI safety
 
 - keep runtime hot-path range failures as `RangeError`; document any new boundary
   API separately from projection methods
+- SharedArrayBuffer-backed writers have atomic cursor and descriptor-ready cells
+  in v2; add a full producer/consumer worker example if the WebGL demo needs
+  live cross-thread writes instead of prebuilt buffers
 - add a malformed-buffer corpus once deterministic inline fixtures become too
   large for focused unit tests
 - expand property-based tests from descriptor/runtime roundtrips to generated

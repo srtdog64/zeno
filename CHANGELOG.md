@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.8.0
+
+Status: browser/data-pipeline minor release for shared-memory arenas and generated source maps.
+
+- Added `SharedDynamicLayoutWriter`, `sharedArenaCursorCell(...)`, and
+  `sharedArenaView(...)` for `SharedArrayBuffer`-backed browser worker
+  pipelines with an atomic shared tail cursor.
+- Added shared descriptor state cells and `*Published(...)` writer methods so
+  `span32`/`vector32` descriptors are published after payload writes with an
+  explicit atomic ready flag.
+- Added compiler `--source-map` support and
+  `emitProjectionFileWithSourceMap(...)` for field-level generated `.view.ts`
+  source maps back to `.zeno.ts` schema fields.
+- Added a WebGL instance streaming demo comparing Zeno binary, FlatBuffers JS,
+  and JSON object payloads at larger browser-facing record counts.
+- Documented WebGL demo benchmark results in the performance comparison notes.
+- Package manifests and workspace lockfile are aligned at `1.8.0`.
+
 ## 1.7.0
 
 Status: v1 completion release for semantic aliases and inline fixed arrays.

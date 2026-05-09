@@ -12,14 +12,12 @@ import {
   type FieldLayout,
   type FixedArrayElementLayout,
   type ScalarKind,
+  type SourceLocation,
   type StructLayout,
   type VectorElementLayout,
 } from "@exornea/zeno-schema";
 
-import {
-  createDiagnostic,
-  type LayoutDiagnostic,
-} from "./diagnostics.js";
+import { createDiagnostic, type LayoutDiagnostic } from "./diagnostics.js";
 import {
   ambiguousLayout,
   insufficientResolution,
@@ -136,7 +134,17 @@ export function lowerField(
     );
   }
 
-  return lowerTypeNode(property.type, fieldName, context);
+  const lowered = lowerTypeNode(property.type, fieldName, context);
+  if (!lowered.ok) {
+    return lowered;
+  }
+
+  const source = sourceLocation(context.sourceFile, property.name);
+  return ok({
+    alignment: lowered.value.alignment,
+    byteLength: lowered.value.byteLength,
+    build: (offset) => attachSourceLocation(lowered.value.build(offset), source),
+  });
 }
 
 function lowerTypeNode(
@@ -159,7 +167,11 @@ function lowerTypeNode(
         {
           structName: context.structName,
           fieldName,
-          measurement: measure(typeNode.getText(context.sourceFile), "typescript-syntax", "phase-0"),
+          measurement: measure(
+            typeNode.getText(context.sourceFile),
+            "typescript-syntax",
+            "phase-0",
+          ),
           error: unsupportedAtPhase(typeNode.getText(context.sourceFile), "phase-0"),
         },
       ),
@@ -177,7 +189,11 @@ function lowerTypeNode(
         {
           structName: context.structName,
           fieldName,
-          measurement: measure(typeNode.getText(context.sourceFile), "typescript-syntax", "phase-0"),
+          measurement: measure(
+            typeNode.getText(context.sourceFile),
+            "typescript-syntax",
+            "phase-0",
+          ),
           error: unsupportedAtPhase(typeNode.getText(context.sourceFile), "phase-0"),
         },
       ),
@@ -219,16 +235,7 @@ function unsupportedNumberType(
         structName: context.structName,
         fieldName,
         measurement: measure("number", "typescript-type", "phase-0"),
-        error: ambiguousLayout("number", [
-          "i8",
-          "u8",
-          "i16",
-          "u16",
-          "i32",
-          "u32",
-          "f32",
-          "f64",
-        ]),
+        error: ambiguousLayout("number", ["i8", "u8", "i16", "u16", "i32", "u32", "f32", "f64"]),
       },
     ),
   );
@@ -544,9 +551,7 @@ function lowerStructReference(
 }
 
 function fixedStringEncoding(referenceName: string): Encoding {
-  return referenceName === "fixed_ascii" || referenceName === "fixedAscii"
-    ? "ascii"
-    : "utf8";
+  return referenceName === "fixed_ascii" || referenceName === "fixedAscii" ? "ascii" : "utf8";
 }
 
 function missingFixedArrayElementType(
@@ -590,7 +595,7 @@ function lowerFixedArrayElementType(
   }
 
   const scalar = SCALAR_NAMES.has(referenceName as ScalarKind)
-    ? referenceName as ScalarKind
+    ? (referenceName as ScalarKind)
     : SCALAR_ALIASES.get(referenceName);
   if (scalar !== undefined) {
     return ok({
@@ -788,7 +793,11 @@ function unsupportedVectorElementType(
       {
         structName: context.structName,
         fieldName,
-        measurement: measure(elementType.getText(context.sourceFile), "typescript-syntax", "phase-0"),
+        measurement: measure(
+          elementType.getText(context.sourceFile),
+          "typescript-syntax",
+          "phase-0",
+        ),
         error: unsupportedAtPhase(elementType.getText(context.sourceFile), "phase-0"),
       },
     ),
@@ -809,7 +818,11 @@ function unsupportedQualifiedVectorElementType(
       {
         structName: context.structName,
         fieldName,
-        measurement: measure(elementType.getText(context.sourceFile), "typescript-syntax", "phase-0"),
+        measurement: measure(
+          elementType.getText(context.sourceFile),
+          "typescript-syntax",
+          "phase-0",
+        ),
         error: unsupportedAtPhase(elementType.getText(context.sourceFile), "phase-0"),
       },
     ),
@@ -973,16 +986,12 @@ function extractNumericTypeArgAt(
   context: LoweringContext,
 ): Result<number, LayoutDiagnostic> {
   const arg = typeNode.typeArguments?.[index];
-  if (
-    arg !== undefined &&
-    ts.isLiteralTypeNode(arg) &&
-    ts.isNumericLiteral(arg.literal)
-  ) {
+  if (arg !== undefined && ts.isLiteralTypeNode(arg) && ts.isNumericLiteral(arg.literal)) {
     return ok(Number(arg.literal.text));
   }
 
   return loweringError(
-      createDiagnostic(
+    createDiagnostic(
       context.sourceFile,
       typeNode,
       "NON_NUMERIC_LENGTH",
@@ -1020,7 +1029,7 @@ function extractReferenceTypeArg(
   }
 
   return loweringError(
-      createDiagnostic(
+    createDiagnostic(
       context.sourceFile,
       typeNode,
       "UNSUPPORTED_TYPE",
@@ -1062,4 +1071,25 @@ function getPropertyName(propertyName: ts.PropertyName): string | undefined {
   }
 
   return undefined;
+}
+
+export function sourceLocation(sourceFile: ts.SourceFile, node: ts.Node): SourceLocation {
+  const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  return {
+    fileName: sourceFile.fileName,
+    line: position.line + 1,
+    character: position.character + 1,
+  };
+}
+
+export function attachSourceLocation<T extends { source?: SourceLocation }>(
+  value: T,
+  source: SourceLocation,
+): T {
+  Object.defineProperty(value, "source", {
+    value: source,
+    enumerable: false,
+    configurable: true,
+  });
+  return value;
 }

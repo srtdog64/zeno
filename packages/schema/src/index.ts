@@ -31,11 +31,18 @@ export type Encoding = "ascii" | "utf8";
 
 export type DescriptorKind = "span32" | "vector32" | "pointer32";
 
+export interface SourceLocation {
+  fileName: string;
+  line: number;
+  character: number;
+}
+
 export interface FieldLayoutBase {
   name: string;
   offset: number;
   byteLength: number;
   alignment: number;
+  source?: SourceLocation;
 }
 
 export interface ScalarFieldLayout extends FieldLayoutBase {
@@ -191,6 +198,7 @@ export interface StructLayout {
   alignment: number;
   endianness: Endianness;
   fields: FieldLayout[];
+  source?: SourceLocation;
 }
 
 export const SPAN32_BYTE_LENGTH = 8;

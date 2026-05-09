@@ -317,6 +317,9 @@ Status: local witness only.
 - `VectorView` documents its live payload view plus cached descriptor contract;
   descriptor rewrites require `refreshDescriptor()` after a publication
   boundary.
+- generated `.view.ts` output crosses a TypeScript AST parse boundary before it
+  is returned or written, while preserving the existing tagged-template emitter
+  formatting.
 
 ## Completed in 1.8
 
@@ -354,8 +357,8 @@ Status: local witness only.
 - formatting enforcement is active through Prettier and ESLint; keep the policy
   minimal and avoid broad lint churn
 - source maps are now a v2 compiler surface through `--source-map`; keep the
-  current contract coarse and field-level until a generated AST emitter can
-  justify statement-level mappings
+  current contract coarse and field-level until a fully synthetic AST emitter
+  can justify statement-level mappings
 
 ### Performance surface
 

@@ -14,6 +14,7 @@ import {
   emitFixedArrayObjectFieldWrite,
   fixedArrayInputElementType,
 } from "./emitter-fixed-array.js";
+import { emitAstCheckedSource } from "./emitter-ast.js";
 import { method } from "./emitter-template.js";
 import { createProjectionSourceMap, type ProjectionSourceMap } from "./source-map.js";
 
@@ -57,6 +58,13 @@ export function emitProjectionFile(
   layouts: readonly StructLayout[],
   options: EmitOptions = {},
 ): string {
+  return emitAstCheckedSource(emitProjectionFileText(layouts, options), "zeno.view.ts").code;
+}
+
+function emitProjectionFileText(
+  layouts: readonly StructLayout[],
+  options: EmitOptions = {},
+): string {
   const lines: string[] = [];
   const runtimeImports = collectRuntimeImports(layouts);
   const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
@@ -81,7 +89,7 @@ export function emitProjectionFileWithSourceMap(
   options: EmitOptions = {},
 ): EmitProjectionFileResult {
   const sourceMapUrl = `${generatedFile.split(/[\\/]/).pop() ?? generatedFile}.map`;
-  const code = `${emitProjectionFile(layouts, options)}\n//# sourceMappingURL=${sourceMapUrl}\n`;
+  const code = `${emitAstCheckedSource(emitProjectionFileText(layouts, options), generatedFile).code}\n//# sourceMappingURL=${sourceMapUrl}\n`;
   return {
     code,
     sourceMap: createProjectionSourceMap(code, layouts, generatedFile),

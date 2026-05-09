@@ -16,6 +16,9 @@ Status: v2 API cleanup release.
   explicitly.
 - Validator field rules dispatch by `FieldLayout.kind` instead of running every
   field-specific rule against every field.
+- Generated view output now passes through a TypeScript AST parse boundary
+  before being returned or written, so emitter syntax errors fail inside the
+  compiler.
 - Added schema grammar acceptance/rejection tests so grammar docs and compiler
   behavior do not drift silently.
 - Repaired the Korean schema grammar document and added it to the format gate.

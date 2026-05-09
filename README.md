@@ -57,6 +57,34 @@ Cap'n Proto, protobuf, or MessagePack are better fits there.
 | Schema evolution-heavy storage        | no   | protobuf, FlatBuffers tables, custom versioned format     |
 | Arbitrary nested object serialization | no   | MessagePack, CBOR, JSON                                   |
 
+## Why Zeno Does Not Hide Schema Evolution
+
+Zeno schemas are expected to change. Zeno does not pretend those changes are
+automatically compatible.
+
+In this project, "schema evolution" means more than editing a schema. It means
+old readers and new writers, or new readers and old stored bytes, must coexist
+without coordinated deployment. That requirement is real for public protocols,
+customer-controlled clients, long-lived files, and cross-team storage contracts.
+It is not free: it usually needs field ids, vtables, defaults, compatibility
+matrices, and an extra indirection on reads.
+
+Zeno chooses the opposite tradeoff for controlled TypeScript systems:
+
+- producer and consumer usually ship together,
+- binary data is often transient, cached, or regenerated,
+- layout changes are explicit breaking wire-format changes,
+- version routing belongs in the application envelope when old and new layouts
+  must coexist.
+
+That keeps the hot path simple: generated accessors project fixed offsets out of
+a known layout. If your system cannot coordinate reader and writer upgrades, or
+if old binary data must remain readable for years, use a format with native
+schema evolution such as FlatBuffers tables or protobuf.
+
+See [docs/schema-compatibility.md](docs/schema-compatibility.md) for the exact
+v2 compatibility rule and the explicit `UserV1` / `UserV2` versioning pattern.
+
 ## Install
 
 ```sh

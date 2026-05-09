@@ -27,7 +27,7 @@
     "bench:dynamic": "npm run build && node --expose-gc ./packages/bench/dynamic-layout.mjs",
     "bench:flatbuffers": "node --expose-gc ./packages/bench/flatbuffers-comparison.mjs",
     "example:webgl:build": "npm run build --workspace @exornea/zeno-example-webgl-instance-streamer",
-    "browser:smoke": "npm run example:webgl:build && node ./scripts/browser-smoke.mjs"
+    "browser:smoke": "npm run build && npm run example:webgl:build && node ./scripts/browser-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

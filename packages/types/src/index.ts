@@ -51,6 +51,11 @@ export namespace z {
     readonly __element: T;
   };
 
+  export type dynamicVector<T> = ReadonlyArray<T> & {
+    readonly __zeno: "dynamic_vector";
+    readonly __element: T;
+  };
+
   export type fixedArray<T, N extends number> = ReadonlyArray<T> & {
     readonly __zeno: "fixed_array";
     readonly __element: T;
@@ -85,5 +90,6 @@ export type bytes = z.bytes;
 export type utf8 = z.utf8;
 export type ascii = z.ascii;
 export type vector<T> = z.vector<T>;
+export type dynamic_vector<T> = z.dynamicVector<T>;
 export type fixed_array<T, N extends number> = z.fixedArray<T, N>;
 export type pointer<T> = z.pointer<T>;

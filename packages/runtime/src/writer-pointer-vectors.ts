@@ -13,23 +13,41 @@ export class PointerVectorLayoutWriter extends StructVectorLayoutWriter {
     targetOffsets: readonly (number | null)[],
     targetByteLength: number,
   ): Vector32Descriptor {
+    return this.writePointerVectorAtBase(
+      this.baseOffset,
+      descriptorOffset,
+      targetOffsets,
+      targetByteLength,
+    );
+  }
+
+  writePointerVectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    targetOffsets: readonly (number | null)[],
+    targetByteLength: number,
+  ): Vector32Descriptor {
     assertNonNegativeInteger(targetByteLength, "targetByteLength");
 
     const payloadOffset = this.reserve(targetOffsets.length * POINTER32_BYTE_LENGTH, 4);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
     const descriptor = {
-      relOffset: payloadOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        payloadAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: targetOffsets.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
 
     targetOffsets.forEach((targetOffset, index) => {
-      const pointerOffset = payloadOffset + index * POINTER32_BYTE_LENGTH;
-      const absolutePointerOffset = this.baseOffset + pointerOffset;
+      const absolutePointerOffset = payloadAbsoluteOffset + index * POINTER32_BYTE_LENGTH;
       if (targetOffset !== null) {
         assertDataViewRange(this.view, targetOffset, targetByteLength);
       }

@@ -561,6 +561,62 @@ describe("analyzeProjectionFile", () => {
     ).toBe(true);
   });
 
+  it("lowers dynamicVector of structs through offset-table dynamic struct vectors", () => {
+    const fixturePath = path.join(fixturesDir, "dynamic-vector-schema.ts");
+    const program = createProgramFromRootNames([fixturePath]);
+    const sourceFile = program.getSourceFile(fixturePath);
+
+    expect(sourceFile).toBeDefined();
+
+    const result = analyzeProjectionFile(program, sourceFile!);
+    const source = emitProjectionFile(result.layouts);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.layouts[1]?.fields).toEqual([
+      {
+        kind: "vector",
+        name: "items",
+        descriptor: "vector32",
+        offset: 0,
+        alignment: 4,
+        byteLength: 8,
+        element: {
+          kind: "dynamic-struct",
+          typeName: "Item",
+          byteLength: 4,
+          descriptor: "pointer32",
+          offsetBase: "object",
+          offsetEncoding: "u32",
+        },
+      },
+    ]);
+    expect(source).toContain("DynamicStructVectorView");
+    expect(source).toContain("itemsView(): DynamicStructVectorView<ItemView>");
+    expect(source).toContain("new DynamicStructVectorView(this.view, 0");
+    expect(source).toContain("static writeItems");
+    expect(source).toContain("writer.writeDynamicStructVector(BagView.itemsOffset, values, 12");
+    expect(source).toContain("ItemView.writeInto(view, elementWriter, value, baseOffset");
+    expect(source).toContain("static write(view: DataView, value: BagViewInput");
+  });
+
+  it("rejects dynamicVector of non-struct elements", () => {
+    const fixturePath = path.join(fixturesDir, "invalid-dynamic-vector-schema.ts");
+    const program = createProgramFromRootNames([fixturePath]);
+    const sourceFile = program.getSourceFile(fixturePath);
+
+    expect(sourceFile).toBeDefined();
+
+    const result = analyzeProjectionFile(program, sourceFile!);
+
+    expect(result.layouts[0]?.fields).toEqual([]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain("UNSUPPORTED_TYPE");
+    expect(
+      result.diagnostics.some((diagnostic) =>
+        diagnostic.message.includes("dynamicVector<T>, which only supports struct element types"),
+      ),
+    ).toBe(true);
+  });
+
   it("reports recursive struct references", () => {
     const fixturePath = path.join(fixturesDir, "recursive-schema.ts");
     const program = createProgramFromRootNames([fixturePath]);

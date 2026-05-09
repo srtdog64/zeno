@@ -146,6 +146,9 @@ function collectFieldRuntimeImports(field: FieldLayout, imports: Set<string>): v
         case "struct":
           imports.add("StructVectorView");
           return;
+        case "dynamic-struct":
+          imports.add("DynamicStructVectorView");
+          return;
         case "pointer":
           imports.add("PointerVectorView");
           return;
@@ -198,6 +201,7 @@ function fieldInputType(field: FieldLayout): string {
         case "dynamic-string":
           return "readonly string[]";
         case "struct":
+        case "dynamic-struct":
           return `readonly ${field.element.typeName}ViewInput[]`;
         case "pointer":
           return "readonly (number | null)[]";
@@ -444,6 +448,19 @@ static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${field.
   return writer.writeStructVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, (view, value, baseOffset, littleEndian) => ${field.element.typeName}View.write(view, value, baseOffset, littleEndian), ${alignment});
 }`;
   },
+  "dynamic-struct": ({ layout, layoutMap, field, pascalName }) => {
+    const elementLayout = layoutMap.get(field.element.typeName);
+    const alignment = elementLayout?.alignment ?? 1;
+    const elementByteLength = elementLayout?.byteLength ?? field.element.byteLength;
+    const writeElement =
+      elementLayout !== undefined && hasTailWriterFields(elementLayout, layoutMap)
+        ? `${field.element.typeName}View.writeInto(view, elementWriter, value, baseOffset, littleEndian)`
+        : `${field.element.typeName}View.write(view, value, baseOffset, littleEndian)`;
+    return method`
+static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${field.element.typeName}ViewInput[]) {
+  return writer.writeDynamicStructVector(${layout.name}View.${field.name}Offset, values, ${elementByteLength}, (view, elementWriter, value, baseOffset, littleEndian) => ${writeElement}, ${alignment});
+}`;
+  },
   pointer: ({ layout, field, pascalName }) => method`
 static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (number | null)[]) {
   return writer.writePointerVector(${layout.name}View.${field.name}Offset, values, ${field.element.targetTypeName}View.byteLength);
@@ -478,24 +495,41 @@ function emitObjectWriterMethod(
   if (hasTailFields) {
     bodyLines.push(
       `  const writer = ${layout.name}View.createWriter(view, baseOffset, ${layout.name}View.byteLength, littleEndian);`,
+      `  ${layout.name}View.writeInto(view, writer, value, baseOffset, littleEndian);`,
+      "  return writer;",
     );
+  } else {
+    for (const field of layout.fields) {
+      bodyLines.push(...emitObjectFieldWrite(layout, layoutMap, field));
+    }
   }
 
-  for (const field of layout.fields) {
-    bodyLines.push(...emitObjectFieldWrite(layout, field));
-  }
-
-  if (hasTailFields) {
-    bodyLines.push("  return writer;");
-  }
-
-  return method`
+  const lines = method`
 static write(view: DataView, value: ${layout.name}ViewInput, baseOffset = 0, littleEndian = ${toLittleEndianLiteral(layout)}): ${returnType} {
 ${bodyLines}
 }`;
+
+  if (hasTailFields) {
+    const writeIntoLines = layout.fields.flatMap((field) =>
+      emitObjectFieldWriteAtBase(layout, layoutMap, field),
+    );
+    lines.push("");
+    lines.push(
+      ...method`
+static writeInto(view: DataView, writer: DynamicLayoutWriter, value: ${layout.name}ViewInput, baseOffset = 0, littleEndian = ${toLittleEndianLiteral(layout)}): void {
+${writeIntoLines}
+}`,
+    );
+  }
+
+  return lines;
 }
 
-function emitObjectFieldWrite(layout: StructLayout, field: FieldLayout): string[] {
+function emitObjectFieldWrite(
+  layout: StructLayout,
+  layoutMap: ReadonlyMap<string, StructLayout>,
+  field: FieldLayout,
+): string[] {
   const pascalName = toPascalCase(field.name);
 
   switch (field.kind) {
@@ -515,6 +549,11 @@ function emitObjectFieldWrite(layout: StructLayout, field: FieldLayout): string[
     case "dynamic-bytes":
       return [`  ${layout.name}View.write${pascalName}(writer, value.${field.name});`];
     case "struct":
+      if (structFieldHasTailFields(layoutMap, field.typeName)) {
+        return [
+          `  ${field.typeName}View.writeInto(view, writer, value.${field.name}, baseOffset + ${field.offset}, littleEndian);`,
+        ];
+      }
       return [
         `  ${field.typeName}View.write(view, value.${field.name}, baseOffset + ${field.offset}, littleEndian);`,
       ];
@@ -526,6 +565,106 @@ function emitObjectFieldWrite(layout: StructLayout, field: FieldLayout): string[
       return emitFixedArrayObjectFieldWrite(field, encodingLiteral);
     case "vector":
       return [`  ${layout.name}View.write${pascalName}(writer, value.${field.name});`];
+  }
+}
+
+function emitObjectFieldWriteAtBase(
+  layout: StructLayout,
+  layoutMap: ReadonlyMap<string, StructLayout>,
+  field: FieldLayout,
+): string[] {
+  const pascalName = toPascalCase(field.name);
+
+  switch (field.kind) {
+    case "scalar":
+      return [
+        `  ${layout.name}View.set${pascalName}(view, value.${field.name}, baseOffset, littleEndian);`,
+      ];
+    case "fixed-bytes":
+      return [
+        `  writeFixedBytes(view.buffer, view.byteOffset + baseOffset + ${field.offset}, ${field.byteLength}, value.${field.name});`,
+      ];
+    case "fixed-string":
+      return [
+        `  writeFixedText(view.buffer, view.byteOffset + baseOffset + ${field.offset}, ${field.byteLength}, value.${field.name}, ${encodingLiteral(field.encoding)});`,
+      ];
+    case "dynamic-string":
+      return [
+        `  writer.writeTextAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${encodingLiteral(field.encoding)});`,
+      ];
+    case "dynamic-bytes":
+      return [
+        `  writer.writeBytesAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name});`,
+      ];
+    case "struct":
+      if (structFieldHasTailFields(layoutMap, field.typeName)) {
+        return [
+          `  ${field.typeName}View.writeInto(view, writer, value.${field.name}, baseOffset + ${field.offset}, littleEndian);`,
+        ];
+      }
+      return [
+        `  ${field.typeName}View.write(view, value.${field.name}, baseOffset + ${field.offset}, littleEndian);`,
+      ];
+    case "pointer":
+      return [
+        `  ${layout.name}View.set${pascalName}TargetOffset(view, value.${field.name}, baseOffset, littleEndian);`,
+      ];
+    case "fixed-array":
+      return emitFixedArrayObjectFieldWrite(field, encodingLiteral);
+    case "vector":
+      return emitVectorObjectFieldWriteAtBase(layout, layoutMap, field);
+  }
+}
+
+function emitVectorObjectFieldWriteAtBase(
+  layout: StructLayout,
+  layoutMap: ReadonlyMap<string, StructLayout>,
+  field: VectorFieldLayout,
+): string[] {
+  switch (field.element.kind) {
+    case "dynamic-string":
+      return [
+        `  writer.writeTextVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${encodingLiteral(field.element.encoding)});`,
+      ];
+    case "dynamic-bytes":
+      return [
+        `  writer.writeBytesVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name});`,
+      ];
+    case "fixed-bytes":
+      return [
+        `  writer.writeFixedBytesVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.byteLength});`,
+      ];
+    case "fixed-string":
+      return [
+        `  writer.writeFixedTextVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.byteLength}, ${encodingLiteral(field.element.encoding)});`,
+      ];
+    case "scalar":
+      return [
+        `  writer.writeScalarVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, "${field.element.scalar}", value.${field.name});`,
+      ];
+    case "struct": {
+      const elementLayout = layoutMap.get(field.element.typeName);
+      const alignment = elementLayout?.alignment ?? 1;
+      return [
+        `  writer.writeStructVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.byteLength}, (view, elementValue, elementBaseOffset, elementLittleEndian) => ${field.element.typeName}View.write(view, elementValue, elementBaseOffset, elementLittleEndian), ${alignment});`,
+      ];
+    }
+    case "dynamic-struct": {
+      const elementLayout = layoutMap.get(field.element.typeName);
+      const alignment = elementLayout?.alignment ?? 1;
+      const elementByteLength = elementLayout?.byteLength ?? field.element.byteLength;
+      const writeElement =
+        elementLayout !== undefined && hasTailWriterFields(elementLayout, layoutMap)
+          ? `${field.element.typeName}View.writeInto(view, elementWriter, elementValue, elementBaseOffset, elementLittleEndian)`
+          : `${field.element.typeName}View.write(view, elementValue, elementBaseOffset, elementLittleEndian)`;
+      return [
+        `  writer.writeDynamicStructVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${elementByteLength}, (view, elementWriter, elementValue, elementBaseOffset, elementLittleEndian) => ${writeElement}, ${alignment});`,
+      ];
+    }
+    case "pointer":
+      return [
+        `  writer.writePointerVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.targetTypeName}View.byteLength);`,
+      ];
   }
 }
 
@@ -799,6 +938,11 @@ ${field.name}View(): FixedStringVectorView {
 ${field.name}View(): StructVectorView<${field.element.typeName}View> {
   return new StructVectorView(this.view, ${field.offset}, ${field.element.byteLength}, (view, baseOffset, littleEndian) => new ${field.element.typeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
 }`;
+        case "dynamic-struct":
+          return method`
+${field.name}View(): DynamicStructVectorView<${field.element.typeName}View> {
+  return new DynamicStructVectorView(this.view, ${field.offset}, (view, baseOffset, littleEndian) => new ${field.element.typeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
+}`;
         case "pointer":
           return method`
 ${field.name}View(): PointerVectorView<${field.element.targetTypeName}View> {
@@ -951,7 +1095,8 @@ function canWriteObjectField(
       );
     case "vector":
       return (
-        field.element.kind !== "struct" || canWriteStructVectorElement(field.element, layoutMap)
+        (field.element.kind !== "struct" && field.element.kind !== "dynamic-struct") ||
+        canWriteStructVectorElement(field.element, layoutMap)
       );
   }
 }
@@ -960,10 +1105,24 @@ function canWriteStructVectorElement(
   element: VectorElementLayout,
   layoutMap: ReadonlyMap<string, StructLayout>,
 ): boolean {
-  if (element.kind !== "struct") {
+  if (element.kind !== "struct" && element.kind !== "dynamic-struct") {
     return false;
   }
 
   const elementLayout = layoutMap.get(element.typeName);
-  return elementLayout !== undefined && !hasTailWriterFields(elementLayout, layoutMap);
+  if (elementLayout === undefined) {
+    return false;
+  }
+
+  return element.kind === "dynamic-struct"
+    ? canEmitObjectWriter(elementLayout, layoutMap)
+    : !hasTailWriterFields(elementLayout, layoutMap);
+}
+
+function structFieldHasTailFields(
+  layoutMap: ReadonlyMap<string, StructLayout>,
+  typeName: string,
+): boolean {
+  const layout = layoutMap.get(typeName);
+  return layout !== undefined && hasTailWriterFields(layout, layoutMap);
 }

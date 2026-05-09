@@ -320,7 +320,11 @@ function lowerTypeReferenceNode(
   }
 
   if (referenceName === "vector") {
-    return lowerVectorReference(typeNode, fieldName, context);
+    return lowerVectorReference(typeNode, fieldName, context, "fixed-stride");
+  }
+
+  if (referenceName === "dynamic_vector" || referenceName === "dynamicVector") {
+    return lowerVectorReference(typeNode, fieldName, context, "dynamic-struct");
   }
 
   if (referenceName === "fixed_array" || referenceName === "fixedArray") {
@@ -441,8 +445,9 @@ function lowerVectorReference(
   typeNode: ts.TypeReferenceNode,
   fieldName: string,
   context: LoweringContext,
+  mode: "fixed-stride" | "dynamic-struct",
 ): Result<LoweredFieldShape, LayoutDiagnostic> {
-  const element = lowerVectorElement(typeNode, fieldName, context);
+  const element = lowerVectorElement(typeNode, fieldName, context, mode);
   if (!element.ok) {
     return element;
   }
@@ -650,6 +655,8 @@ function lowerFixedArrayElementType(
     referenceName === "ascii" ||
     referenceName === "bytes" ||
     referenceName === "vector" ||
+    referenceName === "dynamic_vector" ||
+    referenceName === "dynamicVector" ||
     referenceName === "fixed_array" ||
     referenceName === "fixedArray" ||
     referenceName === "pointer"
@@ -698,26 +705,30 @@ function lowerVectorElement(
   vectorType: ts.TypeReferenceNode,
   fieldName: string,
   context: LoweringContext,
+  mode: "fixed-stride" | "dynamic-struct",
 ): Result<VectorElementLayout, LayoutDiagnostic> {
   const [elementType] = vectorType.typeArguments ?? [];
   if (elementType === undefined) {
     return missingVectorElementType(vectorType, fieldName, context);
   }
 
-  return lowerVectorElementType(elementType, fieldName, context);
+  return lowerVectorElementType(elementType, fieldName, context, mode);
 }
 
 function lowerVectorElementType(
   elementType: ts.TypeNode,
   fieldName: string,
   context: LoweringContext,
+  mode: "fixed-stride" | "dynamic-struct",
 ): Result<VectorElementLayout, LayoutDiagnostic> {
   if (ts.isArrayTypeNode(elementType)) {
     return nestedBareArrayElement(elementType, fieldName, context);
   }
 
   if (elementType.kind === ts.SyntaxKind.StringKeyword) {
-    return lowerDynamicStringVectorElement("utf8");
+    return mode === "dynamic-struct"
+      ? unsupportedDynamicVectorElementType(elementType, fieldName, context)
+      : lowerDynamicStringVectorElement("utf8");
   }
 
   if (!ts.isTypeReferenceNode(elementType)) {
@@ -729,7 +740,7 @@ function lowerVectorElementType(
     return unsupportedQualifiedVectorElementType(elementType, fieldName, context);
   }
 
-  return lowerVectorElementReference(elementType, referenceName, fieldName, context);
+  return lowerVectorElementReference(elementType, referenceName, fieldName, context, mode);
 }
 
 function missingVectorElementType(
@@ -834,7 +845,12 @@ function lowerVectorElementReference(
   referenceName: string,
   fieldName: string,
   context: LoweringContext,
+  mode: "fixed-stride" | "dynamic-struct",
 ): Result<VectorElementLayout, LayoutDiagnostic> {
+  if (mode === "dynamic-struct") {
+    return lowerDynamicStructVectorElement(elementType, referenceName, fieldName, context);
+  }
+
   if (SCALAR_NAMES.has(referenceName as ScalarKind)) {
     return lowerScalarVectorElement(referenceName as ScalarKind);
   }
@@ -870,6 +886,70 @@ function lowerVectorElementReference(
   }
 
   return lowerStructVectorElement(elementType, referenceName, context);
+}
+
+function lowerDynamicStructVectorElement(
+  elementType: ts.TypeReferenceNode,
+  referenceName: string,
+  fieldName: string,
+  context: LoweringContext,
+): Result<VectorElementLayout, LayoutDiagnostic> {
+  if (
+    SCALAR_NAMES.has(referenceName as ScalarKind) ||
+    SCALAR_ALIASES.has(referenceName) ||
+    referenceName === "fixed_bytes" ||
+    referenceName === "fixedBytes" ||
+    referenceName === "fixed_utf8" ||
+    referenceName === "fixed_ascii" ||
+    referenceName === "fixedUtf8" ||
+    referenceName === "fixedAscii" ||
+    referenceName === "utf8" ||
+    referenceName === "ascii" ||
+    referenceName === "bytes" ||
+    referenceName === "pointer" ||
+    referenceName === "vector" ||
+    referenceName === "dynamic_vector" ||
+    referenceName === "dynamicVector" ||
+    referenceName === "fixed_array" ||
+    referenceName === "fixedArray"
+  ) {
+    return unsupportedDynamicVectorElementType(elementType, fieldName, context);
+  }
+
+  const structLayout = context.lowerStructByName(referenceName, elementType);
+  if (!structLayout.ok) {
+    return structLayout;
+  }
+
+  return ok({
+    kind: "dynamic-struct",
+    typeName: structLayout.value.name,
+    byteLength: 4,
+    descriptor: "pointer32",
+    offsetBase: "object",
+    offsetEncoding: "u32",
+  });
+}
+
+function unsupportedDynamicVectorElementType(
+  elementType: ts.TypeNode,
+  fieldName: string,
+  context: LoweringContext,
+): Result<VectorElementLayout, LayoutDiagnostic> {
+  return loweringError(
+    createDiagnostic(
+      context.sourceFile,
+      elementType,
+      "UNSUPPORTED_TYPE",
+      `Field "${fieldName}" uses dynamicVector<T>, which only supports struct element types.`,
+      {
+        structName: context.structName,
+        fieldName,
+        measurement: measure(elementType.getText(context.sourceFile), "typescript-type", "phase-0"),
+        error: unsupportedAtPhase("dynamicVector non-struct element", "phase-0"),
+      },
+    ),
+  );
 }
 
 function lowerScalarVectorElement(

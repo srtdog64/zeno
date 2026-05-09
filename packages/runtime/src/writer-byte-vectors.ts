@@ -4,7 +4,14 @@ import {
   writeVector32Descriptor,
   type Vector32Descriptor,
 } from "./descriptor32.js";
-import { UTF8_ENCODER, encodeText, writeFixedBytes, writeFixedText, writeFixedUtf8, type TextEncoding } from "./fixed.js";
+import {
+  UTF8_ENCODER,
+  encodeText,
+  writeFixedBytes,
+  writeFixedText,
+  writeFixedUtf8,
+  type TextEncoding,
+} from "./fixed.js";
 import { SpanLayoutWriter } from "./writer-spans.js";
 
 export class ByteVectorLayoutWriter extends SpanLayoutWriter {
@@ -12,23 +19,36 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     descriptorOffset: number,
     values: readonly (ArrayLike<number> | Uint8Array)[],
   ): Vector32Descriptor {
+    return this.writeBytesVectorAtBase(this.baseOffset, descriptorOffset, values);
+  }
+
+  writeBytesVectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly (ArrayLike<number> | Uint8Array)[],
+  ): Vector32Descriptor {
     const tableOffset = this.reserve(values.length * SPAN32_BYTE_LENGTH, 4);
+    const tableAbsoluteOffset = this.baseOffset + tableOffset;
     const descriptor = {
-      relOffset: tableOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        tableAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: values.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
 
     values.forEach((value, index) => {
-      const span = this.appendBytes(value);
+      const span = this.appendBytesAtBase(descriptorBaseOffset, value);
       writeSpan32Descriptor(
         this.view,
-        this.baseOffset + tableOffset + index * SPAN32_BYTE_LENGTH,
+        tableAbsoluteOffset + index * SPAN32_BYTE_LENGTH,
         span,
         this.littleEndian,
       );
@@ -42,7 +62,17 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values: readonly string[],
     encoder = UTF8_ENCODER,
   ): Vector32Descriptor {
-    return this.writeBytesVector(
+    return this.writeUtf8VectorAtBase(this.baseOffset, descriptorOffset, values, encoder);
+  }
+
+  writeUtf8VectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly string[],
+    encoder = UTF8_ENCODER,
+  ): Vector32Descriptor {
+    return this.writeBytesVectorAtBase(
+      descriptorBaseOffset,
       descriptorOffset,
       values.map((value) => encoder.encode(value)),
     );
@@ -53,7 +83,17 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values: readonly string[],
     encoding: TextEncoding = "utf8",
   ): Vector32Descriptor {
-    return this.writeBytesVector(
+    return this.writeTextVectorAtBase(this.baseOffset, descriptorOffset, values, encoding);
+  }
+
+  writeTextVectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly string[],
+    encoding: TextEncoding = "utf8",
+  ): Vector32Descriptor {
+    return this.writeBytesVectorAtBase(
+      descriptorBaseOffset,
       descriptorOffset,
       values.map((value) => encodeText(value, encoding)),
     );
@@ -64,14 +104,33 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values: readonly (ArrayLike<number> | Uint8Array)[],
     elementByteLength: number,
   ): Vector32Descriptor {
+    return this.writeFixedBytesVectorAtBase(
+      this.baseOffset,
+      descriptorOffset,
+      values,
+      elementByteLength,
+    );
+  }
+
+  writeFixedBytesVectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly (ArrayLike<number> | Uint8Array)[],
+    elementByteLength: number,
+  ): Vector32Descriptor {
     const payloadOffset = this.reserve(values.length * elementByteLength, 1);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
     const descriptor = {
-      relOffset: payloadOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        payloadAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: values.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
@@ -79,7 +138,7 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values.forEach((value, index) => {
       writeFixedBytes(
         this.view.buffer,
-        this.view.byteOffset + this.baseOffset + payloadOffset + index * elementByteLength,
+        this.view.byteOffset + payloadAbsoluteOffset + index * elementByteLength,
         elementByteLength,
         value,
       );
@@ -94,14 +153,35 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     elementByteLength: number,
     encoder = UTF8_ENCODER,
   ): Vector32Descriptor {
+    return this.writeFixedUtf8VectorAtBase(
+      this.baseOffset,
+      descriptorOffset,
+      values,
+      elementByteLength,
+      encoder,
+    );
+  }
+
+  writeFixedUtf8VectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly string[],
+    elementByteLength: number,
+    encoder = UTF8_ENCODER,
+  ): Vector32Descriptor {
     const payloadOffset = this.reserve(values.length * elementByteLength, 1);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
     const descriptor = {
-      relOffset: payloadOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        payloadAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: values.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
@@ -109,7 +189,7 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values.forEach((value, index) => {
       writeFixedUtf8(
         this.view.buffer,
-        this.view.byteOffset + this.baseOffset + payloadOffset + index * elementByteLength,
+        this.view.byteOffset + payloadAbsoluteOffset + index * elementByteLength,
         elementByteLength,
         value,
         encoder,
@@ -125,14 +205,35 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     elementByteLength: number,
     encoding: TextEncoding = "utf8",
   ): Vector32Descriptor {
+    return this.writeFixedTextVectorAtBase(
+      this.baseOffset,
+      descriptorOffset,
+      values,
+      elementByteLength,
+      encoding,
+    );
+  }
+
+  writeFixedTextVectorAtBase(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    values: readonly string[],
+    elementByteLength: number,
+    encoding: TextEncoding = "utf8",
+  ): Vector32Descriptor {
     const payloadOffset = this.reserve(values.length * elementByteLength, 1);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
     const descriptor = {
-      relOffset: payloadOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        payloadAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: values.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
@@ -140,7 +241,7 @@ export class ByteVectorLayoutWriter extends SpanLayoutWriter {
     values.forEach((value, index) => {
       writeFixedText(
         this.view.buffer,
-        this.view.byteOffset + this.baseOffset + payloadOffset + index * elementByteLength,
+        this.view.byteOffset + payloadAbsoluteOffset + index * elementByteLength,
         elementByteLength,
         value,
         encoding,

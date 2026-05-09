@@ -1,6 +1,6 @@
 import { type Span32Descriptor } from "./descriptor32.js";
 import { UTF8_ENCODER, encodeText, type TextEncoding } from "./fixed.js";
-import { alignOffset, assertDataViewRange } from "./range.js";
+import { alignOffset, assertDataViewRange, assertUint32 } from "./range.js";
 
 export interface SharedArenaViewOptions {
   readonly byteOffset?: number;
@@ -181,22 +181,50 @@ export class DynamicLayoutArena {
   }
 
   appendBytes(bytes: ArrayLike<number> | Uint8Array, alignment = 1): Span32Descriptor {
+    return this.appendBytesAtBase(this.baseOffset, bytes, alignment);
+  }
+
+  appendBytesAtBase(
+    descriptorBaseOffset: number,
+    bytes: ArrayLike<number> | Uint8Array,
+    alignment = 1,
+  ): Span32Descriptor {
     const byteLength = bytes.length;
-    const relOffset = this.reserve(byteLength, alignment);
-    new Uint8Array(
-      this.view.buffer,
-      this.view.byteOffset + this.baseOffset + relOffset,
-      byteLength,
-    ).set(bytes);
+    const payloadOffset = this.reserve(byteLength, alignment);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
+    const relOffset = this.relativeOffsetFromBase(
+      descriptorBaseOffset,
+      payloadAbsoluteOffset,
+      "Span32.relOffset",
+    );
+    new Uint8Array(this.view.buffer, this.view.byteOffset + payloadAbsoluteOffset, byteLength).set(
+      bytes,
+    );
     return { relOffset, byteLength };
   }
 
   appendUtf8(text: string, encoder = UTF8_ENCODER): Span32Descriptor {
-    return this.appendBytes(encoder.encode(text));
+    return this.appendUtf8AtBase(this.baseOffset, text, encoder);
+  }
+
+  appendUtf8AtBase(
+    descriptorBaseOffset: number,
+    text: string,
+    encoder = UTF8_ENCODER,
+  ): Span32Descriptor {
+    return this.appendBytesAtBase(descriptorBaseOffset, encoder.encode(text));
   }
 
   appendText(text: string, encoding: TextEncoding = "utf8"): Span32Descriptor {
-    return this.appendBytes(encodeText(text, encoding));
+    return this.appendTextAtBase(this.baseOffset, text, encoding);
+  }
+
+  appendTextAtBase(
+    descriptorBaseOffset: number,
+    text: string,
+    encoding: TextEncoding = "utf8",
+  ): Span32Descriptor {
+    return this.appendBytesAtBase(descriptorBaseOffset, encodeText(text, encoding));
   }
 
   protected readCursor(): number {
@@ -205,6 +233,19 @@ export class DynamicLayoutArena {
 
   protected writeCursor(value: number): void {
     this.cursor = value;
+  }
+
+  protected relativeOffsetFromBase(
+    descriptorBaseOffset: number,
+    absoluteOffset: number,
+    label: string,
+  ): number {
+    assertDataViewRange(this.view, descriptorBaseOffset, 0);
+    assertDataViewRange(this.view, absoluteOffset, 0);
+
+    const relOffset = absoluteOffset - descriptorBaseOffset;
+    assertUint32(relOffset, label);
+    return relOffset;
   }
 }
 

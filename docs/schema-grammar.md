@@ -206,6 +206,26 @@ export interface Node {
 Pointers use signed relative `pointer32` offsets. Generated pointer APIs move
 one edge at a time; graph traversal needs an explicit step budget.
 
+### Dynamic Struct Vector
+
+```ts
+import type { z } from "@exornea/zeno-types";
+
+export interface Item {
+  id: z.i32;
+  label: z.utf8;
+}
+
+export interface Bag {
+  items: z.dynamicVector<Item>;
+}
+```
+
+`dynamicVector<T>` is for struct elements that have dynamic tail fields. It
+lowers to a `Vector32` offset table and generates a `DynamicStructVectorView`.
+Generated writer helpers reserve element heads from the parent arena and write
+nested dynamic descriptors relative to each element base.
+
 ## Rejected Examples
 
 ### Bare Number

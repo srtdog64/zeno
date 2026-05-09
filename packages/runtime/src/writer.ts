@@ -267,6 +267,32 @@ export class SharedDynamicLayoutWriter {
     return descriptor;
   }
 
+  writeDynamicStructVectorPublished<T>(
+    descriptorOffset: number,
+    values: readonly T[],
+    elementByteLength: number,
+    writeElement: (
+      view: DataView,
+      writer: DynamicLayoutWriter,
+      value: T,
+      baseOffset: number,
+      littleEndian: boolean,
+    ) => void,
+    state: SharedDescriptorState,
+    readyValue = 1,
+    alignment = 1,
+  ): Vector32Descriptor {
+    const descriptor = this.writer.writeDynamicStructVector(
+      descriptorOffset,
+      values,
+      elementByteLength,
+      writeElement,
+      alignment,
+    );
+    this.publishDescriptor(state, readyValue);
+    return descriptor;
+  }
+
   writePointerVectorPublished(
     descriptorOffset: number,
     targetOffsets: readonly (number | null)[],

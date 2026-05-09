@@ -286,7 +286,7 @@ function validateStructVectorElementTarget({
 }: FieldValidationContext): LayoutDiagnostic | null {
   if (
     field.kind !== "vector" ||
-    field.element.kind !== "struct" ||
+    (field.element.kind !== "struct" && field.element.kind !== "dynamic-struct") ||
     layoutNames.has(field.element.typeName)
   ) {
     return null;
@@ -660,6 +660,8 @@ function hasValidVectorElementByteLength(element: VectorElementLayout): boolean 
     case "fixed-string":
     case "struct":
       return element.byteLength > 0;
+    case "dynamic-struct":
+      return element.byteLength === POINTER32_BYTE_LENGTH;
     case "pointer":
       return element.byteLength === POINTER32_BYTE_LENGTH;
   }

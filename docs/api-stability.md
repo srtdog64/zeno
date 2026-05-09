@@ -100,8 +100,11 @@ pointer graph serialization unless:
 - graph serialization is either implemented or explicitly postponed with a
   stable non-goal.
 
-Dynamic vector APIs are stable for the supported element kinds. Do not promote
-new vector element kinds unless:
+Dynamic vector APIs are stable for the supported element kinds. `z.dynamicVector<T>`
+is stable as a read/write codegen surface for struct elements with dynamic tails.
+The writer contract is that allocation happens in the parent arena while nested
+descriptors are written relative to each element base. Do not promote new vector
+element kinds unless:
 
 - vector element layout compatibility is validated by the compiler,
 - dynamic workloads have benchmark witnesses separate from fixed scalar hot
@@ -109,7 +112,13 @@ new vector element kinds unless:
 - schema evolution rules say which descriptor changes are breaking.
 
 Current witness: `vector<struct>` elements with dynamic tail fields are rejected
-with a diagnostic that routes users to `vector<pointer<T>>`.
+with a diagnostic; use `dynamicVector<T>` for offset-table dynamic records and
+`vector<pointer<T>>` for graph-shaped references.
+
+Shared writer publication follows the same stability boundary as other dynamic
+descriptors: payload and descriptor fields are written first, then the caller
+publishes a descriptor-ready cell. This is a synchronization API, not schema
+evolution support.
 
 ## Pattern Note
 

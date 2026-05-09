@@ -142,6 +142,7 @@ already batch their own fixed-field writes.
 | `z.fixedArray<T, N>` | inline fixed array | supported for scalar, fixed bytes/string, and fixed-size struct elements |
 | `z.utf8`, `z.ascii`, `z.bytes` | `Span32` descriptor | read, field-level write, and object-level write supported |
 | `z.vector<T>` | `Vector32` descriptor | read supported for scalar, fixed bytes/string, dynamic bytes/string, fixed struct, and pointer elements; object-level write supported for scalar, fixed bytes/string, dynamic bytes/string, fixed-size struct, and pointer vectors |
+| `z.dynamicVector<T>` | `Vector32` offset table | dynamic struct vectors with generated read and write helpers |
 | `z.pointer<T>` | signed `pointer32` field-relative offset, raw `0xffffffff` null | supported for explicit recursive references |
 | bare `string` | UTF-8 `Span32` descriptor | supported, but prefer `z.utf8` in schemas |
 | bare `number` | ambiguous | rejected |

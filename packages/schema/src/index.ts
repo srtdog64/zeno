@@ -155,6 +155,15 @@ export interface StructVectorElementLayout {
   byteLength: number;
 }
 
+export interface DynamicStructVectorElementLayout {
+  kind: "dynamic-struct";
+  typeName: string;
+  byteLength: number;
+  descriptor: "pointer32";
+  offsetBase: "object";
+  offsetEncoding: "u32";
+}
+
 export interface PointerVectorElementLayout {
   kind: "pointer";
   descriptor: "pointer32";
@@ -172,6 +181,7 @@ export type VectorElementLayout =
   | DynamicStringVectorElementLayout
   | DynamicBytesVectorElementLayout
   | StructVectorElementLayout
+  | DynamicStructVectorElementLayout
   | PointerVectorElementLayout;
 
 export interface VectorFieldLayout extends FieldLayoutBase {

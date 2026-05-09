@@ -8,15 +8,29 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
     scalarKind: ScalarKind,
     values: readonly T[],
   ): Vector32Descriptor {
+    return this.writeScalarVectorAtBase(this.baseOffset, descriptorOffset, scalarKind, values);
+  }
+
+  writeScalarVectorAtBase<T extends number | bigint | boolean>(
+    descriptorBaseOffset: number,
+    descriptorOffset: number,
+    scalarKind: ScalarKind,
+    values: readonly T[],
+  ): Vector32Descriptor {
     const stride = scalarByteLength(scalarKind);
     const payloadOffset = this.reserve(values.length * stride, stride);
+    const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
     const descriptor = {
-      relOffset: payloadOffset,
+      relOffset: this.relativeOffsetFromBase(
+        descriptorBaseOffset,
+        payloadAbsoluteOffset,
+        "Vector32.relOffset",
+      ),
       count: values.length,
     };
     writeVector32Descriptor(
       this.view,
-      this.baseOffset + descriptorOffset,
+      descriptorBaseOffset + descriptorOffset,
       descriptor,
       this.littleEndian,
     );
@@ -25,7 +39,7 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
       writeScalar(
         this.view,
         scalarKind,
-        this.baseOffset + payloadOffset + index * stride,
+        payloadAbsoluteOffset + index * stride,
         value,
         this.littleEndian,
       );

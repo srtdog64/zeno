@@ -126,6 +126,7 @@ per-record view allocation.
 | `z.fixedArray<T, N>`                                                    | inline fixed array          | stable for scalar, fixed bytes/string, and fixed-size struct elements |
 | `z.utf8`, `z.ascii`, `z.bytes`                                          | `Span32` descriptor         | stable                                                                |
 | `z.vector<T>`                                                           | `Vector32` descriptor       | stable for supported elements                                         |
+| `z.dynamicVector<T>`                                                    | `Vector32` offset table     | stable read/write codegen for dynamic struct elements                 |
 | `z.pointer<T>`                                                          | signed relative `pointer32` | stable                                                                |
 | bare `string`                                                           | UTF-8 `Span32` shorthand    | supported, but `z.utf8` is clearer                                    |
 
@@ -136,6 +137,7 @@ Unsupported by design in v1:
 - direct recursive structs without `z.pointer<T>`
 - unions without a discriminator policy
 - optional/vtable-style schema evolution
+- varint / LEB128 compressed integers
 
 ## Binary Frame
 

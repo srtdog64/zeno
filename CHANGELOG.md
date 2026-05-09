@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.9.0
+
+Status: dynamic struct vector read/write codegen release.
+
+- Added `z.dynamicVector<T>` / `dynamic_vector<T>` for `Vector32` offset-table
+  vectors of dynamic struct records.
+- Lowering now emits a `dynamic-struct` vector element layout for
+  `dynamicVector<Struct>`.
+- Generated views now return `DynamicStructVectorView<TView>` for dynamic
+  struct vectors.
+- Runtime tests cover dynamic struct vector offset-table reads and writes.
+- Generated writers now emit `writeDynamicStructVector*` calls for
+  `dynamicVector<Struct>` fields, with nested descriptors written relative to
+  each element base.
+- `SharedDynamicLayoutWriter` now supports
+  `writeDynamicStructVectorPublished(...)` for SharedArrayBuffer pipelines that
+  publish dynamic struct vectors through descriptor-ready cells.
+- Optional/sparse fields and discriminated unions remain schema-evolution design
+  work; varint/LEB128 remains a non-goal for Zeno's fixed-offset projection
+  thesis.
+- Package manifests and workspace lockfile are aligned at `1.9.0`.
+
 ## 1.8.0
 
 Status: browser/data-pipeline minor release for shared-memory arenas and generated source maps.

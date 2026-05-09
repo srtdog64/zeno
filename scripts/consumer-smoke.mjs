@@ -112,12 +112,21 @@ export interface Mini {
   name: z.utf8;
   tags: z.vector<z.utf8>;
 }
+
+export interface Item {
+  id: z.i32;
+  label: z.utf8;
+}
+
+export interface Bag {
+  items: z.dynamicVector<Item>;
+}
 `,
 );
 
 writeFileSync(
   path.join(consumerDir, "src", "main.ts"),
-  `import { MiniView } from "./model.view.js";
+  `import { BagView, MiniView } from "./model.view.js";
 import { POINTER32_NULL } from "@exornea/zeno-runtime";
 
 const buffer = new ArrayBuffer(128);
@@ -150,6 +159,27 @@ if (JSON.stringify(result) !== JSON.stringify({
   pointerNull: 0xffffffff,
 })) {
   throw new Error(\`Unexpected consumer result: \${JSON.stringify(result)}\`);
+}
+
+const bagBuffer = new ArrayBuffer(256);
+const bagView = new DataView(bagBuffer);
+BagView.write(bagView, {
+  items: [
+    { id: 1, label: "alpha" },
+    { id: 2, label: "beta" },
+  ],
+});
+
+const bag = new BagView(bagView);
+const items = bag.itemsView();
+if (
+  items.length !== 2 ||
+  items.at(0).id !== 1 ||
+  items.at(0).labelView().text() !== "alpha" ||
+  items.at(1).id !== 2 ||
+  items.at(1).labelView().text() !== "beta"
+) {
+  throw new Error("Unexpected dynamicVector consumer result");
 }
 
 try {

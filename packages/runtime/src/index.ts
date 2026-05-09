@@ -2,6 +2,7 @@ export type {
   ascii,
   bool,
   bytes,
+  dynamic_vector,
   enum_u8,
   enum_u16,
   f32,

@@ -4,6 +4,7 @@ import {
   BytesSpanView,
   BytesVectorView,
   DynamicLayoutWriter,
+  DynamicStructVectorView,
   FixedBytesVectorView,
   FixedStringVectorView,
   PointerVectorView,
@@ -182,6 +183,100 @@ describe("dynamic layout runtime skeleton", () => {
     expect(Array.from(chunksView.at(1))).toEqual([9, 10, 11]);
   });
 
+  it("reads dynamic struct vectors through an offset table", () => {
+    class ItemView extends ProjectionView {
+      static readonly byteLength = 12;
+
+      get id(): number {
+        return this.view.getInt32(this.baseOffset, this.littleEndian);
+      }
+
+      labelView(): Utf8SpanView {
+        return new Utf8SpanView(this.view, 4, this.baseOffset, this.littleEndian);
+      }
+    }
+
+    const buffer = new ArrayBuffer(128);
+    const view = new DataView(buffer);
+    const alpha = new TextEncoder().encode("alpha");
+    const beta = new TextEncoder().encode("beta");
+
+    writeVector32Descriptor(view, 0, {
+      relOffset: 16,
+      count: 2,
+    });
+    view.setUint32(16, 32, true);
+    view.setUint32(20, 64, true);
+    view.setInt32(32, 1, true);
+    writeSpan32Descriptor(view, 36, {
+      relOffset: 48,
+      byteLength: alpha.length,
+    });
+    view.setInt32(64, 2, true);
+    writeSpan32Descriptor(view, 68, {
+      relOffset: 32,
+      byteLength: beta.length,
+    });
+    new Uint8Array(buffer, 80, alpha.length).set(alpha);
+    new Uint8Array(buffer, 96, beta.length).set(beta);
+
+    const items = new DynamicStructVectorView(
+      view,
+      0,
+      (dataView, baseOffset, littleEndian) => new ItemView(dataView, baseOffset, littleEndian),
+    );
+
+    expect(items.length).toBe(2);
+    expect(items.at(0).id).toBe(1);
+    expect(items.at(0).labelView().text()).toBe("alpha");
+    expect(items.at(1).id).toBe(2);
+    expect(items.at(1).labelView().text()).toBe("beta");
+  });
+
+  it("writes dynamic struct vectors with element-relative descriptors", () => {
+    class ItemView extends ProjectionView {
+      static readonly byteLength = 12;
+
+      get id(): number {
+        return this.view.getInt32(this.baseOffset, this.littleEndian);
+      }
+
+      labelView(): Utf8SpanView {
+        return new Utf8SpanView(this.view, 4, this.baseOffset, this.littleEndian);
+      }
+    }
+
+    const buffer = new ArrayBuffer(128);
+    const view = new DataView(buffer);
+    const writer = new DynamicLayoutWriter(view, 8);
+
+    writer.writeDynamicStructVector(
+      0,
+      [
+        { id: 1, label: "alpha" },
+        { id: 2, label: "beta" },
+      ],
+      ItemView.byteLength,
+      (dataView, elementWriter, value, baseOffset, littleEndian) => {
+        dataView.setInt32(baseOffset, value.id, littleEndian);
+        elementWriter.writeTextAtBase(baseOffset, 4, value.label);
+      },
+      4,
+    );
+
+    const items = new DynamicStructVectorView(
+      view,
+      0,
+      (dataView, baseOffset, littleEndian) => new ItemView(dataView, baseOffset, littleEndian),
+    );
+
+    expect(items.length).toBe(2);
+    expect(items.at(0).id).toBe(1);
+    expect(items.at(0).labelView().text()).toBe("alpha");
+    expect(items.at(1).id).toBe(2);
+    expect(items.at(1).labelView().text()).toBe("beta");
+  });
+
   it("reads fixed-size byte and string vectors from contiguous payloads", () => {
     const buffer = new ArrayBuffer(128);
     const view = new DataView(buffer);
@@ -277,6 +372,57 @@ describe("dynamic layout runtime skeleton", () => {
     const bytesView = new BytesSpanView(readerView, 0);
     expect(Array.from(bytesView.bytes())).toEqual([5, 8, 13, 21]);
     expect(writer.tailOffset).toBe(20);
+  });
+
+  it("publishes dynamic struct vectors from a SharedArrayBuffer-backed writer", () => {
+    class ItemView extends ProjectionView {
+      static readonly byteLength = 12;
+
+      get id(): number {
+        return this.view.getInt32(this.baseOffset, this.littleEndian);
+      }
+
+      labelView(): Utf8SpanView {
+        return new Utf8SpanView(this.view, 4, this.baseOffset, this.littleEndian);
+      }
+    }
+
+    const buffer = new SharedArrayBuffer(256);
+    SharedDynamicLayoutWriter.initializeCursor(buffer, 8, { cursorByteOffset: 252 });
+    const state = sharedDescriptorStateCell(buffer, 248);
+    resetSharedDescriptor(state);
+    const writer = SharedDynamicLayoutWriter.fromSharedBuffer(buffer, {
+      cursorByteOffset: 252,
+    });
+    const readerView = new DataView(buffer);
+
+    writer.writeDynamicStructVectorPublished(
+      0,
+      [
+        { id: 1, label: "alpha" },
+        { id: 2, label: "beta" },
+      ],
+      ItemView.byteLength,
+      (view, elementWriter, value, baseOffset, littleEndian) => {
+        view.setInt32(baseOffset, value.id, littleEndian);
+        elementWriter.writeTextAtBase(baseOffset, 4, value.label);
+      },
+      state,
+      1,
+      4,
+    );
+
+    expect(isSharedDescriptorPublished(state)).toBe(true);
+    const items = new DynamicStructVectorView(
+      readerView,
+      0,
+      (view, baseOffset, littleEndian) => new ItemView(view, baseOffset, littleEndian),
+    );
+    expect(items.length).toBe(2);
+    expect(items.at(0).id).toBe(1);
+    expect(items.at(0).labelView().text()).toBe("alpha");
+    expect(items.at(1).id).toBe(2);
+    expect(items.at(1).labelView().text()).toBe("beta");
   });
 
   it("reserves unique tail ranges for multiple SharedArrayBuffer-backed writers", () => {

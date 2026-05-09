@@ -158,11 +158,15 @@ describe("compiler snapshots", () => {
 
         static write(view: DataView, value: MiniViewInput, baseOffset = 0, littleEndian = true): DynamicLayoutWriter {
           const writer = MiniView.createWriter(view, baseOffset, MiniView.byteLength, littleEndian);
+          MiniView.writeInto(view, writer, value, baseOffset, littleEndian);
+          return writer;
+        }
+
+        static writeInto(view: DataView, writer: DynamicLayoutWriter, value: MiniViewInput, baseOffset = 0, littleEndian = true): void {
           MiniView.setId(view, value.id, baseOffset, littleEndian);
           MiniView.setAge(view, value.age, baseOffset, littleEndian);
           writeFixedText(view.buffer, view.byteOffset + baseOffset + 12, 8, value.handle, "utf8");
-          MiniView.writeChunks(writer, value.chunks);
-          return writer;
+          writer.writeFixedBytesVectorAtBase(baseOffset, MiniView.chunksOffset, value.chunks, 4);
         }
 
         static getId(view: DataView, baseOffset = 0, littleEndian = true): bigint {
@@ -319,10 +323,14 @@ describe("compiler snapshots", () => {
 
         static write(view: DataView, value: NodeViewInput, baseOffset = 0, littleEndian = true): DynamicLayoutWriter {
           const writer = NodeView.createWriter(view, baseOffset, NodeView.byteLength, littleEndian);
+          NodeView.writeInto(view, writer, value, baseOffset, littleEndian);
+          return writer;
+        }
+
+        static writeInto(view: DataView, writer: DynamicLayoutWriter, value: NodeViewInput, baseOffset = 0, littleEndian = true): void {
           NodeView.setValue(view, value.value, baseOffset, littleEndian);
           NodeView.setNextTargetOffset(view, value.next, baseOffset, littleEndian);
-          NodeView.writeChildren(writer, value.children);
-          return writer;
+          writer.writePointerVectorAtBase(baseOffset, NodeView.childrenOffset, value.children, NodeView.byteLength);
         }
 
         static getValue(view: DataView, baseOffset = 0, littleEndian = true): number {

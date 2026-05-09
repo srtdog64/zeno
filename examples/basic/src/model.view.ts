@@ -68,15 +68,19 @@ export class UserView extends ProjectionView {
 
   static write(view: DataView, value: UserViewInput, baseOffset = 0, littleEndian = true): DynamicLayoutWriter {
     const writer = UserView.createWriter(view, baseOffset, UserView.byteLength, littleEndian);
+    UserView.writeInto(view, writer, value, baseOffset, littleEndian);
+    return writer;
+  }
+
+  static writeInto(view: DataView, writer: DynamicLayoutWriter, value: UserViewInput, baseOffset = 0, littleEndian = true): void {
     UserView.setId(view, value.id, baseOffset, littleEndian);
     UserView.setAge(view, value.age, baseOffset, littleEndian);
     UserView.setScore(view, value.score, baseOffset, littleEndian);
     UserView.setRatio(view, value.ratio, baseOffset, littleEndian);
     writeFixedText(view.buffer, view.byteOffset + baseOffset + 28, 32, value.handle, "utf8");
-    UserView.writeName(writer, value.name);
-    UserView.writeTags(writer, value.tags);
-    UserView.writeAvatar(writer, value.avatar);
-    return writer;
+    writer.writeTextAtBase(baseOffset, UserView.nameOffset, value.name, "utf8");
+    writer.writeTextVectorAtBase(baseOffset, UserView.tagsOffset, value.tags, "utf8");
+    writer.writeBytesAtBase(baseOffset, UserView.avatarOffset, value.avatar);
   }
 
   static getId(view: DataView, baseOffset = 0, littleEndian = true): bigint {

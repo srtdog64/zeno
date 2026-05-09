@@ -271,18 +271,31 @@ That keeps the hot path simple and still leaves room for FlatBuffers-like evolut
 | Generated field-level dynamic writer helpers                                | supported | [model.view.ts](../examples/basic/src/model.view.ts)                                  |
 | Generated object-level writer for fixed fields plus dynamic tail fields     | supported | [model.view.ts](../examples/basic/src/model.view.ts)                                  |
 | Fixed-size `vector<struct>` writer                                          | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| `dynamicVector<struct>` offset-table reads                                  | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Generated `dynamicVector<struct>` view accessors                            | supported | [analyzer.test.ts](../tests/compiler/analyzer.test.ts)                                |
+| `dynamicVector<struct>` writer helpers                                      | supported | `writeDynamicStructVector*` preserves element-relative nested descriptors             |
 | `pointer32` relative pointer fields                                         | supported | [recursive-pointer-schema.ts](../tests/compiler/fixtures/recursive-pointer-schema.ts) |
 | `SharedArrayBuffer`-backed arena initialization                             | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Shared tail cursor with atomic reservation                                  | supported | [writer.ts](../packages/runtime/src/writer.ts)                                        |
 | Shared arena sharding for low-contention worker append paths                | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Shared descriptor ready cells for SWMR publication                          | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
+| Shared publication for `dynamicVector<struct>`                              | supported | [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)                     |
 | Schema versioning through optional vtables                                  | future    | not implemented                                                                       |
 
 The read-side model exists now. The write-side model has a low-level runtime
 writer, generated field-level helpers, and a first object-level serializer path.
-Vectors of structs with nested dynamic tail fields are still rejected in the
-stable ABI surface; use `vector<pointer<T>>` for dynamic or graph-shaped
-elements.
+Use `z.vector<T>` for fixed-stride struct vectors, `z.dynamicVector<T>` for
+offset-table vectors of variable-size dynamic struct records, and
+`z.vector<z.pointer<T>>` for graph-shaped or shared-object references.
+
+`z.dynamicVector<T>` stores a `Vector32` descriptor whose payload is a table of
+`u32` object-relative offsets to element heads. Each element view is then
+created at that offset, so its own `Span32` and `Vector32` descriptors remain
+relative to the element base. Writer helpers use the same split: the parent
+arena reserves the offset table and element heads, while `write*AtBase(...)`
+writes each nested descriptor relative to the element base. This base separation
+is load-bearing; using the parent base for nested descriptors would make the
+generated view read the wrong payload.
 
 `VectorView` instances cache their `vector32` descriptor after the first
 `length`, `payloadOffset`, or indexed access. This is load-bearing for hot loops:

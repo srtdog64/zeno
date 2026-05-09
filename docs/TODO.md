@@ -204,7 +204,7 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.8.0` after human release review
+- tag and publish `1.9.0` after human release review
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
@@ -368,10 +368,14 @@ Status: local witness only.
 
 ### Schema and grammar
 
+- `z.dynamicVector<T>` is implemented for read/write codegen over dynamic struct
+  elements; add malformed offset-table fixtures before expanding the ABI family
 - design optional fields as a schema-evolution feature, not as nullable inline
   fields
 - design discriminated unions with an explicit tag field and fixed variant
   table before accepting any union syntax
+- keep varint / LEB128 retired unless Zeno explicitly adds a compressed
+  non-projection ABI family
 - decide whether bare `string` remains a supported shorthand or becomes a
   diagnostic hint toward `z.utf8`
 - add witness cases to both grammar docs for every newly rejected construct

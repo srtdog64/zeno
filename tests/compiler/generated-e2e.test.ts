@@ -61,6 +61,7 @@ describe("generated code compile and run checks", () => {
           fields.forEach((kind, index) => {
             const value = RowView[`getF${index}`](view);
             expectValue(value, sampleValue(kind, index), kind);
+            expectGeneratedKernels(RowView, view, kind, index, sampleValue(kind, index));
           });
 
           const row = new RowView(view);
@@ -228,6 +229,25 @@ function expectValue(actual: unknown, expected: number | bigint | boolean, kind:
   }
 
   expect(actual).toBe(expected);
+}
+
+function expectGeneratedKernels(
+  RowView: GeneratedViewConstructor,
+  view: DataView,
+  kind: ScalarKind,
+  index: number,
+  expected: number | bigint | boolean,
+): void {
+  const pascalName = `F${index}`;
+  if (kind !== "i64" && kind !== "u64" && kind !== "f32" && kind !== "f64") {
+    expect(RowView[`count${pascalName}WhereEq`](view, 1, expected)).toBe(1);
+    expect(RowView[`findFirst${pascalName}WhereEq`](view, 1, expected)).toBe(0);
+  }
+
+  if (kind !== "i64" && kind !== "u64" && kind !== "bool") {
+    expect(RowView[`min${pascalName}`](view, 1)).toBeCloseTo(expected as number);
+    expect(RowView[`max${pascalName}`](view, 1)).toBeCloseTo(expected as number);
+  }
 }
 
 function formatDiagnostics(diagnostics: readonly ts.Diagnostic[]): string[] {

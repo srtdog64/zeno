@@ -5,6 +5,7 @@
     { "path": "./packages/types" },
     { "path": "./packages/runtime" },
     { "path": "./packages/compiler" },
-    { "path": "./examples/basic" }
+    { "path": "./examples/basic" },
+    { "path": "./examples/scalar-only" }
   ]
 }

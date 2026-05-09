@@ -15,6 +15,14 @@ without maintaining a separate `.fbs`/IDL file or cross-language codegen flow.
 Zeno is strongest when one TypeScript codebase owns both the writer and reader
 and needs to scan many fixed-layout records without materializing objects.
 
+Use it when:
+
+- producer and consumer ship together
+- records are scanned in large batches
+- JSON object materialization is the bottleneck
+- named `DataView` offsets are needed
+- cross-language schema evolution is not required
+
 Good fits:
 
 - WebGL/WebGPU instance data and browser-side binary assets
@@ -169,9 +177,75 @@ for (let index = 0; index < count; index += 1) {
 const totalAge = UserView.sumAge(view, count);
 ```
 
-`sum<Field>()` kernels are emitted for `number` scalar fields. They validate the
-record count and buffer range once, then run a generated stride loop without
-per-record view allocation.
+`sum<Field>()`, `min<Field>()`, and `max<Field>()` kernels are emitted for
+`number` scalar fields. `count<Field>WhereEq(...)` and
+`findFirst<Field>WhereEq(...)` are emitted for integer and boolean scalar
+fields. These kernels validate the record count and buffer range once, then run
+a generated stride loop without per-record view allocation or callbacks.
+
+## Fast Path Mental Model
+
+Use Zeno like a generated `DataView` table scanner.
+
+Prefer static accessors or scan kernels in hot loops:
+
+```ts
+let sum = 0;
+
+for (let offset = 0; offset < byteLength; offset += UserView.byteLength) {
+  sum += UserView.getAge(view, offset);
+}
+```
+
+Avoid per-record allocation in hot loops:
+
+```ts
+const users = Array.from({ length: count }, (_, index) => {
+  return new UserView(view, index * UserView.byteLength);
+});
+```
+
+Cursor views are ergonomic and reusable when one record needs several fields:
+
+```ts
+const user = UserView.at(view);
+
+for (let index = 0; index < count; index += 1) {
+  user.moveToUnchecked(index);
+  sum += user.age;
+}
+```
+
+Dynamic text is an explicit decode boundary:
+
+```ts
+const bytes = user.nameView().bytes();
+const text = user.nameView().text();
+```
+
+## Layout Inspection
+
+Generate a machine-readable layout manifest next to generated views:
+
+```sh
+zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --manifest ./src/model.layout.json
+```
+
+Inspect a schema from the CLI:
+
+```sh
+zeno-inspect ./src/model.zeno.ts
+```
+
+Compare two manifests in CI or migration review:
+
+```sh
+zeno-diff-layout ./old.layout.json ./new.layout.json
+```
+
+Layout diffs do not make incompatible layouts magically compatible. They make
+the breaking wire-format change explicit so the application can route by
+version when old and new layouts must coexist.
 
 ## WebGL Demo
 
@@ -186,6 +260,10 @@ npm run browser:smoke
 The demo is intentionally narrow: it represents the kind of fixed-stride,
 read-mostly browser workload where Zeno's projection-first model is meant to
 earn its keep.
+
+For the smallest hot-path example, see
+[examples/scalar-only](examples/scalar-only). It contains only fixed scalar
+fields and generated scan kernels.
 
 ## Supported Schema Surface
 

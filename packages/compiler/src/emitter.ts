@@ -550,6 +550,8 @@ function emitStaticScalarAccessor(
     emitStaticScalarWriteBody(field, setterMethod, indexOffset, endianArg),
     "  }",
     ...emitScalarSumKernel(layout, field, getterMethod, littleEndianDefault, pascalName),
+    ...emitScalarEqualityKernels(layout, field, getterMethod, littleEndianDefault, pascalName),
+    ...emitScalarMinMaxKernels(layout, field, getterMethod, littleEndianDefault, pascalName),
   ];
 }
 
@@ -685,8 +687,125 @@ static sum${pascalName}(view: DataView, count: number, baseOffset = 0, littleEnd
 }`;
 }
 
+function emitScalarEqualityKernels(
+  layout: StructLayout,
+  field: Extract<FieldLayout, { kind: "scalar" }>,
+  getterMethod: string,
+  littleEndianDefault: "true" | "false",
+  pascalName: string,
+): string[] {
+  if (!isEqualityKernelScalar(field.scalar)) {
+    return [];
+  }
+
+  const typeName = scalarTsType(field.scalar);
+  const endianArg = field.byteLength === 1 || field.scalar === "bool" ? "" : ", littleEndian";
+  const readExpression =
+    field.scalar === "bool"
+      ? `view.${getterMethod}(offset) !== 0`
+      : `view.${getterMethod}(offset${endianArg})`;
+  return method`
+static count${pascalName}WhereEq(view: DataView, count: number, expected: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
+  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
+  let matched = 0;
+  const start = baseOffset + ${field.offset};
+  const limit = start + count * ${layout.byteLength};
+  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
+    if (${readExpression} === expected) {
+      matched += 1;
+    }
+  }
+  return matched;
+}
+static findFirst${pascalName}WhereEq(view: DataView, count: number, expected: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
+  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
+  const start = baseOffset + ${field.offset};
+  const limit = start + count * ${layout.byteLength};
+  let index = 0;
+  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
+    if (${readExpression} === expected) {
+      return index;
+    }
+    index += 1;
+  }
+  return -1;
+}`;
+}
+
+function emitScalarMinMaxKernels(
+  layout: StructLayout,
+  field: Extract<FieldLayout, { kind: "scalar" }>,
+  getterMethod: string,
+  littleEndianDefault: "true" | "false",
+  pascalName: string,
+): string[] {
+  if (!isNumberSumScalar(field.scalar)) {
+    return [];
+  }
+
+  const endianArg = field.byteLength === 1 ? "" : ", littleEndian";
+  return method`
+static min${pascalName}(view: DataView, count: number, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
+  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
+  if (count === 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const start = baseOffset + ${field.offset};
+  const limit = start + count * ${layout.byteLength};
+  let minimum = Number.POSITIVE_INFINITY;
+  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
+    const value = view.${getterMethod}(offset${endianArg});
+    if (value < minimum) {
+      minimum = value;
+    }
+  }
+  return minimum;
+}
+static max${pascalName}(view: DataView, count: number, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
+  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
+  if (count === 0) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  const start = baseOffset + ${field.offset};
+  const limit = start + count * ${layout.byteLength};
+  let maximum = Number.NEGATIVE_INFINITY;
+  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
+    const value = view.${getterMethod}(offset${endianArg});
+    if (value > maximum) {
+      maximum = value;
+    }
+  }
+  return maximum;
+}`;
+}
+
+function scanRangeGuard(
+  countName: string,
+  baseOffsetName: string,
+  byteLength: number,
+  fieldOffset: number,
+  fieldByteLength: number,
+): string {
+  return `if (!Number.isInteger(${countName}) || ${countName} < 0) {
+    throw new RangeError(\`Invalid record count: \${${countName}}\`);
+  }
+  if (!Number.isFinite(${baseOffsetName}) || !Number.isInteger(${baseOffsetName}) || ${baseOffsetName} < 0) {
+    throw new RangeError(\`Invalid base offset: \${${baseOffsetName}}\`);
+  }
+  if (${countName} !== 0) {
+    const lastByte = ${baseOffsetName} + ${fieldOffset} + (${countName} - 1) * ${byteLength} + ${fieldByteLength};
+    if (lastByte > view.byteLength) {
+      throw new RangeError(\`scan range exceeds DataView length \${view.byteLength}\`);
+    }
+  }`;
+}
+
 function isNumberSumScalar(kind: string): boolean {
   return kind !== "i64" && kind !== "u64" && kind !== "bool";
+}
+
+function isEqualityKernelScalar(kind: string): boolean {
+  return kind !== "i64" && kind !== "u64" && kind !== "f32" && kind !== "f64";
 }
 
 function emitField(layout: StructLayout, field: FieldLayout): string[] {

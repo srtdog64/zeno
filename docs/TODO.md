@@ -395,12 +395,11 @@ Status: local witness only.
   clears the benchmark and retained-heap promotion gate
 - promote generated scan kernels as the main aggregate hot path, not optimized
   cursor offsets
-- add generated scan kernel candidates only after `sum<Field>()` has repeated
-  benchmark witnesses:
-  - `min<Field>()` / `max<Field>()` for number scalar fields
-  - `count<Field>()` for `bool` fields
-  - `count<Field>WhereEq(...)` and `findFirst<Field>WhereEq(...)` for scalar
-    equality predicates
+- `sum<Field>()`, `min<Field>()`, and `max<Field>()` are generated for number
+  scalar fields; `count<Field>WhereEq(...)` and `findFirst<Field>WhereEq(...)`
+  are generated for integer and boolean scalar equality predicates
+- add browser benchmark witnesses for the newer scan kernels before promoting
+  them beyond the compiler API surface
 - keep checked cursor APIs for safety and unchecked cursor APIs for caller-proven
   loops; benchmark them separately
 - promote additional text byte predicates only after real call-site witnesses
@@ -455,7 +454,7 @@ Status: local witness only.
 ### Examples
 
 - split examples by user-facing workload instead of growing `basic`:
-  - `examples/scalar-only`: fixed record hot-path scans
+  - `examples/scalar-only`: fixed record hot-path scans (implemented)
   - `examples/dynamic`: strings, bytes, vectors, and writer tail layout
   - `examples/recursive`: pointer-based graph projection
   - `examples/webgl-instance-streamer`: large WebGL instance projection with

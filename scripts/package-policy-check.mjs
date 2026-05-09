@@ -61,6 +61,8 @@ const policies = [
     },
     bin: {
       "zeno-codegen": "bin/zeno-codegen.mjs",
+      "zeno-diff-layout": "bin/zeno-diff-layout.mjs",
+      "zeno-inspect": "bin/zeno-inspect.mjs",
     },
   },
   {

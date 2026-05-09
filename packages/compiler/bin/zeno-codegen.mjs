@@ -5,6 +5,7 @@ import ts from "typescript";
 
 import {
   analyzeProjectionSourceFile,
+  createLayoutManifest,
   emitProjectionFile,
   emitProjectionFileWithSourceMap,
   formatDiagnosticLocation,
@@ -13,12 +14,13 @@ import {
 const args = process.argv.slice(2);
 let sourceMap = false;
 let endianness = "little";
+let manifestPath;
 const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
 let diagnosticsFormat =
   diagnosticsArg === undefined ? "text" : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
 const usage =
-  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--endian=little|big] [--diagnostics=text|json]";
+  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--manifest <layout.json>] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {
@@ -40,7 +42,8 @@ function fail(code, message, details = {}) {
   process.exit(1);
 }
 
-for (const arg of args) {
+for (let index = 0; index < args.length; index += 1) {
+  const arg = args[index];
   if (arg === "--help" || arg === "-h") {
     console.log(usage);
     process.exit(0);
@@ -48,6 +51,21 @@ for (const arg of args) {
 
   if (arg === "--source-map") {
     sourceMap = true;
+    continue;
+  }
+
+  if (arg === "--manifest") {
+    const next = args[index + 1];
+    if (next === undefined || next.startsWith("--")) {
+      fail("INVALID_ARGUMENTS", "Missing path after --manifest.");
+    }
+    manifestPath = next;
+    index += 1;
+    continue;
+  }
+
+  if (arg.startsWith("--manifest=")) {
+    manifestPath = arg.slice("--manifest=".length);
     continue;
   }
 
@@ -119,4 +137,12 @@ if (sourceMap) {
   await writeFile(`${resolvedOutputPath}.map`, JSON.stringify(emitted.sourceMap, null, 2), "utf8");
 } else {
   await writeFile(resolvedOutputPath, emitProjectionFile(result.layouts), "utf8");
+}
+
+if (manifestPath !== undefined) {
+  await writeFile(
+    path.resolve(manifestPath),
+    `${JSON.stringify(createLayoutManifest(result.layouts), null, 2)}\n`,
+    "utf8",
+  );
 }

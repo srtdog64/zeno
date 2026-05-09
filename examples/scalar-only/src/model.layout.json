@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "structs": [
+    {
+      "name": "Instance",
+      "byteLength": 32,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "entityId",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "kind",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "x",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "y",
+          "kind": "scalar",
+          "offset": 12,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "z",
+          "kind": "scalar",
+          "offset": 16,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "health",
+          "kind": "scalar",
+          "offset": 20,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "i32"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 24,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "active",
+          "kind": "scalar",
+          "offset": 28,
+          "byteLength": 1,
+          "alignment": 1,
+          "scalar": "bool"
+        }
+      ],
+      "layoutHash": "0xb67a89f3"
+    }
+  ]
+}

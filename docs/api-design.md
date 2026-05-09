@@ -87,6 +87,10 @@ UserView.setAge(view, value, byteOffset);
 UserView.getAgeAt(view, index);
 UserView.setAgeAt(view, value, index);
 UserView.sumAge(view, count);
+UserView.minAge(view, count);
+UserView.maxAge(view, count);
+UserView.countAgeWhereEq(view, count, 37);
+UserView.findFirstAgeWhereEq(view, count, 37);
 ```
 
 Rules:
@@ -105,6 +109,12 @@ Rules:
 - `sumX(view, count)` is generated for `number` scalar fields only. `i64`,
   `u64`, and `bool` do not get sum kernels in v2 because their accumulation
   semantics are different.
+- `minX(view, count)` and `maxX(view, count)` are generated for `number` scalar
+  fields and return positive/negative infinity for empty scans.
+- `countXWhereEq(view, count, expected)` and
+  `findFirstXWhereEq(view, count, expected)` are generated for integer and
+  boolean scalar fields. Floating-point equality and bigint predicates are not
+  generated in v2.1.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
 - Cursor offset caching is removed from the public emitter.

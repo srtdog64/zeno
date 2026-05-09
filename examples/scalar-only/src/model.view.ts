@@ -1,38 +1,38 @@
 import { ProjectionView } from "@exornea/zeno-runtime";
 
 export interface InstanceViewInput {
-  readonly id: number;
-  readonly meshId: number;
-  readonly materialId: number;
+  readonly entityId: number;
+  readonly kind: number;
   readonly x: number;
   readonly y: number;
   readonly z: number;
-  readonly scale: number;
-  readonly color: number;
+  readonly health: number;
+  readonly flags: number;
+  readonly active: boolean;
 }
 
-export const InstanceViewByteLength = 28;
+export const InstanceViewByteLength = 32;
 export const InstanceViewAlignment = 4;
-export const InstanceViewIdOffset = 0;
-export const InstanceViewMeshIdOffset = 4;
-export const InstanceViewMaterialIdOffset = 6;
+export const InstanceViewEntityIdOffset = 0;
+export const InstanceViewKindOffset = 4;
 export const InstanceViewXOffset = 8;
 export const InstanceViewYOffset = 12;
 export const InstanceViewZOffset = 16;
-export const InstanceViewScaleOffset = 20;
-export const InstanceViewColorOffset = 24;
+export const InstanceViewHealthOffset = 20;
+export const InstanceViewFlagsOffset = 24;
+export const InstanceViewActiveOffset = 28;
 
 export class InstanceView extends ProjectionView {
-  static readonly byteLength = 28;
+  static readonly byteLength = 32;
   static readonly alignment = 4;
-  static readonly idOffset = 0;
-  static readonly meshIdOffset = 4;
-  static readonly materialIdOffset = 6;
+  static readonly entityIdOffset = 0;
+  static readonly kindOffset = 4;
   static readonly xOffset = 8;
   static readonly yOffset = 12;
   static readonly zOffset = 16;
-  static readonly scaleOffset = 20;
-  static readonly colorOffset = 24;
+  static readonly healthOffset = 20;
+  static readonly flagsOffset = 24;
+  static readonly activeOffset = 28;
 
   constructor(view: DataView, baseOffset = 0, littleEndian = true) {
     super(view, baseOffset, littleEndian);
@@ -47,33 +47,33 @@ export class InstanceView extends ProjectionView {
   }
 
   moveToUnchecked(index: number): this {
-    return this.rebaseUnchecked(index * 28);
+    return this.rebaseUnchecked(index * 32);
   }
 
   static write(view: DataView, value: InstanceViewInput, baseOffset = 0, littleEndian = true): void {
-    InstanceView.setId(view, value.id, baseOffset, littleEndian);
-    InstanceView.setMeshId(view, value.meshId, baseOffset, littleEndian);
-    InstanceView.setMaterialId(view, value.materialId, baseOffset, littleEndian);
+    InstanceView.setEntityId(view, value.entityId, baseOffset, littleEndian);
+    InstanceView.setKind(view, value.kind, baseOffset, littleEndian);
     InstanceView.setX(view, value.x, baseOffset, littleEndian);
     InstanceView.setY(view, value.y, baseOffset, littleEndian);
     InstanceView.setZ(view, value.z, baseOffset, littleEndian);
-    InstanceView.setScale(view, value.scale, baseOffset, littleEndian);
-    InstanceView.setColor(view, value.color, baseOffset, littleEndian);
+    InstanceView.setHealth(view, value.health, baseOffset, littleEndian);
+    InstanceView.setFlags(view, value.flags, baseOffset, littleEndian);
+    InstanceView.setActive(view, value.active, baseOffset, littleEndian);
   }
 
-  static getId(view: DataView, baseOffset = 0, littleEndian = true): number {
+  static getEntityId(view: DataView, baseOffset = 0, littleEndian = true): number {
     return view.getUint32(baseOffset + 0, littleEndian);
   }
-  static setId(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
+  static setEntityId(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
     view.setUint32(baseOffset + 0, value, littleEndian);
   }
-  static getIdAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getUint32(index * 28 + 0, littleEndian);
+  static getEntityIdAt(view: DataView, index: number, littleEndian = true): number {
+    return view.getUint32(index * 32 + 0, littleEndian);
   }
-  static setIdAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setUint32(index * 28 + 0, value, littleEndian);
+  static setEntityIdAt(view: DataView, value: number, index: number, littleEndian = true): void {
+    view.setUint32(index * 32 + 0, value, littleEndian);
   }
-  static sumId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static sumEntityId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -84,18 +84,18 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 0;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getUint32(offset, littleEndian);
     }
     return sum;
   }
-  static countIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static countEntityIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -103,22 +103,22 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 0 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 0 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     let matched = 0;
     const start = baseOffset + 0;
-    const limit = start + count * 28;
-    for (let offset = start; offset < limit; offset += 28) {
+    const limit = start + count * 32;
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint32(offset, littleEndian) === expected) {
         matched += 1;
       }
     }
     return matched;
   }
-  static findFirstIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static findFirstEntityIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -126,15 +126,15 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 0 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 0 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     const start = baseOffset + 0;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let index = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint32(offset, littleEndian) === expected) {
         return index;
       }
@@ -142,7 +142,7 @@ export class InstanceView extends ProjectionView {
     }
     return -1;
   }
-  static minId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static minEntityId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -150,7 +150,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 0 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 0 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -159,9 +159,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 0;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -169,7 +169,7 @@ export class InstanceView extends ProjectionView {
     }
     return minimum;
   }
-  static maxId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static maxEntityId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -177,7 +177,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 0 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 0 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -186,9 +186,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 0;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -197,26 +197,26 @@ export class InstanceView extends ProjectionView {
     return maximum;
   }
 
-  get id(): number {
+  get entityId(): number {
     return this.view.getUint32(this.baseOffset + 0, this.littleEndian);
   }
-  set id(value: number) {
+  set entityId(value: number) {
     this.view.setUint32(this.baseOffset + 0, value, this.littleEndian);
   }
 
-  static getMeshId(view: DataView, baseOffset = 0, littleEndian = true): number {
+  static getKind(view: DataView, baseOffset = 0, littleEndian = true): number {
     return view.getUint16(baseOffset + 4, littleEndian);
   }
-  static setMeshId(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
+  static setKind(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
     view.setUint16(baseOffset + 4, value, littleEndian);
   }
-  static getMeshIdAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getUint16(index * 28 + 4, littleEndian);
+  static getKindAt(view: DataView, index: number, littleEndian = true): number {
+    return view.getUint16(index * 32 + 4, littleEndian);
   }
-  static setMeshIdAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setUint16(index * 28 + 4, value, littleEndian);
+  static setKindAt(view: DataView, value: number, index: number, littleEndian = true): void {
+    view.setUint16(index * 32 + 4, value, littleEndian);
   }
-  static sumMeshId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static sumKind(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -227,18 +227,18 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 4;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 2;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 2;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getUint16(offset, littleEndian);
     }
     return sum;
   }
-  static countMeshIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static countKindWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -246,22 +246,22 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 4 + (count - 1) * 28 + 2;
+      const lastByte = baseOffset + 4 + (count - 1) * 32 + 2;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     let matched = 0;
     const start = baseOffset + 4;
-    const limit = start + count * 28;
-    for (let offset = start; offset < limit; offset += 28) {
+    const limit = start + count * 32;
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint16(offset, littleEndian) === expected) {
         matched += 1;
       }
     }
     return matched;
   }
-  static findFirstMeshIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static findFirstKindWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -269,15 +269,15 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 4 + (count - 1) * 28 + 2;
+      const lastByte = baseOffset + 4 + (count - 1) * 32 + 2;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     const start = baseOffset + 4;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let index = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint16(offset, littleEndian) === expected) {
         return index;
       }
@@ -285,7 +285,7 @@ export class InstanceView extends ProjectionView {
     }
     return -1;
   }
-  static minMeshId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static minKind(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -293,7 +293,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 4 + (count - 1) * 28 + 2;
+      const lastByte = baseOffset + 4 + (count - 1) * 32 + 2;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -302,9 +302,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 4;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint16(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -312,7 +312,7 @@ export class InstanceView extends ProjectionView {
     }
     return minimum;
   }
-  static maxMeshId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static maxKind(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -320,7 +320,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 4 + (count - 1) * 28 + 2;
+      const lastByte = baseOffset + 4 + (count - 1) * 32 + 2;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -329,9 +329,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 4;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint16(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -340,154 +340,11 @@ export class InstanceView extends ProjectionView {
     return maximum;
   }
 
-  get meshId(): number {
+  get kind(): number {
     return this.view.getUint16(this.baseOffset + 4, this.littleEndian);
   }
-  set meshId(value: number) {
+  set kind(value: number) {
     this.view.setUint16(this.baseOffset + 4, value, this.littleEndian);
-  }
-
-  static getMaterialId(view: DataView, baseOffset = 0, littleEndian = true): number {
-    return view.getUint16(baseOffset + 6, littleEndian);
-  }
-  static setMaterialId(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
-    view.setUint16(baseOffset + 6, value, littleEndian);
-  }
-  static getMaterialIdAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getUint16(index * 28 + 6, littleEndian);
-  }
-  static setMaterialIdAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setUint16(index * 28 + 6, value, littleEndian);
-  }
-  static sumMaterialId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count === 0) {
-      return 0;
-    }
-    const start = baseOffset + 6;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 2;
-    if (lastByte > view.byteLength) {
-      throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-    }
-    let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
-      sum += view.getUint16(offset, littleEndian);
-    }
-    return sum;
-  }
-  static countMaterialIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 6 + (count - 1) * 28 + 2;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    let matched = 0;
-    const start = baseOffset + 6;
-    const limit = start + count * 28;
-    for (let offset = start; offset < limit; offset += 28) {
-      if (view.getUint16(offset, littleEndian) === expected) {
-        matched += 1;
-      }
-    }
-    return matched;
-  }
-  static findFirstMaterialIdWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 6 + (count - 1) * 28 + 2;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    const start = baseOffset + 6;
-    const limit = start + count * 28;
-    let index = 0;
-    for (let offset = start; offset < limit; offset += 28) {
-      if (view.getUint16(offset, littleEndian) === expected) {
-        return index;
-      }
-      index += 1;
-    }
-    return -1;
-  }
-  static minMaterialId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 6 + (count - 1) * 28 + 2;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    if (count === 0) {
-      return Number.POSITIVE_INFINITY;
-    }
-    const start = baseOffset + 6;
-    const limit = start + count * 28;
-    let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
-      const value = view.getUint16(offset, littleEndian);
-      if (value < minimum) {
-        minimum = value;
-      }
-    }
-    return minimum;
-  }
-  static maxMaterialId(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 6 + (count - 1) * 28 + 2;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    if (count === 0) {
-      return Number.NEGATIVE_INFINITY;
-    }
-    const start = baseOffset + 6;
-    const limit = start + count * 28;
-    let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
-      const value = view.getUint16(offset, littleEndian);
-      if (value > maximum) {
-        maximum = value;
-      }
-    }
-    return maximum;
-  }
-
-  get materialId(): number {
-    return this.view.getUint16(this.baseOffset + 6, this.littleEndian);
-  }
-  set materialId(value: number) {
-    this.view.setUint16(this.baseOffset + 6, value, this.littleEndian);
   }
 
   static getX(view: DataView, baseOffset = 0, littleEndian = true): number {
@@ -497,10 +354,10 @@ export class InstanceView extends ProjectionView {
     view.setFloat32(baseOffset + 8, value, littleEndian);
   }
   static getXAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getFloat32(index * 28 + 8, littleEndian);
+    return view.getFloat32(index * 32 + 8, littleEndian);
   }
   static setXAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setFloat32(index * 28 + 8, value, littleEndian);
+    view.setFloat32(index * 32 + 8, value, littleEndian);
   }
   static sumX(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
@@ -513,13 +370,13 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 8;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getFloat32(offset, littleEndian);
     }
     return sum;
@@ -532,7 +389,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 8 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -541,9 +398,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 8;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -559,7 +416,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 8 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -568,9 +425,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 8;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -593,10 +450,10 @@ export class InstanceView extends ProjectionView {
     view.setFloat32(baseOffset + 12, value, littleEndian);
   }
   static getYAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getFloat32(index * 28 + 12, littleEndian);
+    return view.getFloat32(index * 32 + 12, littleEndian);
   }
   static setYAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setFloat32(index * 28 + 12, value, littleEndian);
+    view.setFloat32(index * 32 + 12, value, littleEndian);
   }
   static sumY(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
@@ -609,13 +466,13 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 12;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getFloat32(offset, littleEndian);
     }
     return sum;
@@ -628,7 +485,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 12 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 12 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -637,9 +494,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 12;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -655,7 +512,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 12 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 12 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -664,9 +521,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 12;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -689,10 +546,10 @@ export class InstanceView extends ProjectionView {
     view.setFloat32(baseOffset + 16, value, littleEndian);
   }
   static getZAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getFloat32(index * 28 + 16, littleEndian);
+    return view.getFloat32(index * 32 + 16, littleEndian);
   }
   static setZAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setFloat32(index * 28 + 16, value, littleEndian);
+    view.setFloat32(index * 32 + 16, value, littleEndian);
   }
   static sumZ(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
@@ -705,13 +562,13 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 16;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getFloat32(offset, littleEndian);
     }
     return sum;
@@ -724,7 +581,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 16 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 16 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -733,9 +590,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 16;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -751,7 +608,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 16 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 16 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -760,9 +617,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 16;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getFloat32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -778,19 +635,19 @@ export class InstanceView extends ProjectionView {
     this.view.setFloat32(this.baseOffset + 16, value, this.littleEndian);
   }
 
-  static getScale(view: DataView, baseOffset = 0, littleEndian = true): number {
-    return view.getFloat32(baseOffset + 20, littleEndian);
+  static getHealth(view: DataView, baseOffset = 0, littleEndian = true): number {
+    return view.getInt32(baseOffset + 20, littleEndian);
   }
-  static setScale(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
-    view.setFloat32(baseOffset + 20, value, littleEndian);
+  static setHealth(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
+    view.setInt32(baseOffset + 20, value, littleEndian);
   }
-  static getScaleAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getFloat32(index * 28 + 20, littleEndian);
+  static getHealthAt(view: DataView, index: number, littleEndian = true): number {
+    return view.getInt32(index * 32 + 20, littleEndian);
   }
-  static setScaleAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setFloat32(index * 28 + 20, value, littleEndian);
+  static setHealthAt(view: DataView, value: number, index: number, littleEndian = true): void {
+    view.setInt32(index * 32 + 20, value, littleEndian);
   }
-  static sumScale(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static sumHealth(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -801,18 +658,18 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 20;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
-      sum += view.getFloat32(offset, littleEndian);
+    for (let offset = start; offset < limit; offset += 32) {
+      sum += view.getInt32(offset, littleEndian);
     }
     return sum;
   }
-  static minScale(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static countHealthWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -820,7 +677,54 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 20 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 20 + (count - 1) * 32 + 4;
+      if (lastByte > view.byteLength) {
+        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
+      }
+    }
+    let matched = 0;
+    const start = baseOffset + 20;
+    const limit = start + count * 32;
+    for (let offset = start; offset < limit; offset += 32) {
+      if (view.getInt32(offset, littleEndian) === expected) {
+        matched += 1;
+      }
+    }
+    return matched;
+  }
+  static findFirstHealthWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+    if (!Number.isInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (count !== 0) {
+      const lastByte = baseOffset + 20 + (count - 1) * 32 + 4;
+      if (lastByte > view.byteLength) {
+        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
+      }
+    }
+    const start = baseOffset + 20;
+    const limit = start + count * 32;
+    let index = 0;
+    for (let offset = start; offset < limit; offset += 32) {
+      if (view.getInt32(offset, littleEndian) === expected) {
+        return index;
+      }
+      index += 1;
+    }
+    return -1;
+  }
+  static minHealth(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+    if (!Number.isInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (count !== 0) {
+      const lastByte = baseOffset + 20 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -829,17 +733,17 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 20;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
-      const value = view.getFloat32(offset, littleEndian);
+    for (let offset = start; offset < limit; offset += 32) {
+      const value = view.getInt32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
       }
     }
     return minimum;
   }
-  static maxScale(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static maxHealth(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -847,7 +751,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 20 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 20 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -856,10 +760,10 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 20;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
-      const value = view.getFloat32(offset, littleEndian);
+    for (let offset = start; offset < limit; offset += 32) {
+      const value = view.getInt32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
       }
@@ -867,26 +771,26 @@ export class InstanceView extends ProjectionView {
     return maximum;
   }
 
-  get scale(): number {
-    return this.view.getFloat32(this.baseOffset + 20, this.littleEndian);
+  get health(): number {
+    return this.view.getInt32(this.baseOffset + 20, this.littleEndian);
   }
-  set scale(value: number) {
-    this.view.setFloat32(this.baseOffset + 20, value, this.littleEndian);
+  set health(value: number) {
+    this.view.setInt32(this.baseOffset + 20, value, this.littleEndian);
   }
 
-  static getColor(view: DataView, baseOffset = 0, littleEndian = true): number {
+  static getFlags(view: DataView, baseOffset = 0, littleEndian = true): number {
     return view.getUint32(baseOffset + 24, littleEndian);
   }
-  static setColor(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
+  static setFlags(view: DataView, value: number, baseOffset = 0, littleEndian = true): void {
     view.setUint32(baseOffset + 24, value, littleEndian);
   }
-  static getColorAt(view: DataView, index: number, littleEndian = true): number {
-    return view.getUint32(index * 28 + 24, littleEndian);
+  static getFlagsAt(view: DataView, index: number, littleEndian = true): number {
+    return view.getUint32(index * 32 + 24, littleEndian);
   }
-  static setColorAt(view: DataView, value: number, index: number, littleEndian = true): void {
-    view.setUint32(index * 28 + 24, value, littleEndian);
+  static setFlagsAt(view: DataView, value: number, index: number, littleEndian = true): void {
+    view.setUint32(index * 32 + 24, value, littleEndian);
   }
-  static sumColor(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static sumFlags(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -897,18 +801,18 @@ export class InstanceView extends ProjectionView {
       return 0;
     }
     const start = baseOffset + 24;
-    const limit = start + count * 28;
-    const lastByte = start + (count - 1) * 28 + 4;
+    const limit = start + count * 32;
+    const lastByte = start + (count - 1) * 32 + 4;
     if (lastByte > view.byteLength) {
       throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
     }
     let sum = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       sum += view.getUint32(offset, littleEndian);
     }
     return sum;
   }
-  static countColorWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static countFlagsWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -916,22 +820,22 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 24 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     let matched = 0;
     const start = baseOffset + 24;
-    const limit = start + count * 28;
-    for (let offset = start; offset < limit; offset += 28) {
+    const limit = start + count * 32;
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint32(offset, littleEndian) === expected) {
         matched += 1;
       }
     }
     return matched;
   }
-  static findFirstColorWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+  static findFirstFlagsWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -939,15 +843,15 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 24 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
     }
     const start = baseOffset + 24;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let index = 0;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       if (view.getUint32(offset, littleEndian) === expected) {
         return index;
       }
@@ -955,7 +859,7 @@ export class InstanceView extends ProjectionView {
     }
     return -1;
   }
-  static minColor(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static minFlags(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -963,7 +867,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 24 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -972,9 +876,9 @@ export class InstanceView extends ProjectionView {
       return Number.POSITIVE_INFINITY;
     }
     const start = baseOffset + 24;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let minimum = Number.POSITIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint32(offset, littleEndian);
       if (value < minimum) {
         minimum = value;
@@ -982,7 +886,7 @@ export class InstanceView extends ProjectionView {
     }
     return minimum;
   }
-  static maxColor(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
+  static maxFlags(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
     if (!Number.isInteger(count) || count < 0) {
       throw new RangeError(`Invalid record count: ${count}`);
     }
@@ -990,7 +894,7 @@ export class InstanceView extends ProjectionView {
       throw new RangeError(`Invalid base offset: ${baseOffset}`);
     }
     if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 28 + 4;
+      const lastByte = baseOffset + 24 + (count - 1) * 32 + 4;
       if (lastByte > view.byteLength) {
         throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
       }
@@ -999,9 +903,9 @@ export class InstanceView extends ProjectionView {
       return Number.NEGATIVE_INFINITY;
     }
     const start = baseOffset + 24;
-    const limit = start + count * 28;
+    const limit = start + count * 32;
     let maximum = Number.NEGATIVE_INFINITY;
-    for (let offset = start; offset < limit; offset += 28) {
+    for (let offset = start; offset < limit; offset += 32) {
       const value = view.getUint32(offset, littleEndian);
       if (value > maximum) {
         maximum = value;
@@ -1010,13 +914,78 @@ export class InstanceView extends ProjectionView {
     return maximum;
   }
 
-  get color(): number {
+  get flags(): number {
     return this.view.getUint32(this.baseOffset + 24, this.littleEndian);
   }
-  set color(value: number) {
+  set flags(value: number) {
     this.view.setUint32(this.baseOffset + 24, value, this.littleEndian);
   }
 
-}
+  static getActive(view: DataView, baseOffset = 0, littleEndian = true): boolean {
+    return view.getUint8(baseOffset + 28) !== 0;
+  }
+  static setActive(view: DataView, value: boolean, baseOffset = 0, littleEndian = true): void {
+    view.setUint8(baseOffset + 28, value ? 1 : 0);
+  }
+  static getActiveAt(view: DataView, index: number, littleEndian = true): boolean {
+    return view.getUint8(index * 32 + 28) !== 0;
+  }
+  static setActiveAt(view: DataView, value: boolean, index: number, littleEndian = true): void {
+    view.setUint8(index * 32 + 28, value ? 1 : 0);
+  }
+  static countActiveWhereEq(view: DataView, count: number, expected: boolean, baseOffset = 0, littleEndian = true): number {
+    if (!Number.isInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (count !== 0) {
+      const lastByte = baseOffset + 28 + (count - 1) * 32 + 1;
+      if (lastByte > view.byteLength) {
+        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
+      }
+    }
+    let matched = 0;
+    const start = baseOffset + 28;
+    const limit = start + count * 32;
+    for (let offset = start; offset < limit; offset += 32) {
+      if (view.getUint8(offset) !== 0 === expected) {
+        matched += 1;
+      }
+    }
+    return matched;
+  }
+  static findFirstActiveWhereEq(view: DataView, count: number, expected: boolean, baseOffset = 0, littleEndian = true): number {
+    if (!Number.isInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (count !== 0) {
+      const lastByte = baseOffset + 28 + (count - 1) * 32 + 1;
+      if (lastByte > view.byteLength) {
+        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
+      }
+    }
+    const start = baseOffset + 28;
+    const limit = start + count * 32;
+    let index = 0;
+    for (let offset = start; offset < limit; offset += 32) {
+      if (view.getUint8(offset) !== 0 === expected) {
+        return index;
+      }
+      index += 1;
+    }
+    return -1;
+  }
 
-//# sourceMappingURL=schema.view.ts.map
+  get active(): boolean {
+    return this.view.getUint8(this.baseOffset + 28) !== 0;
+  }
+  set active(value: boolean) {
+    this.view.setUint8(this.baseOffset + 28, value ? 1 : 0);
+  }
+
+}

@@ -34,6 +34,16 @@ export {
   type EmitProjectionFileResult,
   type EmitOptions,
 } from "./emitter.js";
+export {
+  createLayoutManifest,
+  diffLayoutManifests,
+  formatLayoutDiff,
+  formatLayoutInspection,
+  type LayoutDiffResult,
+  type LayoutManifest,
+  type LayoutManifestField,
+  type LayoutManifestStruct,
+} from "./layout-manifest.js";
 export { lowerField, type LoweringContext } from "./lowering.js";
 export { type ProjectionSourceMap } from "./source-map.js";
 export { validateLayouts } from "./validator.js";

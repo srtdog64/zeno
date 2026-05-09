@@ -11,6 +11,7 @@ Status: v2 API cleanup release.
 | `textAt(i)` / `textArray()` decode APIs | load-bearing | Makes JS string allocation explicit at every decode site.                                                |
 | Removed cursor-offset optimizer flag    | load-bearing | The retired v1 diagnostic did not clear its benchmark or heap promotion gate.                            |
 | AST-checked generated output            | load-bearing | Generated views must parse as TypeScript before the compiler hands them to users or writes source maps.  |
+| Expanded ABI release gates              | load-bearing | Fuzzed generated-code execution, hostile buffers, packed consumer imports, and SAB stress cover v2 risk. |
 | Explicit analyzer layout result         | diagnostic   | Removes the hidden `state.layouts.set(...)` side effect from struct lowering.                            |
 | Validator kind dispatch                 | diagnostic   | Keeps validation rules aligned with the field kinds they actually handle.                                |
 
@@ -41,6 +42,16 @@ Generated `.view.ts` output now crosses a TypeScript AST parse boundary before
 it is returned from the emitter or written by the CLI. The compiler still keeps
 Zeno's tagged-template emitter formatting, but invalid generated TypeScript now
 fails at the emitter boundary instead of surfacing later in a consumer build.
+
+The v2 release gate also covers:
+
+- generated-code compile/run fuzzing for scalar schemas
+- big-endian nested dynamic generated views
+- frozen v1 fixed-layout bytes read by the v2 runtime
+- hostile malformed descriptor properties
+- Node worker stress for shared arena atomic reservation
+- packed consumer import resolution for compiler/runtime package roots
+- Playwright browser smoke for the WebGL demo in CI
 
 ## Migration
 

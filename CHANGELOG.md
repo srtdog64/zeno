@@ -19,6 +19,11 @@ Status: v2 API cleanup release.
 - Generated view output now passes through a TypeScript AST parse boundary
   before being returned or written, so emitter syntax errors fail inside the
   compiler.
+- Added generated-code compile/run fuzz tests, a frozen v1 layout compatibility
+  fixture, hostile malformed-descriptor property tests, and a Node worker
+  SharedArrayBuffer writer stress gate.
+- Added a Playwright browser smoke workflow for the WebGL demo across Chromium
+  and Firefox.
 - Added schema grammar acceptance/rejection tests so grammar docs and compiler
   behavior do not drift silently.
 - Repaired the Korean schema grammar document and added it to the format gate.

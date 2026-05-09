@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync, readdirSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -130,8 +130,13 @@ export interface Bag {
 
 writeFileSync(
   path.join(consumerDir, "src", "main.ts"),
-  `import { BagView, MiniView } from "./model.view.js";
+  `import { emitProjectionFile } from "@exornea/zeno-compiler";
+import { BagView, MiniView } from "./model.view.js";
 import { POINTER32_NULL } from "@exornea/zeno-runtime";
+
+if (typeof emitProjectionFile !== "function") {
+  throw new Error("Compiler public import did not resolve.");
+}
 
 const buffer = new ArrayBuffer(128);
 const view = new DataView(buffer);
@@ -195,6 +200,16 @@ try {
     throw error;
   }
 }
+
+try {
+  // @ts-expect-error Package exports intentionally block compiler internals.
+  await import("@exornea/zeno-compiler/dist/emitter.js");
+  throw new Error("Compiler deep import unexpectedly succeeded");
+} catch (error) {
+  if (!(error instanceof Error) || !error.message.includes("Package subpath")) {
+    throw error;
+  }
+}
 `,
 );
 
@@ -242,6 +257,13 @@ if (
   throw new Error(`Unexpected JSON operational failure: ${operationalFailureOutput}`);
 }
 run(npmBin, ["run", "codegen", "--silent"], consumerDir);
+const generatedView = readFileSync(path.join(consumerDir, "src", "model.view.ts"), "utf8");
+if (!generatedView.includes('from "@exornea/zeno-runtime"')) {
+  throw new Error("Generated view did not import the runtime package root.");
+}
+if (generatedView.includes("@exornea/zeno-runtime/dist/")) {
+  throw new Error("Generated view used a runtime deep import.");
+}
 run(npmBin, ["run", "build", "--silent"], consumerDir);
 run(npmBin, ["run", "start", "--silent"], consumerDir);
 

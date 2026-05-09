@@ -320,6 +320,18 @@ Status: local witness only.
 - generated `.view.ts` output crosses a TypeScript AST parse boundary before it
   is returned or written, while preserving the existing tagged-template emitter
   formatting.
+- generated-code compile/run fuzzing covers scalar schema shapes, and a
+  representative big-endian nested dynamic schema runs through generated
+  writer/view APIs.
+- ABI compatibility now has a frozen v1 fixed-layout byte fixture read by the
+  v2 runtime.
+- hostile malformed descriptors are covered by property tests in addition to
+  deterministic fixtures.
+- `release:check` includes a Node worker SharedArrayBuffer writer stress gate
+  for atomic tail reservation.
+- packed consumer smoke checks compiler/runtime package-root import resolution
+  and rejects deep package imports.
+- CI includes a Playwright WebGL browser smoke matrix for Chromium and Firefox.
 
 ## Completed in 1.8
 

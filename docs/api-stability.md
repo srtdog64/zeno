@@ -1,7 +1,7 @@
 # API Stability
 
 This document defines which Zeno APIs are public, experimental, or internal in
-the stable `1.x` surface.
+the stable `2.x` surface.
 
 ## Claim Status
 
@@ -35,7 +35,7 @@ behind the root export graph. They are not public subpath APIs.
 
 ## Stable / Experimental Split
 
-Stable for `1.x`:
+Stable for `2.x`:
 
 - `.zeno.ts` TypeScript interface input convention
 - `@exornea/zeno-types` scalar markers: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`,
@@ -58,14 +58,10 @@ Stable for `1.x`:
 - `zeno-codegen` CLI
 - root `@exornea/zeno-runtime` imports used by generated code
 
-Experimental for `1.x`:
+Experimental for `2.x`:
 
 - pointer graph serialization policy
 - vtable/optional-field schema evolution
-
-Retired diagnostic for `1.x`:
-
-- `--optimize-cursor-offsets` emission mode
 
 Internal:
 

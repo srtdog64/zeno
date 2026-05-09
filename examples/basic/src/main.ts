@@ -23,6 +23,6 @@ console.log({
   ratio: user.ratio,
   handle: user.handleText().replaceAll("\u0000", ""),
   name: user.nameView().text(),
-  tags: user.tagsView().toArray(),
+  tags: user.tagsView().textArray(),
   avatar: Array.from(user.avatarBytes()),
 });

@@ -203,11 +203,15 @@ Good API:
 - `user.avatarBytes()` returns `Uint8Array` view
 - `user.tagsView()` returns a generated vector view
 - `user.tagsView().at(i)` returns subviews or scalar values
+- `user.tagsView().bytesAt(i)` returns a zero-copy byte view for byte/string vectors
+- `user.tagsView().textAt(i)` explicitly decodes UTF-8/ASCII and allocates a JS string
 
 Bad API:
 
 - `user.name` always returns JS `string`
 - `user.tags` always returns JS array
+- `user.tagsView().textAt(i)` in a hot loop when byte comparison would have
+  avoided JS string allocation
 
 Those APIs force allocation on access, even if the underlying wire format is zero-copy.
 
@@ -249,7 +253,7 @@ If I had to pick one first design for Zeno, it would be:
 - head plus tail arena for dynamic fields
 - `Span32` and `Vector32` descriptors with relative offsets
 - generated lazy view APIs for strings and arrays
-- no universal vtable in v1
+- no universal vtable in v2
 
 Then add:
 

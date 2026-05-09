@@ -207,7 +207,7 @@ Local Node result:
 | Direct bytes vector              |  5.63 ms | 17.54 ms | 17.72 ms | 3.48 ms |         56.31 ns |
 | Zeno `BytesVectorView.bytesAt()` |  6.11 ms | 18.87 ms | 23.49 ms | 4.32 ms |         61.07 ns |
 | Direct UTF-8 vector decode       | 11.38 ms | 14.50 ms | 15.15 ms | 1.54 ms |        113.79 ns |
-| Zeno `Utf8VectorView.at(i)`      | 20.32 ms | 22.12 ms | 25.13 ms | 1.62 ms |        203.17 ns |
+| Zeno `Utf8VectorView.textAt(i)`  | 20.32 ms | 22.12 ms | 25.13 ms | 1.62 ms |        203.17 ns |
 | Manual `writeUtf8`               | 65.84 ms | 75.85 ms | 79.52 ms | 5.23 ms |        658.41 ns |
 | `DynamicLayoutWriter.writeUtf8`  | 77.00 ms | 82.72 ms | 82.74 ms | 3.62 ms |        770.00 ns |
 | Manual `writeBytes`              |  3.98 ms |  7.81 ms | 10.17 ms | 1.71 ms |         39.81 ns |
@@ -225,7 +225,7 @@ Delta interpretation:
 | `JSON.parse` string array           |       -78.39 ns/record | 39.78 ns/record | above noise  |
 | `ScalarVectorView.at(i)`            |       +33.54 ns/record |  8.81 ns/record | above noise  |
 | `BytesVectorView.bytesAt(i)`        |        +4.76 ns/record | 55.49 ns/record | within noise |
-| `Utf8VectorView.at(i)`              |       +89.38 ns/record | 22.31 ns/record | above noise  |
+| `Utf8VectorView.textAt(i)`          |       +89.38 ns/record | 22.31 ns/record | above noise  |
 | `DynamicLayoutWriter.writeUtf8`     |      +111.59 ns/record | 63.64 ns/record | above noise  |
 | `DynamicLayoutWriter.writeBytes`    |       +60.65 ns/record | 24.18 ns/record | above noise  |
 | `writeScalarVector`                 |       +28.73 ns/record | 14.86 ns/record | above noise  |
@@ -333,9 +333,8 @@ load-bearing when:
 Do not promote dynamic string/vector performance claims yet. They need separate
 witness cases for byte-slice access, explicit text decode, and vector indexing.
 
-Do not promote cursor offset caching by default. The retired diagnostic
-`--optimize-cursor-offsets` emitter mode has not produced repeated benchmark and
-retained-heap witnesses.
+Do not reintroduce cursor offset caching by default. The removed v1 diagnostic
+emitter mode did not produce repeated benchmark and retained-heap witnesses.
 
 The latest generated optimized-view witness still does not clear that bar:
 
@@ -349,7 +348,7 @@ heap cost, so the default emitter stays unchanged.
 
 ## Scan Kernel Witness
 
-Generated number-scalar scan kernels are part of the v1 hot path. The first
+Generated number-scalar scan kernels are part of the v2 hot path. The first
 kernel is `sum<Field>()`, emitted for scalar fields whose TypeScript value is
 `number`.
 

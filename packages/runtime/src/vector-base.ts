@@ -25,6 +25,16 @@ export abstract class VectorView<T> extends ProjectionView {
       }
     | undefined;
 
+  /**
+   * Vector views are live payload views with a cached descriptor.
+   *
+   * Element reads always project the current backing buffer bytes. The
+   * `Vector32` descriptor itself is cached after the first access so hot loops
+   * do not reread the same `relOffset/count` pair on every `length`/`at(i)`
+   * call. Rebase and move operations clear the cache. If another writer mutates
+   * the descriptor in-place while this view is reused, callers must call
+   * `refreshDescriptor()` after observing the writer's publication boundary.
+   */
   override rebase(baseOffset: number): this {
     super.rebase(baseOffset);
     this.clearDescriptorCache();

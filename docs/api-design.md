@@ -66,13 +66,12 @@ Rules:
 - Static accessors should only cover scalar fields first. Dynamic fields need
   separate witness cases before being promoted.
 - `sumX(view, count)` is generated for `number` scalar fields only. `i64`,
-  `u64`, and `bool` do not get sum kernels in v1 because their accumulation
+  `u64`, and `bool` do not get sum kernels in v2 because their accumulation
   semantics are different.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
-- Cursor offset caching is a retired diagnostic emit mode, not a recommended
-  API.
-- Do not enable cursor offset caching globally; repeated witnesses show no
+- Cursor offset caching is removed from the public emitter.
+- Do not reintroduce cursor offset caching globally; repeated witnesses show no
   stable timing win and higher retained heap.
 
 ### Cursor projection API

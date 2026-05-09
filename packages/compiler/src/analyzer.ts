@@ -21,9 +21,11 @@ interface AnalyzerState {
   readonly sourceFile: ts.SourceFile;
   readonly endianness: Endianness;
   readonly declarations: Map<string, ts.InterfaceDeclaration>;
-  readonly layouts: Map<string, StructLayout>;
-  readonly diagnostics: LayoutDiagnostic[];
-  readonly activeStack: Set<string>;
+}
+
+interface LowerStructResult {
+  readonly layout: StructLayout;
+  readonly diagnostics: readonly LayoutDiagnostic[];
 }
 
 export function analyzeProjectionFile(
@@ -42,22 +44,23 @@ export function analyzeProjectionSourceFile(
     sourceFile,
     endianness: options.endianness ?? "little",
     declarations: collectInterfaceDeclarations(sourceFile),
-    layouts: new Map<string, StructLayout>(),
-    diagnostics: validateSchemaSource(sourceFile),
-    activeStack: new Set<string>(),
   };
+  const diagnostics = validateSchemaSource(sourceFile);
+  const layouts: StructLayout[] = [];
 
   for (const structName of state.declarations.keys()) {
     const result = lowerStruct(structName, state, sourceFile);
     if (!result.ok) {
-      state.diagnostics.push(result.error);
+      diagnostics.push(result.error);
+      continue;
     }
+    diagnostics.push(...result.value.diagnostics);
+    layouts.push(result.value.layout);
   }
 
-  const layouts = Array.from(state.layouts.values());
   return {
     layouts,
-    diagnostics: [...state.diagnostics, ...validateLayouts(layouts)],
+    diagnostics: [...diagnostics, ...validateLayouts(layouts)],
   };
 }
 
@@ -159,12 +162,8 @@ function lowerStruct(
   name: string,
   state: AnalyzerState,
   node: ts.Node,
-): Result<StructLayout, LayoutDiagnostic> {
-  const existing = state.layouts.get(name);
-  if (existing !== undefined) {
-    return ok(existing);
-  }
-
+  activeStack: ReadonlySet<string> = new Set(),
+): Result<LowerStructResult, LayoutDiagnostic> {
   const declaration = state.declarations.get(name);
   if (declaration === undefined) {
     return err(
@@ -175,7 +174,7 @@ function lowerStruct(
     );
   }
 
-  if (state.activeStack.has(name)) {
+  if (activeStack.has(name)) {
     return err(
       createDiagnostic(
         state.sourceFile,
@@ -190,15 +189,17 @@ function lowerStruct(
     );
   }
 
-  state.activeStack.add(name);
+  const nextActiveStack = new Set(activeStack);
+  nextActiveStack.add(name);
 
   const fields = [];
+  const diagnostics: LayoutDiagnostic[] = [];
   let runningOffset = 0;
   let alignment = 1;
 
   for (const member of declaration.members) {
     if (!ts.isPropertySignature(member)) {
-      state.diagnostics.push(
+      diagnostics.push(
         createDiagnostic(
           state.sourceFile,
           member,
@@ -216,12 +217,18 @@ function lowerStruct(
     const lowered = lowerField(member, {
       sourceFile: state.sourceFile,
       endianness: state.endianness,
-      diagnostics: state.diagnostics,
       structName: name,
-      lowerStructByName: (refName, refNode) => lowerStruct(refName, state, refNode),
+      lowerStructByName: (refName, refNode) => {
+        const result = lowerStruct(refName, state, refNode, nextActiveStack);
+        if (!result.ok) {
+          return err(result.error);
+        }
+        diagnostics.push(...result.value.diagnostics);
+        return ok(result.value.layout);
+      },
     });
     if (!lowered.ok) {
-      state.diagnostics.push(lowered.error);
+      diagnostics.push(lowered.error);
       continue;
     }
 
@@ -243,7 +250,5 @@ function lowerStruct(
     sourceLocation(state.sourceFile, declaration.name),
   );
 
-  state.layouts.set(name, layout);
-  state.activeStack.delete(name);
-  return ok(layout);
+  return ok({ layout, diagnostics });
 }

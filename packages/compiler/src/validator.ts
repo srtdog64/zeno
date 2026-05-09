@@ -33,13 +33,11 @@ interface LayoutValidationContext extends ValidationContext {
   readonly layout: StructLayout;
 }
 
-type FieldValidationRule = (
-  context: FieldValidationContext,
-) => LayoutDiagnostic | null;
+type FieldValidationRule = (context: FieldValidationContext) => LayoutDiagnostic | null;
 
-type LayoutValidationRule = (
-  context: LayoutValidationContext,
-) => readonly LayoutDiagnostic[];
+type FieldKind = FieldLayout["kind"];
+
+type LayoutValidationRule = (context: LayoutValidationContext) => readonly LayoutDiagnostic[];
 
 export function validateLayouts(layouts: StructLayout[]): LayoutDiagnostic[] {
   const diagnostics: LayoutDiagnostic[] = [];
@@ -52,7 +50,13 @@ export function validateLayouts(layouts: StructLayout[]): LayoutDiagnostic[] {
     const seenFieldNames = new Set<string>();
     for (const field of layout.fields) {
       const fieldContext = { ...context, layout, field, seenFieldNames };
-      for (const rule of fieldValidationRules) {
+      for (const rule of commonFieldValidationRules) {
+        const diagnostic = rule(fieldContext);
+        if (diagnostic !== null) {
+          diagnostics.push(diagnostic);
+        }
+      }
+      for (const rule of fieldValidationRulesByKind[field.kind]) {
         const diagnostic = rule(fieldContext);
         if (diagnostic !== null) {
           diagnostics.push(diagnostic);
@@ -70,21 +74,33 @@ export function validateLayouts(layouts: StructLayout[]): LayoutDiagnostic[] {
   return diagnostics;
 }
 
-const fieldValidationRules = [
+const commonFieldValidationRules = [
   validateDuplicateField,
   validateFieldAlignment,
   validateDescriptorShape,
-  validatePointerTarget,
-  validatePointerVectorTarget,
-  validatePointerShape,
-  validatePointerVectorElementShape,
-  validateVectorElementByteLength,
-  validateFixedArrayElementByteLength,
-  validateStructVectorElementTarget,
-  validateStructVectorElementStride,
-  validateStructFixedArrayElementTarget,
-  validateStructFixedArrayElementStride,
 ] satisfies readonly FieldValidationRule[];
+
+const fieldValidationRulesByKind = {
+  scalar: [],
+  "fixed-bytes": [],
+  "fixed-string": [],
+  "dynamic-string": [],
+  "dynamic-bytes": [],
+  struct: [],
+  pointer: [validatePointerTarget, validatePointerShape],
+  "fixed-array": [
+    validateFixedArrayElementByteLength,
+    validateStructFixedArrayElementTarget,
+    validateStructFixedArrayElementStride,
+  ],
+  vector: [
+    validatePointerVectorTarget,
+    validatePointerVectorElementShape,
+    validateVectorElementByteLength,
+    validateStructVectorElementTarget,
+    validateStructVectorElementStride,
+  ],
+} satisfies Record<FieldKind, readonly FieldValidationRule[]>;
 
 const layoutValidationRules = [
   validateNoOverlappingFields,
@@ -108,11 +124,7 @@ function validateDuplicateField({
     {
       structName: layout.name,
       fieldName: field.name,
-      measurement: measure(
-        `field "${field.name}" definition`,
-        "layout-ir-fixed",
-        "phase-0",
-      ),
+      measurement: measure(`field "${field.name}" definition`, "layout-ir-fixed", "phase-0"),
       error: duplicateDefinition(
         `field "${field.name}"`,
         "first declaration",
@@ -196,10 +208,7 @@ function validatePointerVectorTarget({
   );
 }
 
-function validatePointerShape({
-  layout,
-  field,
-}: FieldValidationContext): LayoutDiagnostic | null {
+function validatePointerShape({ layout, field }: FieldValidationContext): LayoutDiagnostic | null {
   if (field.kind !== "pointer" || hasValidPointerShape(field)) {
     return null;
   }
@@ -260,11 +269,9 @@ function validateFixedArrayElementByteLength({
 }: FieldValidationContext): LayoutDiagnostic | null {
   if (
     field.kind !== "fixed-array" ||
-    (
-      field.length > 0 &&
+    (field.length > 0 &&
       hasValidFixedArrayElementByteLength(field.element) &&
-      field.byteLength === field.length * field.element.byteLength
-    )
+      field.byteLength === field.length * field.element.byteLength)
   ) {
     return null;
   }
@@ -402,11 +409,7 @@ function validateStructByteLength({
       `validateLayouts:${layout.name}.byteLength`,
       {
         structName: layout.name,
-        measurement: measure(
-          `struct "${layout.name}" byteLength`,
-          "layout-ir-fixed",
-          "phase-0",
-        ),
+        measurement: measure(`struct "${layout.name}" byteLength`, "layout-ir-fixed", "phase-0"),
         error: layoutInvariantViolation(
           `struct "${layout.name}" byteLength`,
           "byteLength must equal the aligned end of the last field",
@@ -431,15 +434,8 @@ function validateNoInlineStructCycle({
       `validateLayouts:${layout.name}.inlineCycle`,
       {
         structName: layout.name,
-        measurement: measure(
-          `struct "${layout.name}" inline size`,
-          "layout-ir-fixed",
-          "phase-0",
-        ),
-        error: unsupportedAtPhase(
-          `inline recursive struct "${layout.name}"`,
-          "phase-0",
-        ),
+        measurement: measure(`struct "${layout.name}" inline size`, "layout-ir-fixed", "phase-0"),
+        error: unsupportedAtPhase(`inline recursive struct "${layout.name}"`, "phase-0"),
       },
     ),
   ];
@@ -458,15 +454,8 @@ function unknownStructVectorElementDiagnostic(
     {
       structName: layout.name,
       fieldName,
-      measurement: measure(
-        `vector "${fieldName}" struct element`,
-        "layout-ir-fixed",
-        "phase-0",
-      ),
-      error: unsupportedAtPhase(
-        `vector struct element "${typeName}"`,
-        "phase-0",
-      ),
+      measurement: measure(`vector "${fieldName}" struct element`, "layout-ir-fixed", "phase-0"),
+      error: unsupportedAtPhase(`vector struct element "${typeName}"`, "phase-0"),
     },
   );
 }
@@ -490,10 +479,7 @@ function unknownStructElementDiagnostic(
         "layout-ir-fixed",
         "phase-0",
       ),
-      error: unsupportedAtPhase(
-        `${label.toLowerCase()} struct element "${typeName}"`,
-        "phase-0",
-      ),
+      error: unsupportedAtPhase(`${label.toLowerCase()} struct element "${typeName}"`, "phase-0"),
     },
   );
 }
@@ -511,22 +497,13 @@ function unknownPointerTargetDiagnostic(
     {
       structName: layout.name,
       fieldName,
-      measurement: measure(
-        `pointer "${fieldName}" target`,
-        "layout-ir-fixed",
-        "phase-0",
-      ),
-      error: unsupportedAtPhase(
-        `pointer target "${targetTypeName}"`,
-        "phase-0",
-      ),
+      measurement: measure(`pointer "${fieldName}" target`, "layout-ir-fixed", "phase-0"),
+      error: unsupportedAtPhase(`pointer target "${targetTypeName}"`, "phase-0"),
     },
   );
 }
 
-function hasValidPointerShape(
-  field: Extract<FieldLayout, { kind: "pointer" }>,
-): boolean {
+function hasValidPointerShape(field: Extract<FieldLayout, { kind: "pointer" }>): boolean {
   return (
     field.descriptor === "pointer32" &&
     field.nullValue === 0xffffffff &&
@@ -562,10 +539,7 @@ function hasInlineStructCycle(
 
   active.add(layoutName);
   for (const field of layout.fields) {
-    if (
-      field.kind === "struct" &&
-      hasInlineStructCycle(field.typeName, layouts, active)
-    ) {
+    if (field.kind === "struct" && hasInlineStructCycle(field.typeName, layouts, active)) {
       active.delete(layoutName);
       return true;
     }
@@ -709,15 +683,10 @@ function invariantDiagnostic(
   construct: string,
   invariant: string,
 ): LayoutDiagnostic {
-  return createIrDiagnostic(
-    code,
-    message,
-    `validateLayouts:${layout.name}.${field.name}`,
-    {
-      structName: layout.name,
-      fieldName: field.name,
-      measurement: measure(construct, "layout-ir-fixed", "phase-0"),
-      error: layoutInvariantViolation(construct, invariant),
-    },
-  );
+  return createIrDiagnostic(code, message, `validateLayouts:${layout.name}.${field.name}`, {
+    structName: layout.name,
+    fieldName: field.name,
+    measurement: measure(construct, "layout-ir-fixed", "phase-0"),
+    error: layoutInvariantViolation(construct, invariant),
+  });
 }

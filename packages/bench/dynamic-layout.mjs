@@ -286,7 +286,7 @@ function zenoUtf8VectorDecodePass(view, count) {
   const vector = new Utf8VectorView(view, 0);
   let checksum = 0;
   for (let index = 0; index < count; index += 1) {
-    checksum += vector.at(index).length;
+    checksum += vector.textAt(index).length;
   }
   return checksum;
 }
@@ -436,11 +436,11 @@ const zenoBytesVector = measure("Zeno BytesVectorView.bytesAt(i)", () =>
 const directUtf8Vector = measure("direct UTF-8 vector decode", () =>
   directUtf8VectorDecodePass(utf8Vector.view, RECORD_COUNT),
 );
-const zenoUtf8Vector = measure("Zeno Utf8VectorView.at(i)", () =>
+const zenoUtf8Vector = measure("Zeno Utf8VectorView.textAt(i)", () =>
   zenoUtf8VectorDecodePass(utf8Vector.view, RECORD_COUNT),
 );
 compareToBaseline("BytesVectorView.bytesAt(i)", directBytesVector.stats, zenoBytesVector.stats);
-compareToBaseline("Utf8VectorView.at(i)", directUtf8Vector.stats, zenoUtf8Vector.stats);
+compareToBaseline("Utf8VectorView.textAt(i)", directUtf8Vector.stats, zenoUtf8Vector.stats);
 
 const manualUtf8Writer = measure("manual writeUtf8", () => manualWriterUtf8Pass(RECORD_COUNT));
 const writerUtf8 = measure("DynamicLayoutWriter.writeUtf8", () => writerUtf8Pass(RECORD_COUNT));

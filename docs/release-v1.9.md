@@ -4,16 +4,19 @@ Status: dynamic struct vector read/write codegen release.
 
 ## Load-Bearing Changes
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| `z.dynamicVector<T>` marker | load-bearing | Separates variable-record vectors from fixed-stride `z.vector<T>`. |
-| `dynamic-struct` Layout IR element | load-bearing | Represents a `Vector32` table of object-relative struct offsets. |
-| `DynamicStructVectorView` codegen | load-bearing | Generated views can read variable-size struct records without pretending they are fixed-stride. |
-| Dynamic struct vector writer | load-bearing | Uses `writeDynamicStructVector*` and `write*AtBase(...)` so nested descriptors remain element-relative. |
-| Shared dynamic struct vector publication | diagnostic | Extends the existing shared-writer ready-cell pattern to dynamic struct vectors. |
-| Optional/sparse fields | candidate | Requires presence metadata or vtable ABI. |
-| Discriminated unions | candidate | Requires explicit tag and variant table ABI. |
-| Varint / LEB128 | retired | Conflicts with Zeno's fixed-offset direct projection model. |
+| Property                                 | Status       | Reason                                                                                                                               |
+| ---------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `z.dynamicVector<T>` marker              | load-bearing | Separates variable-record vectors from fixed-stride `z.vector<T>`.                                                                   |
+| `dynamic-struct` Layout IR element       | load-bearing | Represents a `Vector32` table of object-relative struct offsets.                                                                     |
+| `DynamicStructVectorView` codegen        | load-bearing | Generated views can read variable-size struct records without pretending they are fixed-stride.                                      |
+| Dynamic struct vector writer             | load-bearing | Uses `writeDynamicStructVector*` and `write*AtBase(...)` so nested descriptors remain element-relative.                              |
+| Validator kind dispatch                  | diagnostic   | Removes the rule-list over-application smell without changing emitted ABI.                                                           |
+| Enumerable source locations              | diagnostic   | Makes source metadata survive ordinary JSON serialization; tests strip it explicitly where the snapshot wants source-independent IR. |
+| `textAt(i)` string vector API            | diagnostic   | Names string allocation/decode sites explicitly while keeping the v1 `at(i)` alias for compatibility.                                |
+| Shared dynamic struct vector publication | diagnostic   | Extends the existing shared-writer ready-cell pattern to dynamic struct vectors.                                                     |
+| Optional/sparse fields                   | candidate    | Requires presence metadata or vtable ABI.                                                                                            |
+| Discriminated unions                     | candidate    | Requires explicit tag and variant table ABI.                                                                                         |
+| Varint / LEB128                          | retired      | Conflicts with Zeno's fixed-offset direct projection model.                                                                          |
 
 ## Witness Case
 
@@ -35,6 +38,13 @@ Generated access and write:
 ```ts
 bag.itemsView(); // DynamicStructVectorView<ItemView>
 BagView.write(view, { items: [{ id: 1, label: "alpha" }] });
+```
+
+Dynamic string vectors expose the allocation boundary explicitly:
+
+```ts
+bag.labelsView().bytesAt(0); // zero-copy byte slice
+bag.labelsView().textAt(0); // TextDecoder + JS string allocation
 ```
 
 Shared writer publication:

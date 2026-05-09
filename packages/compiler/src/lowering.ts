@@ -58,7 +58,6 @@ export interface LoweringContext {
     name: string,
     node: ts.Node,
   ) => Result<StructLayout, LayoutDiagnostic>;
-  readonly diagnostics: LayoutDiagnostic[];
   readonly structName: string;
 }
 
@@ -1166,10 +1165,6 @@ export function attachSourceLocation<T extends { source?: SourceLocation }>(
   value: T,
   source: SourceLocation,
 ): T {
-  Object.defineProperty(value, "source", {
-    value: source,
-    enumerable: false,
-    configurable: true,
-  });
+  value.source = source;
   return value;
 }

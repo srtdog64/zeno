@@ -52,10 +52,14 @@ mkdirSync(path.join(consumerDir, "src"), { recursive: true });
 
 run(npmBin, [
   "pack",
-  "--workspace", "@exornea/zeno-schema",
-  "--workspace", "@exornea/zeno-types",
-  "--workspace", "@exornea/zeno-runtime",
-  "--workspace", "@exornea/zeno-compiler",
+  "--workspace",
+  "@exornea/zeno-schema",
+  "--workspace",
+  "@exornea/zeno-types",
+  "--workspace",
+  "@exornea/zeno-runtime",
+  "--workspace",
+  "@exornea/zeno-compiler",
   "--pack-destination",
   packDir,
 ]);
@@ -146,7 +150,7 @@ const result = {
   age: mini.age,
   label: mini.labelText().replaceAll("\\u0000", ""),
   name: mini.nameView().text(),
-  tags: mini.tagsView().toArray(),
+  tags: mini.tagsView().textArray(),
   pointerNull: POINTER32_NULL,
 };
 
@@ -214,12 +218,7 @@ if (!help.includes("Usage: zeno-codegen")) {
 }
 const diagnosticOutput = runCaptureFailure(
   npxBin,
-  [
-    "zeno-codegen",
-    "./src/invalid.zeno.ts",
-    "./src/invalid.view.ts",
-    "--diagnostics=json",
-  ],
+  ["zeno-codegen", "./src/invalid.zeno.ts", "./src/invalid.view.ts", "--diagnostics=json"],
   consumerDir,
 );
 const diagnosticJson = JSON.parse(diagnosticOutput);
@@ -232,12 +231,7 @@ if (
 }
 const operationalFailureOutput = runCaptureFailure(
   npxBin,
-  [
-    "zeno-codegen",
-    "./src/missing.zeno.ts",
-    "./src/missing.view.ts",
-    "--diagnostics=json",
-  ],
+  ["zeno-codegen", "./src/missing.zeno.ts", "./src/missing.view.ts", "--diagnostics=json"],
   consumerDir,
 );
 const operationalFailureJson = JSON.parse(operationalFailureOutput);

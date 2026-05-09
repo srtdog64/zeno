@@ -14,6 +14,12 @@ import { createProgramFromRootNames } from "./helpers.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixturesDir = path.join(__dirname, "fixtures");
 
+function stripSourceLocations<T>(value: T): T {
+  return JSON.parse(
+    JSON.stringify(value, (key, nestedValue) => (key === "source" ? undefined : nestedValue)),
+  ) as T;
+}
+
 describe("analyzeProjectionFile", () => {
   it("lowers supported branded types into layout IR", () => {
     const fixturePath = path.join(fixturesDir, "valid-schema.ts");
@@ -25,7 +31,7 @@ describe("analyzeProjectionFile", () => {
     const result = analyzeProjectionFile(program, sourceFile!);
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.layouts).toEqual([
+    expect(stripSourceLocations(result.layouts)).toEqual([
       {
         kind: "struct",
         name: "Stats",
@@ -165,16 +171,8 @@ describe("analyzeProjectionFile", () => {
     expect(emitProjectionFile(result.layouts)).toContain("class StatsView extends ProjectionView");
     expect(emitProjectionFile(result.layouts)).toContain("statsView(): StatsView");
 
-    const diagnosticCursorOffsetViewSource = emitStructView(result.layouts[1]!, {
-      optimizeCursorOffsets: true,
-    });
-    expect(diagnosticCursorOffsetViewSource).toContain("private $idOffset = 0");
-    expect(diagnosticCursorOffsetViewSource).toContain("private $refreshOffsets(): void");
-    expect(diagnosticCursorOffsetViewSource).toContain("override rebase(baseOffset: number): this");
-    expect(diagnosticCursorOffsetViewSource).toContain("this.$idOffset = this.baseOffset + 0");
-    expect(diagnosticCursorOffsetViewSource).toContain(
-      "return this.view.getBigUint64(this.$idOffset",
-    );
+    expect(playerViewSource).not.toContain("$refreshOffsets");
+    expect(playerViewSource).not.toContain("$idOffset");
   });
 
   it("analyzes a source file without requiring a TypeScript program", () => {
@@ -202,7 +200,7 @@ describe("analyzeProjectionFile", () => {
     const result = analyzeProjectionFile(program, sourceFile!);
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.layouts).toEqual([
+    expect(stripSourceLocations(result.layouts)).toEqual([
       {
         kind: "struct",
         name: "Point",
@@ -329,7 +327,7 @@ describe("analyzeProjectionFile", () => {
 
     const result = analyzeProjectionFile(program, sourceFile!);
 
-    expect(result.layouts).toEqual([
+    expect(stripSourceLocations(result.layouts)).toEqual([
       {
         kind: "struct",
         name: "Broken",
@@ -396,7 +394,7 @@ describe("analyzeProjectionFile", () => {
 
     const result = analyzeProjectionFile(program, sourceFile!);
 
-    expect(result.layouts).toEqual([
+    expect(stripSourceLocations(result.layouts)).toEqual([
       {
         kind: "struct",
         name: "EvolutionBad",
@@ -454,7 +452,7 @@ describe("analyzeProjectionFile", () => {
     const source = emitProjectionFile(result.layouts);
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.layouts[0]?.fields).toEqual([
+    expect(stripSourceLocations(result.layouts[0]?.fields)).toEqual([
       expect.objectContaining({ kind: "fixed-string", encoding: "ascii" }),
       expect.objectContaining({ kind: "dynamic-string", encoding: "ascii" }),
       expect.objectContaining({
@@ -572,7 +570,7 @@ describe("analyzeProjectionFile", () => {
     const source = emitProjectionFile(result.layouts);
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.layouts[1]?.fields).toEqual([
+    expect(stripSourceLocations(result.layouts[1]?.fields)).toEqual([
       {
         kind: "vector",
         name: "items",
@@ -643,7 +641,7 @@ describe("analyzeProjectionFile", () => {
     const source = emitProjectionFile(result.layouts);
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.layouts).toEqual([
+    expect(stripSourceLocations(result.layouts)).toEqual([
       {
         kind: "struct",
         name: "Node",

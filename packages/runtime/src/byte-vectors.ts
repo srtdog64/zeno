@@ -41,7 +41,7 @@ export class FixedBytesVectorView extends VectorView<Uint8Array> {
   }
 }
 
-export class FixedStringVectorView extends VectorView<string> {
+export class FixedStringVectorView extends VectorView<Uint8Array> {
   constructor(
     view: DataView,
     descriptorOffset: number,
@@ -67,12 +67,16 @@ export class FixedStringVectorView extends VectorView<string> {
     return decodeText(this.bytesAt(index), this.encoding);
   }
 
-  at(index: number): string {
-    return this.textAt(index);
+  textArray(): string[] {
+    return Array.from({ length: this.length }, (_, index) => this.textAt(index));
+  }
+
+  at(index: number): Uint8Array {
+    return this.bytesAt(index);
   }
 }
 
-export class Utf8VectorView extends VectorView<string> {
+export class Utf8VectorView extends VectorView<Uint8Array> {
   constructor(
     view: DataView,
     descriptorOffset: number,
@@ -87,7 +91,15 @@ export class Utf8VectorView extends VectorView<string> {
     return this.spanBytesAt(index);
   }
 
-  at(index: number): string {
+  textAt(index: number): string {
     return decodeText(this.bytesAt(index), this.encoding);
+  }
+
+  textArray(): string[] {
+    return Array.from({ length: this.length }, (_, index) => this.textAt(index));
+  }
+
+  at(index: number): Uint8Array {
+    return this.bytesAt(index);
   }
 }

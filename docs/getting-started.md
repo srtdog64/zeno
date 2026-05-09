@@ -2,13 +2,13 @@
 
 ## Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| TypeScript-only schema authoring | load-bearing | Zeno removes a separate `.fbs`-style IDL only for TS-only systems. |
-| `@exornea/zeno-types` ABI aliases | load-bearing | Binary width and dynamic layout policy must be explicit in the type layer. |
-| `.zeno.ts` schema files | load-bearing | They keep schema review separate from application logic while staying valid TypeScript. |
-| Dynamic read/write views | load-bearing | `Span32` and `Vector32` readers and supported writers are part of the v1 surface. |
-| Bare `string` shorthand | diagnostic | The compiler can lower it to UTF-8 today, but `z.utf8` is clearer in schema review. |
+| Property                          | Status       | Reason                                                                                  |
+| --------------------------------- | ------------ | --------------------------------------------------------------------------------------- |
+| TypeScript-only schema authoring  | load-bearing | Zeno removes a separate `.fbs`-style IDL only for TS-only systems.                      |
+| `@exornea/zeno-types` ABI aliases | load-bearing | Binary width and dynamic layout policy must be explicit in the type layer.              |
+| `.zeno.ts` schema files           | load-bearing | They keep schema review separate from application logic while staying valid TypeScript. |
+| Dynamic read/write views          | load-bearing | `Span32` and `Vector32` readers and supported writers are part of the v2 surface.       |
+| Bare `string` shorthand           | diagnostic   | The compiler can lower it to UTF-8 today, but `z.utf8` is clearer in schema review.     |
 
 ## 1. Write a Schema
 
@@ -82,7 +82,7 @@ const id = user.id;
 const age = UserView.getAge(view);
 const nameBytes = user.nameView().bytes();
 const nameText = user.nameView().text();
-const tags = user.tagsView().toArray();
+const tags = user.tagsView().textArray();
 ```
 
 Scalar reads are the hot path. Dynamic strings and vectors are lazy view APIs:
@@ -132,33 +132,33 @@ already batch their own fixed-field writes.
 
 ## Supported Types
 
-| Schema type | Layout | Status |
-| --- | --- | --- |
-| `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32` | scalar | supported |
-| `z.i64`, `z.u64` | bigint scalar | supported |
-| `z.f32`, `z.f64`, `z.bool` | scalar | supported |
-| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases | supported; lower to `u8`, `u16`, `u8`, `u32`, and `i64` |
-| `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>` | inline fixed region | supported |
-| `z.fixedArray<T, N>` | inline fixed array | supported for scalar, fixed bytes/string, and fixed-size struct elements |
-| `z.utf8`, `z.ascii`, `z.bytes` | `Span32` descriptor | read, field-level write, and object-level write supported |
-| `z.vector<T>` | `Vector32` descriptor | read supported for scalar, fixed bytes/string, dynamic bytes/string, fixed struct, and pointer elements; object-level write supported for scalar, fixed bytes/string, dynamic bytes/string, fixed-size struct, and pointer vectors |
-| `z.dynamicVector<T>` | `Vector32` offset table | dynamic struct vectors with generated read and write helpers |
-| `z.pointer<T>` | signed `pointer32` field-relative offset, raw `0xffffffff` null | supported for explicit recursive references |
-| bare `string` | UTF-8 `Span32` descriptor | supported, but prefer `z.utf8` in schemas |
-| bare `number` | ambiguous | rejected |
-| bare `T[]` or `any[]` | ambiguous dynamic layout | rejected, use `z.vector<T>` |
-| direct recursive structs, unions, optional fields | no stable ABI rule yet | rejected |
+| Schema type                                                             | Layout                                                          | Status                                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32`                      | scalar                                                          | supported                                                                                                                                                                                                                          |
+| `z.i64`, `z.u64`                                                        | bigint scalar                                                   | supported                                                                                                                                                                                                                          |
+| `z.f32`, `z.f64`, `z.bool`                                              | scalar                                                          | supported                                                                                                                                                                                                                          |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases                                         | supported; lower to `u8`, `u16`, `u8`, `u32`, and `i64`                                                                                                                                                                            |
+| `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>`                  | inline fixed region                                             | supported                                                                                                                                                                                                                          |
+| `z.fixedArray<T, N>`                                                    | inline fixed array                                              | supported for scalar, fixed bytes/string, and fixed-size struct elements                                                                                                                                                           |
+| `z.utf8`, `z.ascii`, `z.bytes`                                          | `Span32` descriptor                                             | read, field-level write, and object-level write supported                                                                                                                                                                          |
+| `z.vector<T>`                                                           | `Vector32` descriptor                                           | read supported for scalar, fixed bytes/string, dynamic bytes/string, fixed struct, and pointer elements; object-level write supported for scalar, fixed bytes/string, dynamic bytes/string, fixed-size struct, and pointer vectors |
+| `z.dynamicVector<T>`                                                    | `Vector32` offset table                                         | dynamic struct vectors with generated read and write helpers                                                                                                                                                                       |
+| `z.pointer<T>`                                                          | signed `pointer32` field-relative offset, raw `0xffffffff` null | supported for explicit recursive references                                                                                                                                                                                        |
+| bare `string`                                                           | UTF-8 `Span32` descriptor                                       | supported, but prefer `z.utf8` in schemas                                                                                                                                                                                          |
+| bare `number`                                                           | ambiguous                                                       | rejected                                                                                                                                                                                                                           |
+| bare `T[]` or `any[]`                                                   | ambiguous dynamic layout                                        | rejected, use `z.vector<T>`                                                                                                                                                                                                        |
+| direct recursive structs, unions, optional fields                       | no stable ABI rule yet                                          | rejected                                                                                                                                                                                                                           |
 
 ## Why This Is Easier Than `.fbs` in the Target Case
 
-| Question | `.fbs` style IDL | Zeno `.zeno.ts` |
-| --- | --- | --- |
-| Source of truth | separate schema language | TypeScript schema file |
-| Editor behavior | extra language/tooling | normal TS parser and imports |
-| TS-only project overhead | extra compiler step and mental model | one TS-flavored schema convention |
-| Cross-language output | strong | intentionally out of scope |
-| Schema review | clean standalone file | clean if `.zeno.ts` convention is followed |
-| Hot scalar access | generated API | generated static and cursor accessors |
+| Question                 | `.fbs` style IDL                     | Zeno `.zeno.ts`                            |
+| ------------------------ | ------------------------------------ | ------------------------------------------ |
+| Source of truth          | separate schema language             | TypeScript schema file                     |
+| Editor behavior          | extra language/tooling               | normal TS parser and imports               |
+| TS-only project overhead | extra compiler step and mental model | one TS-flavored schema convention          |
+| Cross-language output    | strong                               | intentionally out of scope                 |
+| Schema review            | clean standalone file                | clean if `.zeno.ts` convention is followed |
+| Hot scalar access        | generated API                        | generated static and cursor accessors      |
 
 The load-bearing claim is narrower than "better than FlatBuffers": Zeno should
 be better for TS-only teams that do not need cross-language schema tooling.
@@ -170,7 +170,7 @@ be better for TS-only teams that do not need cross-language schema tooling.
 - `z.pointer<T>` stores relative offsets only; object graph allocation/serialization is not
   implemented.
 - `z.utf8`/`z.bytes` return views or explicit decode helpers, not free JS strings.
-- Versioning and schema diff tooling are not implemented; v1 treats
+- Versioning and schema diff tooling are not implemented; v2 treats
   layout-changing schema edits as breaking.
 - Generated dynamic accessors are correctness-first; performance claims remain
   local benchmark witnesses.

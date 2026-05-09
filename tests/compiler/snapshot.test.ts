@@ -31,6 +31,12 @@ function snapshotDiagnostics(diagnostics: readonly LayoutDiagnostic[]) {
   }));
 }
 
+function stripSourceLocations(value: unknown): unknown {
+  return JSON.parse(
+    JSON.stringify(value, (key, nestedValue) => (key === "source" ? undefined : nestedValue)),
+  );
+}
+
 describe("compiler snapshots", () => {
   it("matches the Layout IR snapshot for a representative schema", () => {
     const fixturePath = path.join(fixturesDir, "snapshot-schema.ts");
@@ -42,7 +48,9 @@ describe("compiler snapshots", () => {
     const result = analyzeProjectionFile(program, sourceFile!);
 
     expect(result.diagnostics).toEqual([]);
-    expect(JSON.stringify(result.layouts, null, 2)).toMatchInlineSnapshot(`
+    expect(Object.keys(result.layouts[0]!)).toContain("source");
+    expect(Object.keys(result.layouts[0]!.fields[0]!)).toContain("source");
+    expect(JSON.stringify(stripSourceLocations(result.layouts), null, 2)).toMatchInlineSnapshot(`
       "[
         {
           "kind": "struct",
@@ -104,9 +112,9 @@ describe("compiler snapshots", () => {
 
     expect(result.diagnostics).toEqual([]);
     const emitted = emitProjectionFile(result.layouts);
-    expect(
-      emitted.indexOf("Invalid base offset: ${baseOffset}"),
-    ).toBeLessThan(emitted.indexOf("const start = baseOffset + 8"));
+    expect(emitted.indexOf("Invalid base offset: ${baseOffset}")).toBeLessThan(
+      emitted.indexOf("const start = baseOffset + 8"),
+    );
     expect(emitted).toMatchInlineSnapshot(`
       "import { DynamicLayoutWriter, FixedBytesVectorView, ProjectionView, decodeFixedText, fixedBytesView, writeFixedText } from "@exornea/zeno-runtime";
 
@@ -521,10 +529,7 @@ describe("compiler snapshots", () => {
 
     expect(invalidSourceFile).toBeDefined();
 
-    const invalidResult = analyzeProjectionFile(
-      invalidProgram,
-      invalidSourceFile!,
-    );
+    const invalidResult = analyzeProjectionFile(invalidProgram, invalidSourceFile!);
 
     expect(snapshotDiagnostics(invalidResult.diagnostics)).toMatchInlineSnapshot(`
       [
@@ -588,10 +593,7 @@ describe("compiler snapshots", () => {
 
     expect(recursiveSourceFile).toBeDefined();
 
-    const recursiveResult = analyzeProjectionFile(
-      recursiveProgram,
-      recursiveSourceFile!,
-    );
+    const recursiveResult = analyzeProjectionFile(recursiveProgram, recursiveSourceFile!);
 
     expect(snapshotDiagnostics(recursiveResult.diagnostics)).toMatchInlineSnapshot(`
       [

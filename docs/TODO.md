@@ -139,7 +139,7 @@ considered complete.
 
 ### Gate 1: Layout correctness
 
-Status: satisfied for v1.
+Status: satisfied for v2.
 
 - IR snapshots for supported schemas: done for representative schemas
 - diagnostics snapshots for rejected schemas: done for representative rejected source schemas
@@ -147,7 +147,7 @@ Status: satisfied for v1.
 
 ### Gate 2: Emitter correctness
 
-Status: satisfied for v1.
+Status: satisfied for v2.
 
 - generated code golden tests: done for a representative schema
 - emitted code compiles under `tsc`: covered by `npm run check`
@@ -164,7 +164,7 @@ Status: satisfied for current supported surface.
 
 ### Gate 4: Dynamic layout correctness
 
-Status: satisfied for v1.
+Status: satisfied for v2.
 
 - `Span32` string descriptors resolve correctly
 - `Vector32` descriptors resolve correctly
@@ -184,7 +184,7 @@ Status: satisfied for v1 with a conservative retained-heap budget.
 
 ### Gate 5A: Package consumer smoke
 
-Status: satisfied for v1.
+Status: satisfied for v2.
 
 - packed tarballs install into a fresh consumer project
 - `zeno-codegen --help` works through the installed compiler bin
@@ -204,7 +204,7 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `1.9.0` after human release review
+- tag and publish `2.0.0` after human release review
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
@@ -222,8 +222,8 @@ Status: local witness only.
   static pointer accessors, and scalar `sum<Field>()` kernels.
 - `lowerTypeNode` is split by semantic boundary: syntax, scalar, fixed,
   dynamic, vector, pointer, and struct references.
-- `--optimize-cursor-offsets` is marked as a retired diagnostic in CLI usage and
-  kept out of the default release and benchmark paths.
+- `--optimize-cursor-offsets` was retired from the default release and benchmark
+  paths.
 - optional frame payload boundaries are covered by `assertZenoFramePayload(...)`
   and `checkedZenoFramePayloadView(...)`.
 - cyclic pointer traversal has an explicit budget failure test.
@@ -283,6 +283,41 @@ Status: local witness only.
   not expose this as a runtime API while Zeno only projects existing
   `DataView` float bits without numeric transformation
 
+## Completed in 1.9
+
+- `z.dynamicVector<T>` / `dynamic_vector<T>` is supported for offset-table
+  vectors of dynamic struct records.
+- generated dynamic struct vector views use `DynamicStructVectorView<TView>`.
+- generated writers emit `writeDynamicStructVector*` and preserve element-local
+  descriptor bases for nested dynamic fields.
+- `SharedDynamicLayoutWriter` can publish dynamic struct vectors through the
+  existing descriptor-ready cell contract.
+- validator field checks dispatch by `FieldLayout.kind` so field-specific rules
+  do not run against unrelated field kinds.
+- Layout IR `source` locations are enumerable; snapshots strip source metadata
+  explicitly when testing source-independent shape.
+- dynamic/fixed string vector APIs expose `textAt(i)` as the explicit decode
+  boundary; in v2, `at(i)` returns the zero-copy byte view for string vectors.
+- `--optimize-cursor-offsets` is removed from the public CLI and emitter.
+
+## Completed in 2.0
+
+- dynamic and fixed string vector `at(i)` now returns the zero-copy byte view;
+  use `textAt(i)` or `textArray()` for decoding.
+- fixed string array `at(i)` now returns the zero-copy byte view; use
+  `textAt(i)` or `textArray()` for decoding.
+- the retired cursor-offset optimizer is removed from CLI, emitter, release
+  scripts, and benchmark entrypoints.
+- analyzer struct lowering returns explicit layout plus diagnostics instead of
+  writing completed layouts through a shared `state.layouts` side effect.
+- schema grammar docs now have compiler acceptance/rejection tests that cover
+  the documented supported and rejected examples.
+- the Korean schema grammar document is valid UTF-8 and included in the format
+  gate.
+- `VectorView` documents its live payload view plus cached descriptor contract;
+  descriptor rewrites require `refreshDescriptor()` after a publication
+  boundary.
+
 ## Completed in 1.8
 
 - source maps are a compiler surface through `--source-map` and
@@ -324,10 +359,8 @@ Status: local witness only.
 
 ### Performance surface
 
-- keep `--optimize-cursor-offsets` out of the default release and benchmark
-  paths; remove it from the public CLI if the diagnostic stops paying for itself
-- current status: `--optimize-cursor-offsets` is a retired diagnostic mode, not
-  a recommended public optimization
+- keep removed cursor offset caching out of the public CLI unless a new design
+  clears the benchmark and retained-heap promotion gate
 - promote generated scan kernels as the main aggregate hot path, not optimized
   cursor offsets
 - add generated scan kernel candidates only after `sum<Field>()` has repeated

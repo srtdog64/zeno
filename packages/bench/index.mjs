@@ -12,20 +12,12 @@ import {
 const RECORD_COUNT = Number(process.env.ZENO_BENCH_RECORDS ?? 200_000);
 const WARMUP_RUNS = Number(process.env.ZENO_BENCH_WARMUP ?? 3);
 const MEASURE_RUNS = Number(process.env.ZENO_BENCH_RUNS ?? 30);
-const INCLUDE_CURSOR_DIAGNOSTICS =
-  process.argv.includes("--cursor-diagnostics") ||
-  process.env.ZENO_BENCH_CURSOR_DIAGNOSTICS === "1";
+const INCLUDE_CURSOR_DIAGNOSTICS = false;
 const STRIDE = UserView.byteLength;
 const POINTER_NODE_STRIDE = 8;
 const POINTER_NODE_VALUE_OFFSET = 0;
 const POINTER_NODE_NEXT_OFFSET = 4;
 const POINTER32_NULL = 0xffffffff;
-let OptimizedUserView = null;
-
-if (INCLUDE_CURSOR_DIAGNOSTICS) {
-  ({ UserView: OptimizedUserView } =
-    await import("../../examples/basic/dist/model.optimized.view.js"));
-}
 
 if (typeof globalThis.gc !== "function") {
   console.error("Run with --expose-gc so retained memory measurements are meaningful.");
@@ -169,10 +161,7 @@ function timeOnce(label, run) {
 }
 
 function optimizedUserViewClass() {
-  if (OptimizedUserView === null) {
-    throw new Error("Run bench with --cursor-diagnostics to load the retired optimized view.");
-  }
-  return OptimizedUserView;
+  throw new Error("optimized cursor diagnostics were removed in Zeno v2.");
 }
 
 function makeFixture(count) {

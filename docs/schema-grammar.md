@@ -7,13 +7,13 @@ TypeScript subset plus Zeno ABI marker types from `@exornea/zeno-types`.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Type-only imports | load-bearing | Schema files must not depend on runtime values. |
-| Interface fields | load-bearing | Field order, names, and marker types define the binary layout. |
-| ABI marker types | load-bearing | Width, descriptor, and pointer policy must be explicit. |
-| Bare TS shorthand | diagnostic | `string` is supported as UTF-8 shorthand, but explicit `z.utf8` is clearer. |
-| Value declarations | rejected | Runtime values in schema files make codegen ambiguous and unsafe. |
+| Property           | Status       | Reason                                                                      |
+| ------------------ | ------------ | --------------------------------------------------------------------------- |
+| Type-only imports  | load-bearing | Schema files must not depend on runtime values.                             |
+| Interface fields   | load-bearing | Field order, names, and marker types define the binary layout.              |
+| ABI marker types   | load-bearing | Width, descriptor, and pointer policy must be explicit.                     |
+| Bare TS shorthand  | diagnostic   | `string` is supported as UTF-8 shorthand, but explicit `z.utf8` is clearer. |
+| Value declarations | rejected     | Runtime values in schema files make codegen ambiguous and unsafe.           |
 
 ## File Shape
 

@@ -23,9 +23,8 @@ Command:
 
 ```powershell
 npm run codegen:basic
-npm run codegen:diagnostic:cursor-offsets
 npm run build
-npm run bench:cursor-diagnostics
+npm run bench
 ```
 
 Parameters:
@@ -92,15 +91,9 @@ Reason:
 
 ### Precomputed cursor offsets
 
-Retire as a public optimization path. The compiler still accepts the diagnostic
-emit switch for regression experiments:
-
-```powershell
-node .\packages\compiler\bin\zeno-codegen.mjs .\examples\basic\src\model.zeno.ts .\examples\basic\src\model.optimized.view.ts --optimize-cursor-offsets
-```
-
-The default emitter, release gate, and default `npm run bench` do not enable it.
-New users should not start from it.
+Removed as a public compiler path in v2. The v1 diagnostic switch did not clear
+its promotion gate and added codegen complexity for a shape users should not
+start from.
 
 Latest generated-view witness:
 
@@ -136,7 +129,7 @@ Witness run:
 This is a structural rhyme with the manual `PrecomputedAgeOffsetView` benchmark,
 but not a stable win as generated API. The narrower hidden class helps in some
 single-field witnesses, yet getter calls and cursor state still do not beat the
-static accessor path. Keep this as a diagnostic experiment, not a public v1 API.
+static accessor path. Keep this as a diagnostic experiment, not a public v2 API.
 
 ### Offset-increment loops
 
@@ -171,7 +164,7 @@ First witness:
 - `UserView.sumAge(view, count)`: `6.06 ns/record`
 - result: within pooled noise, with a cleaner API boundary
 
-Do not generate v1 sum kernels for `i64`, `u64`, or `bool`. BigInt
+Do not generate sum kernels for `i64`, `u64`, or `bool`. BigInt
 accumulation and boolean counting need separate naming and overflow semantics.
 
 over index APIs when they already own byte offsets.

@@ -153,8 +153,8 @@ describe("dynamic layout runtime skeleton", () => {
     const tagsView = new Utf8VectorView(view, 0);
 
     expect(tagsView.length).toBe(2);
-    expect(tagsView.at(0)).toBe("red");
-    expect(tagsView.at(1)).toBe("blue");
+    expect(tagsView.textAt(0)).toBe("red");
+    expect(tagsView.textAt(1)).toBe("blue");
   });
 
   it("reads a vector of raw byte slices through span descriptors", () => {
@@ -301,8 +301,8 @@ describe("dynamic layout runtime skeleton", () => {
 
     expect(Array.from(bytesView.at(0))).toEqual([1, 2, 3, 4]);
     expect(Array.from(bytesView.at(1))).toEqual([5, 6, 7, 8]);
-    expect(textView.at(0).replaceAll("\u0000", "")).toBe("ab");
-    expect(textView.at(1).replaceAll("\u0000", "")).toBe("cd");
+    expect(textView.textAt(0).replaceAll("\u0000", "")).toBe("ab");
+    expect(textView.textAt(1).replaceAll("\u0000", "")).toBe("cd");
   });
 
   it("honors ascii encoding for fixed and vector text views", () => {
@@ -321,8 +321,8 @@ describe("dynamic layout runtime skeleton", () => {
     new Uint8Array(buffer, 36, 4).set([0x80, 0, 0, 0]);
 
     const textView = new FixedStringVectorView(view, 8, 4, 0, true, "ascii");
-    expect(textView.at(0).replaceAll("\u0000", "")).toBe("ab");
-    expect(() => textView.at(1)).toThrow(RangeError);
+    expect(textView.textAt(0).replaceAll("\u0000", "")).toBe("ab");
+    expect(() => textView.textAt(1)).toThrow(RangeError);
   });
 
   it("honors ascii encoding for dynamic string spans and vectors", () => {
@@ -335,7 +335,7 @@ describe("dynamic layout runtime skeleton", () => {
     expect(() => writer.writeText(16, "é", "ascii")).toThrow(RangeError);
 
     expect(new Utf8SpanView(view, 0, 0, true, "ascii").text()).toBe("ascii");
-    expect(new Utf8VectorView(view, 8, 0, true, "ascii").toArray()).toEqual(["aa", "bb"]);
+    expect(new Utf8VectorView(view, 8, 0, true, "ascii").textArray()).toEqual(["aa", "bb"]);
   });
 
   it("writes dynamic spans and vectors through a tail arena writer", () => {
@@ -350,7 +350,7 @@ describe("dynamic layout runtime skeleton", () => {
     const tagsView = new Utf8VectorView(view, 8);
 
     expect(nameView.text()).toBe("zeno");
-    expect(tagsView.toArray()).toEqual(["ts", "view"]);
+    expect(tagsView.textArray()).toEqual(["ts", "view"]);
   });
 
   it("writes dynamic payloads into a SharedArrayBuffer-backed tail arena", () => {
@@ -540,8 +540,8 @@ describe("dynamic layout runtime skeleton", () => {
       "id",
     );
     expect(Array.from(new Uint8Array(buffer, 8, 4))).toEqual([1, 2, 0, 0]);
-    expect(textVector.at(0).replaceAll("\u0000", "")).toBe("aa");
-    expect(textVector.at(1).replaceAll("\u0000", "")).toBe("b");
+    expect(textVector.textAt(0).replaceAll("\u0000", "")).toBe("aa");
+    expect(textVector.textAt(1).replaceAll("\u0000", "")).toBe("b");
     expect(Array.from(bytesVector.at(0))).toEqual([3, 4, 0]);
     expect(Array.from(bytesVector.at(1))).toEqual([5, 0, 0]);
   });
@@ -664,7 +664,7 @@ describe("dynamic layout runtime skeleton", () => {
     dynamicVectorDataView.setUint32(0, 60, true);
     dynamicVectorDataView.setUint32(4, 1, true);
 
-    expect(() => new Utf8VectorView(dynamicVectorDataView, 0).at(0)).toThrow(RangeError);
+    expect(() => new Utf8VectorView(dynamicVectorDataView, 0).textAt(0)).toThrow(RangeError);
 
     const pointerVectorBuffer = new ArrayBuffer(64);
     const pointerVectorDataView = new DataView(pointerVectorBuffer);

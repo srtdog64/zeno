@@ -11,7 +11,6 @@ import {
 } from "../dist/index.js";
 
 const args = process.argv.slice(2);
-let optimizeCursorOffsets = false;
 let sourceMap = false;
 let endianness = "little";
 const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
@@ -19,7 +18,7 @@ let diagnosticsFormat =
   diagnosticsArg === undefined ? "text" : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
 const usage =
-  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--optimize-cursor-offsets retired-diagnostic] [--endian=little|big] [--diagnostics=text|json]";
+  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {
@@ -45,14 +44,6 @@ for (const arg of args) {
   if (arg === "--help" || arg === "-h") {
     console.log(usage);
     process.exit(0);
-  }
-
-  if (arg === "--optimize-cursor-offsets") {
-    optimizeCursorOffsets = true;
-    console.error(
-      "Warning: --optimize-cursor-offsets is a retired diagnostic mode; static accessors and scan kernels are the supported hot path.",
-    );
-    continue;
   }
 
   if (arg === "--source-map") {
@@ -123,15 +114,9 @@ if (result.diagnostics.length > 0) {
 
 const resolvedOutputPath = path.resolve(outputPath);
 if (sourceMap) {
-  const emitted = emitProjectionFileWithSourceMap(result.layouts, resolvedOutputPath, {
-    optimizeCursorOffsets,
-  });
+  const emitted = emitProjectionFileWithSourceMap(result.layouts, resolvedOutputPath);
   await writeFile(resolvedOutputPath, emitted.code, "utf8");
   await writeFile(`${resolvedOutputPath}.map`, JSON.stringify(emitted.sourceMap, null, 2), "utf8");
 } else {
-  await writeFile(
-    resolvedOutputPath,
-    emitProjectionFile(result.layouts, { optimizeCursorOffsets }),
-    "utf8",
-  );
+  await writeFile(resolvedOutputPath, emitProjectionFile(result.layouts), "utf8");
 }

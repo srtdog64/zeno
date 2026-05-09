@@ -1,19 +1,19 @@
 # Schema Compatibility
 
-This document defines Zeno's v1 schema compatibility contract.
+This document defines Zeno's v2 schema compatibility contract.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Layout signature compatibility | load-bearing | Readers and writers are binary-compatible only when offsets, byte lengths, alignments, descriptors, and endianness match. |
-| Schema source compatibility | diagnostic | TypeScript source diffs help review changes, but binary compatibility is decided by Layout IR. |
-| Append-only evolution | candidate | Appending fields can be compatible only when callers use an explicit envelope or version policy; Zeno v1 does not infer that policy. |
-| Optional/vtable evolution | future | Sparse and versioned records need a vtable-style model that is intentionally outside v1. |
+| Property                       | Status       | Reason                                                                                                                               |
+| ------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Layout signature compatibility | load-bearing | Readers and writers are binary-compatible only when offsets, byte lengths, alignments, descriptors, and endianness match.            |
+| Schema source compatibility    | diagnostic   | TypeScript source diffs help review changes, but binary compatibility is decided by Layout IR.                                       |
+| Append-only evolution          | candidate    | Appending fields can be compatible only when callers use an explicit envelope or version policy; Zeno v2 does not infer that policy. |
+| Optional/vtable evolution      | future       | Sparse and versioned records need a vtable-style model that is intentionally outside v2.                                             |
 
-## V1 Rule
+## V2 Rule
 
-Zeno v1 provides a stable ABI for a generated view and the exact Layout IR it was
+Zeno v2 provides a stable ABI for a generated view and the exact Layout IR it was
 generated from. It does not claim automatic compatibility between two different
 schemas.
 
@@ -31,7 +31,7 @@ If any of those change, treat the change as a breaking wire-format change.
 
 ## Breaking Changes
 
-These are breaking in v1:
+These are breaking in v2:
 
 - changing `z.i32` to `z.u32`, `z.f32`, or another scalar kind,
 - changing `z.fixedUtf8<32>` to another length,
@@ -55,7 +55,7 @@ These are source-level non-breaking only; they do not change the wire layout:
 
 ## Versioning Pattern
 
-For v1, version records explicitly at the application envelope level:
+For v2, version records explicitly at the application envelope level:
 
 ```ts
 import type { z } from "@exornea/zeno-types";
@@ -82,7 +82,7 @@ export interface UserV2 {
 }
 ```
 
-This keeps v1 honest: Zeno projects bytes quickly and predictably, while the
+This keeps v2 honest: Zeno projects bytes quickly and predictably, while the
 application owns migration routing.
 
 ## Promotion Criterion

@@ -41,11 +41,7 @@ type VectorWriterEmitter<K extends VectorElementLayout["kind"]> = (
 ) => string[];
 
 export interface EmitOptions {
-  /**
-   * @deprecated Retired diagnostic mode. Static accessors and scan kernels are
-   * the supported hot path; keep this only for regression experiments.
-   */
-  readonly optimizeCursorOffsets?: boolean;
+  readonly reserved?: never;
 }
 
 export interface EmitProjectionFileResult {
@@ -225,10 +221,9 @@ function emitLayoutConstants(layout: StructLayout): string[] {
 
 function emitStructClass(
   layout: StructLayout,
-  options: EmitOptions,
+  _options: EmitOptions,
   layoutMap: ReadonlyMap<string, StructLayout>,
 ): string[] {
-  const scalarFields = layout.fields.filter((field) => field.kind === "scalar");
   const littleEndianDefault = toLittleEndianLiteral(layout);
   const lines: string[] = [`export class ${layout.name}View extends ProjectionView {`];
   lines.push(
@@ -262,46 +257,13 @@ private static assertPointerTargetRange(view: DataView, targetOffset: number, by
     );
   }
 
-  if (options.optimizeCursorOffsets && scalarFields.length > 0) {
-    lines.push("");
-    lines.push(
-      ...method`${scalarFields.map((field) => `private $${field.name}Offset = ${field.offset};`)}`,
-    );
-  }
-
   lines.push("");
-  if (options.optimizeCursorOffsets && scalarFields.length > 0) {
-    lines.push(
-      ...method`
-constructor(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault}) {
-  super(view, baseOffset, littleEndian);
-  this.$refreshOffsets();
-}
-
-private $refreshOffsets(): void {
-${scalarFields.map((field) => `  this.$${field.name}Offset = this.baseOffset + ${field.offset};`)}
-}
-
-override rebase(baseOffset: number): this {
-  super.rebase(baseOffset);
-  this.$refreshOffsets();
-  return this;
-}
-
-override rebaseUnchecked(baseOffset: number): this {
-  super.rebaseUnchecked(baseOffset);
-  this.$refreshOffsets();
-  return this;
-}`,
-    );
-  } else {
-    lines.push(
-      ...method`
+  lines.push(
+    ...method`
 constructor(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault}) {
   super(view, baseOffset, littleEndian);
 }`,
-    );
-  }
+  );
 
   lines.push("");
   lines.push(
@@ -312,23 +274,12 @@ static at(view: DataView, baseOffset = 0, littleEndian = ${littleEndianDefault})
   );
   lines.push("");
 
-  if (options.optimizeCursorOffsets && scalarFields.length > 0) {
-    lines.push(
-      ...method`
-moveTo(index: number): this {
-  this.moveToIndex(index, ${layout.name}View.byteLength);
-  this.$refreshOffsets();
-  return this;
-}`,
-    );
-  } else {
-    lines.push(
-      ...method`
+  lines.push(
+    ...method`
 moveTo(index: number): this {
   return this.moveToIndex(index, ${layout.name}View.byteLength);
 }`,
-    );
-  }
+  );
   lines.push("");
   lines.push(
     ...method`
@@ -362,7 +313,7 @@ moveToUnchecked(index: number): this {
     if (staticAccessorLines.length > 0) {
       lines.push("");
     }
-    for (const line of emitField(layout, field, options)) {
+    for (const line of emitField(layout, field)) {
       lines.push(line);
     }
     lines.push("");
@@ -841,7 +792,7 @@ function isNumberSumScalar(kind: string): boolean {
   return kind !== "i64" && kind !== "u64" && kind !== "bool";
 }
 
-function emitField(layout: StructLayout, field: FieldLayout, options: EmitOptions): string[] {
+function emitField(layout: StructLayout, field: FieldLayout): string[] {
   // This switch intentionally mirrors the Layout IR field-kind surface.
   // Split it only when a dispatch table removes real emitter complexity.
   switch (field.kind) {
@@ -851,9 +802,7 @@ function emitField(layout: StructLayout, field: FieldLayout, options: EmitOption
       const typeName = scalarTsType(field.scalar);
       const getterArgs =
         field.byteLength === 1 || field.scalar === "bool" ? "" : ", this.littleEndian";
-      const instanceOffset = options.optimizeCursorOffsets
-        ? `this.$${field.name}Offset`
-        : `this.baseOffset + ${field.offset}`;
+      const instanceOffset = `this.baseOffset + ${field.offset}`;
       const getterBody =
         field.scalar === "bool"
           ? `return this.view.${getterMethod}(${instanceOffset}) !== 0;`

@@ -96,7 +96,7 @@ const user = new UserView(view);
 console.log(user.id);
 console.log(user.age);
 console.log(user.nameView().text());
-console.log(user.tagsView().toArray());
+console.log(user.tagsView().textArray());
 ```
 
 For hot loops, use generated static accessors or scan kernels:
@@ -130,7 +130,7 @@ per-record view allocation.
 | `z.pointer<T>`                                                          | signed relative `pointer32` | stable                                                                |
 | bare `string`                                                           | UTF-8 `Span32` shorthand    | supported, but `z.utf8` is clearer                                    |
 
-Unsupported by design in v1:
+Unsupported by design in v2:
 
 - bare `number`
 - bare `T[]` / `any[]`
@@ -209,4 +209,6 @@ project.
   analyzer additions.
 - [docs/release-v1.8.md](docs/release-v1.8.md): shared-memory arena, source
   map, and WebGL demo additions.
+- [docs/release-v2.0.md](docs/release-v2.0.md): projection-first string vector
+  cleanup and retired optimizer removal.
 - [CHANGELOG.md](CHANGELOG.md): release history.

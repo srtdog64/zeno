@@ -5,12 +5,7 @@ import {
   writeFixedText,
   type TextEncoding,
 } from "./fixed.js";
-import {
-  readScalar,
-  scalarByteLength,
-  writeScalar,
-  type ScalarKind,
-} from "./scalar.js";
+import { readScalar, scalarByteLength, writeScalar, type ScalarKind } from "./scalar.js";
 import { ProjectionView } from "./view-base.js";
 
 export abstract class FixedArrayView<T> extends ProjectionView {
@@ -43,9 +38,7 @@ export abstract class FixedArrayView<T> extends ProjectionView {
   }
 }
 
-export class FixedScalarArrayView<
-  T extends number | bigint | boolean,
-> extends FixedArrayView<T> {
+export class FixedScalarArrayView<T extends number | bigint | boolean> extends FixedArrayView<T> {
   constructor(
     view: DataView,
     payloadOffset: number,
@@ -116,7 +109,7 @@ export class FixedBytesArrayView extends FixedArrayView<Uint8Array> {
   }
 }
 
-export class FixedStringArrayView extends FixedArrayView<string> {
+export class FixedStringArrayView extends FixedArrayView<Uint8Array> {
   constructor(
     view: DataView,
     payloadOffset: number,
@@ -154,8 +147,12 @@ export class FixedStringArrayView extends FixedArrayView<string> {
     );
   }
 
-  at(index: number): string {
-    return this.textAt(index);
+  textArray(): string[] {
+    return Array.from({ length: this.length }, (_, index) => this.textAt(index));
+  }
+
+  at(index: number): Uint8Array {
+    return this.bytesAt(index);
   }
 }
 
@@ -165,11 +162,7 @@ export class FixedStructArrayView<TView extends ProjectionView> extends FixedArr
     payloadOffset: number,
     length: number,
     elementByteLength: number,
-    private readonly factory: (
-      view: DataView,
-      baseOffset: number,
-      littleEndian: boolean,
-    ) => TView,
+    private readonly factory: (view: DataView, baseOffset: number, littleEndian: boolean) => TView,
     baseOffset = 0,
     littleEndian = true,
   ) {

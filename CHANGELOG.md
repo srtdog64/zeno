@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.0.0
+
+Status: v2 API cleanup release.
+
+- Breaking: dynamic and fixed string vector `at(i)` now returns the zero-copy
+  `Uint8Array` byte view. Use `textAt(i)` or `textArray()` for explicit
+  UTF-8/ASCII decoding and JS string allocation.
+- Breaking: fixed string array `at(i)` now returns the zero-copy `Uint8Array`
+  byte view. Use `textAt(i)` or `textArray()` for explicit decoding.
+- Breaking: removed the retired `--optimize-cursor-offsets` CLI/emitter path.
+  Static accessors and generated scan kernels remain the supported hot path.
+- Analyzer lowering no longer writes completed layouts through a shared
+  `state.layouts` side effect; `lowerStruct` returns layout plus diagnostics
+  explicitly.
+- Validator field rules dispatch by `FieldLayout.kind` instead of running every
+  field-specific rule against every field.
+- Added schema grammar acceptance/rejection tests so grammar docs and compiler
+  behavior do not drift silently.
+- Repaired the Korean schema grammar document and added it to the format gate.
+- Documented `VectorView`'s live-view plus cached-descriptor contract at the
+  runtime boundary.
+- Layout IR `source` locations remain enumerable; tests explicitly strip them
+  when snapshotting source-independent layout shape.
+- Package manifests and workspace lockfile are aligned at `2.0.0`.
+
 ## 1.9.0
 
 Status: dynamic struct vector read/write codegen release.
@@ -17,6 +42,13 @@ Status: dynamic struct vector read/write codegen release.
 - `SharedDynamicLayoutWriter` now supports
   `writeDynamicStructVectorPublished(...)` for SharedArrayBuffer pipelines that
   publish dynamic struct vectors through descriptor-ready cells.
+- Validator field rules now dispatch by `FieldLayout.kind` instead of running
+  every field-specific rule against every field.
+- Layout IR `source` locations are enumerable; tests explicitly strip them when
+  snapshotting source-independent layout shape.
+- `Utf8VectorView.textAt(i)` is the explicit text-decoding API for dynamic
+  string vectors. The v1-compatible `at(i)` alias remains but is deprecated in
+  docs/types because it allocates a JavaScript string.
 - Optional/sparse fields and discriminated unions remain schema-evolution design
   work; varint/LEB128 remains a non-goal for Zeno's fixed-offset projection
   thesis.

@@ -48,6 +48,9 @@ Zeno separates construction-time/compiler errors from runtime projection errors:
   values internally
 - runtime projection code throws `RangeError` for invalid offsets, descriptors,
   counts, and payload ranges
+- runtime hot projection paths must not return `Result<T, E>`; generated scalar
+  getters, scan kernels, cursor movement, and tight vector loops are
+  value-returning APIs
 - generated unchecked APIs exist only for loops where the caller has already
   proved bounds outside the hot path
 

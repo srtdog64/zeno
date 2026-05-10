@@ -227,6 +227,21 @@ Status: local witness only.
 - keep [schema-grammar.md](schema-grammar.md) and
   [schema-grammar.ko.md](schema-grammar.ko.md) in sync with every new accepted
   or rejected schema construct
+- clarify the compiler frontend story: Zeno is AST-first over a restricted
+  schema grammar, not a full TypeScript semantic type parser. This is partly a
+  portability choice; future frontends can lower another language or IDL into
+  the same Layout IR without inheriting all TypeScript checker semantics.
+- keep high-contention shared writer work separate from the synchronous shared
+  writer. Candidate work: async/backoff writer, sharded arena benchmarks, and
+  explicit guidance that a single shared cursor is not the high-contention
+  industrial path.
+- document the runtime failure boundary more sharply: hot projection APIs may
+  throw `RangeError`, while untrusted input boundaries should use checked/try
+  validation APIs before entering hot loops.
+- explicitly reject `Result<T, E>` on runtime hot projection paths. `Result`
+  belongs in compiler analysis and optional boundary validation APIs, not in
+  generated scalar getters, scan kernels, cursor movement, or tight vector
+  access loops.
 
 ## Completed in 1.3
 

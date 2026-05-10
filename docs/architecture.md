@@ -190,6 +190,11 @@ scalar or span read would change the API shape and steady-state cost. Callers
 that accept untrusted buffers should validate or catch at the boundary before
 entering tight projection loops.
 
+Zeno explicitly rejects `Result<T, E>` on runtime hot projection paths:
+generated scalar getters, scan kernels, cursor movement, and tight vector access
+loops must stay value-returning APIs. `Result` belongs in compiler analysis and
+optional boundary validation wrappers, not in the inner projection loop.
+
 Promotion criterion: add a separate safe wrapper API only when there is a
 witness workload that needs recoverable malformed-buffer handling without
 throwing.

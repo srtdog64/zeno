@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.4.0
+
+Status: frontend and runtime boundary hardening release.
+
+- Added `docs/frontend-model.md` to define Zeno as an AST-first frontend over a
+  restricted schema grammar, with Layout IR as the portable compiler boundary.
+- Added `docs/runtime-boundary.md` to make the runtime failure policy explicit:
+  hot projection APIs reject `Result<T, E>` and remain value-returning.
+- Cleaned architecture wording so Zeno does not imply support for arbitrary
+  TypeScript checker semantics.
+- Added a documentation policy test covering frontend, runtime boundary, and
+  emitter growth guardrails.
+- Package manifests and workspace lockfile are aligned at `2.4.0`.
+
 ## 2.3.0
 
 Status: layered projection model release.

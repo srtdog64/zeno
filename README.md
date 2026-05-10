@@ -389,8 +389,14 @@ thresholds stay diagnostic because CI hardware noise is high.
   optional frame ABI.
 - [docs/api-design.md](docs/api-design.md): generated accessors, cursors,
   pointers, and scan kernels.
+- [docs/frontend-model.md](docs/frontend-model.md): AST-first restricted schema
+  frontend and Layout IR portability boundary.
+- [docs/runtime-boundary.md](docs/runtime-boundary.md): runtime failure policy,
+  hot-path `Result` rejection, and shared writer boundary.
 - [docs/schema-compatibility.md](docs/schema-compatibility.md): breaking-change
   policy for layout edits.
+- [docs/release-checklist.md](docs/release-checklist.md): local and GitHub
+  release gates.
 - [docs/release-v1.md](docs/release-v1.md): stable v1 surface.
 - [docs/release-v1.1.md](docs/release-v1.1.md): optional frame and source-file
   analyzer additions.
@@ -402,4 +408,6 @@ thresholds stay diagnostic because CI hardware noise is high.
   tooling.
 - [docs/release-v2.3.md](docs/release-v2.3.md): layered projection model and
   emitter layer split.
+- [docs/release-v2.4.md](docs/release-v2.4.md): frontend and runtime boundary
+  hardening.
 - [CHANGELOG.md](CHANGELOG.md): release history.

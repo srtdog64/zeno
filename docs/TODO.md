@@ -107,8 +107,10 @@ considered complete.
 ### Phase 1: Analyzer and validation
 
 - traverse TS source with Compiler API
-- resolve symbols with type checker
-- lower supported declarations into layout IR
+- read the restricted `.zeno.ts` schema grammar from TypeScript syntax
+- resolve supported Zeno marker references without turning TypeScript inference
+  into an implicit ABI policy
+- lower supported declarations into Layout IR
 - emit deterministic diagnostics for unsupported patterns
 
 ### Phase 2: Code generation
@@ -174,7 +176,8 @@ Status: satisfied for v2.
 
 ### Gate 5: Allocation behavior
 
-Status: satisfied for v1 with a conservative retained-heap budget.
+Status: satisfied for the current scalar/view hot-path surface with a
+conservative retained-heap budget.
 
 - scalar projection steady-state retained heap stays within the regression budget
 - cursor rebase scans stay within the retained heap regression budget
@@ -184,32 +187,37 @@ Status: satisfied for v1 with a conservative retained-heap budget.
 
 ### Gate 5A: Package consumer smoke
 
-Status: satisfied for v2.
+Status: satisfied for v2.4.
 
 - packed tarballs install into a fresh consumer project
 - `zeno-codegen --help` works through the installed compiler bin
+- `zeno-inspect` and `zeno-diff-layout` work through the installed compiler bin
+- generated layout manifests round-trip through the packed CLI tools
 - generated code compiles with package-root imports
 - runtime execution reads and writes through the generated view
 - deep runtime subpath imports are rejected
 
 ### Gate 6: Throughput benchmarks
 
-Status: local witness only.
+Status: satisfied as a diagnostic release gate.
 
-- compare against plain object decode
-- compare against JSON parse baseline
-- compare against typia or equivalent optimized decoder
-- compare against hand-written `DataView` access
-- keep pointer dereference benchmark separate from fixed-stride scalar scans
+- fixed-layout, dynamic-layout, and FlatBuffers comparison workloads run through
+  `bench:check`
+- exact timing thresholds remain diagnostic because local and CI hardware noise
+  is high
+- pointer dereference benchmark stays separate from fixed-stride scalar scans
 
 ## Immediate next tasks
 
-- tag and publish `2.3.0` after human release review
+- tag and publish `2.4.0` after human release review
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
-- verify packed `zeno-codegen`, `zeno-inspect`, and `zeno-diff-layout` execution
-  in the consumer smoke gate
+- use [release-checklist.md](release-checklist.md) as the release gate before
+  tagging or publishing
+
+## Ongoing policies
+
 - keep `--scan-kernels=none|sum|basic|full` documented when scan kernel output
   changes
 - keep [layers](layers/00-wire-abi.md) and `tests/layer-model.test.ts` in sync
@@ -222,22 +230,21 @@ Status: local witness only.
   hardware noise is high
 - keep [performance-comparison.md](performance-comparison.md) synced when
   benchmark code or generated hot-path code changes
-- use [release-checklist.md](release-checklist.md) as the release gate before
-  tagging or publishing
 - keep [schema-grammar.md](schema-grammar.md) and
   [schema-grammar.ko.md](schema-grammar.ko.md) in sync with every new accepted
   or rejected schema construct
-- clarify the compiler frontend story: Zeno is AST-first over a restricted
-  schema grammar, not a full TypeScript semantic type parser. This is partly a
-  portability choice; future frontends can lower another language or IDL into
-  the same Layout IR without inheriting all TypeScript checker semantics.
+- keep [frontend-model.md](frontend-model.md) synchronized with analyzer and
+  schema grammar changes. Zeno is AST-first over a restricted schema grammar,
+  not a full TypeScript semantic type parser; this is partly a portability
+  choice because future frontends can lower another language or IDL into the
+  same Layout IR.
 - keep high-contention shared writer work separate from the synchronous shared
   writer. Candidate work: async/backoff writer, sharded arena benchmarks, and
   explicit guidance that a single shared cursor is not the high-contention
   industrial path.
-- document the runtime failure boundary more sharply: hot projection APIs may
-  throw `RangeError`, while untrusted input boundaries should use checked/try
-  validation APIs before entering hot loops.
+- keep [runtime-boundary.md](runtime-boundary.md) synchronized with runtime API
+  changes. Hot projection APIs may throw `RangeError`, while untrusted input
+  boundaries should use checked/try validation APIs before entering hot loops.
 - explicitly reject `Result<T, E>` on runtime hot projection paths. `Result`
   belongs in compiler analysis and optional boundary validation APIs, not in
   generated scalar getters, scan kernels, cursor movement, or tight vector
@@ -397,7 +404,24 @@ Status: local witness only.
 - `emitSyntheticSource(...)` exists as a diagnostic migration utility, while
   the default emitter keeps stable tagged-template formatting
 
-## v2.2 Candidate Work
+## Completed in 2.4
+
+- [frontend-model.md](frontend-model.md) records the TypeScript frontend as
+  AST-first over a restricted schema grammar, not a full TypeScript semantic
+  parser.
+- [runtime-boundary.md](runtime-boundary.md) records that runtime hot projection
+  APIs may throw `RangeError` and must not return `Result<T, E>`.
+- [architecture.md](architecture.md) now describes the compiler frontend as a
+  restricted schema grammar lowered to Layout IR.
+- `tests/docs-policy.test.ts` locks the frontend, runtime boundary, and emitter
+  assembly-layer documentation policies.
+- packed `zeno-codegen`, `zeno-inspect`, and `zeno-diff-layout` execution are
+  verified by the consumer smoke gate.
+- package versions, workspace internal dependencies, and `package-lock.json` are
+  aligned at `2.4.0`.
+- `release:check` keeps `bench:check` in the publish gate.
+
+## Candidate Work
 
 ### Compiler maintainability
 

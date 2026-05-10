@@ -4,13 +4,14 @@ This checklist is the publish gate for Zeno package releases.
 
 ## Load-Bearing Checks
 
-| Check | Status | Reason |
-| --- | --- | --- |
-| Workspace versions are aligned | load-bearing | All published packages use the same version and internal dependency pins. |
-| Package root exports are stable | load-bearing | Consumers must not rely on unpublished subpaths. |
-| Tarball contents are small and intentional | load-bearing | Only `dist/` and compiler `bin/` should ship. |
-| Packed consumer smoke passes | load-bearing | It verifies the real npm consumer path, not only workspace links. |
-| Benchmark claims are refreshed | diagnostic | Performance witnesses are local and should not block correctness releases. |
+| Check                                      | Status       | Reason                                                                                        |
+| ------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------- |
+| Workspace versions are aligned             | load-bearing | All published packages use the same version and internal dependency pins.                     |
+| Package root exports are stable            | load-bearing | Consumers must not rely on unpublished subpaths.                                              |
+| Tarball contents are small and intentional | load-bearing | Only `dist/` and compiler `bin/` should ship.                                                 |
+| Packed consumer smoke passes               | load-bearing | It verifies the real npm consumer path, not only workspace links.                             |
+| Benchmark workloads execute                | load-bearing | `bench:check` is part of `release:check`; exact timing thresholds remain diagnostic.          |
+| Benchmark claims are refreshed             | diagnostic   | Performance documents should match benchmark code when a release announcement mentions speed. |
 
 ## Commands
 
@@ -28,6 +29,7 @@ This runs:
 - example codegen
 - package dry-runs
 - packed consumer smoke test
+- fixed-layout, dynamic-layout, and FlatBuffers comparison benchmark workloads
 
 For a scoped public publish, use the release publisher:
 
@@ -79,6 +81,8 @@ recovering a failed release, or testing npm account permissions.
 - Confirm README install examples match the package names being published.
 - Confirm `docs/performance-comparison.md` records the latest benchmark witness
   if the release announcement mentions speed.
+- Confirm `docs/frontend-model.md` and `docs/runtime-boundary.md` still match
+  analyzer/runtime policy when frontend or hot-path APIs changed.
 
 ## Do Not Publish When
 

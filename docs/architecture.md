@@ -7,7 +7,7 @@ This is feasible, but only if the project is precise about what "pure TypeScript
 Possible:
 
 - authoring with `interface` and `type` only
-- compile-time AST and type-checker analysis
+- compile-time analysis of a restricted schema grammar
 - generated projection classes or factory functions
 - zero-copy scalar reads from a backing `ArrayBuffer`
 - zero object allocation for scalar access paths
@@ -76,8 +76,8 @@ export class UserView {
 
 1. Source scan
    Read source files that opt into projection generation.
-2. Type analysis
-   Resolve declarations through the TypeScript type checker.
+2. Frontend analysis
+   Read a restricted `.zeno.ts` schema grammar from TypeScript syntax.
 3. Layout IR build
    Convert resolved fields into a compact internal representation.
 4. Validation
@@ -131,11 +131,11 @@ responsibility:
   helpers
 
 `@exornea/zeno-compiler` turns schema-only TypeScript into generated view code.
-It reads TypeScript syntax and types in `analyzer`, lowers them to Layout IR in
-`lowering`, enforces ABI invariants in `validator`, and emits `.view.ts` code in
-`emitter`. The compiler uses `Result<T, E>` and structured diagnostics because
-schema failures are recoverable authoring errors; runtime projection failures
-remain `RangeError` at the memory boundary.
+It reads a restricted `.zeno.ts` schema grammar in `analyzer`, lowers it to
+Layout IR in `lowering`, enforces ABI invariants in `validator`, and emits
+`.view.ts` code in `emitter`. The compiler uses `Result<T, E>` and structured
+diagnostics because schema failures are recoverable authoring errors; runtime
+projection failures remain `RangeError` at the memory boundary.
 
 ## Core packages
 
@@ -154,7 +154,7 @@ The compiler should not directly emit from AST nodes. It should emit from a norm
 
 Recommended split:
 
-- `analyzer.ts`: AST and type-checker traversal
+- `analyzer.ts`: restricted schema grammar frontend
 - `lowering.ts`: TypeScript types to layout IR
 - `validator.ts`: unsupported construct checks
 - `emitter.ts`: generate view code
@@ -192,8 +192,9 @@ entering tight projection loops.
 
 Zeno explicitly rejects `Result<T, E>` on runtime hot projection paths:
 generated scalar getters, scan kernels, cursor movement, and tight vector access
-loops must stay value-returning APIs. `Result` belongs in compiler analysis and
-optional boundary validation wrappers, not in the inner projection loop.
+loops must not return `Result<T, E>`. They must stay value-returning APIs.
+`Result` belongs in compiler analysis and optional boundary validation wrappers,
+not in the inner projection loop.
 
 Promotion criterion: add a separate safe wrapper API only when there is a
 witness workload that needs recoverable malformed-buffer handling without
@@ -268,8 +269,11 @@ still override the generated default per call when needed.
 
 - offset-table encoding for dynamic fields
 - vector/string table accessors
-- schema evolution rules
+- explicit schema compatibility policy and layout diff tooling
 
-Current v1 status: Phase 3 dynamic descriptors exist for the supported
-`Span32`, `Vector32`, and `pointer32` ABI. Native schema evolution remains an
-explicit non-goal for v1; see [schema-compatibility.md](schema-compatibility.md).
+Current v2.4 status: dynamic descriptors exist for the supported `Span32`,
+`Vector32`, `dynamicVector`, and `pointer32` ABI families. Native schema
+evolution remains an explicit non-goal for the current projection ABI; Zeno
+instead exposes layout manifests and `zeno-diff-layout` so applications can use
+explicit version routing when they need compatibility review. See
+[schema-compatibility.md](schema-compatibility.md).

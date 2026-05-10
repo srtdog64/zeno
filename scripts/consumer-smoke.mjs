@@ -76,7 +76,8 @@ writeFileSync(
       private: true,
       type: "module",
       scripts: {
-        codegen: "zeno-codegen ./src/model.zeno.ts ./src/model.view.ts",
+        codegen:
+          "zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --manifest ./src/model.layout.json",
         build: "tsc -p tsconfig.json",
         start: "node ./dist/main.js",
       },
@@ -231,6 +232,14 @@ const help = runCapture(npxBin, ["zeno-codegen", "--help"], consumerDir);
 if (!help.includes("Usage: zeno-codegen")) {
   throw new Error(`Unexpected zeno-codegen help output: ${help}`);
 }
+const inspectHelp = runCapture(npxBin, ["zeno-inspect", "--help"], consumerDir);
+if (!inspectHelp.includes("Usage: zeno-inspect")) {
+  throw new Error(`Unexpected zeno-inspect help output: ${inspectHelp}`);
+}
+const diffHelp = runCapture(npxBin, ["zeno-diff-layout", "--help"], consumerDir);
+if (!diffHelp.includes("Usage: zeno-diff-layout")) {
+  throw new Error(`Unexpected zeno-diff-layout help output: ${diffHelp}`);
+}
 const diagnosticOutput = runCaptureFailure(
   npxBin,
   ["zeno-codegen", "./src/invalid.zeno.ts", "./src/invalid.view.ts", "--diagnostics=json"],
@@ -257,6 +266,18 @@ if (
   throw new Error(`Unexpected JSON operational failure: ${operationalFailureOutput}`);
 }
 run(npmBin, ["run", "codegen", "--silent"], consumerDir);
+const inspectOutput = runCapture(npxBin, ["zeno-inspect", "./src/model.zeno.ts"], consumerDir);
+if (!inspectOutput.includes("Struct Mini") || !inspectOutput.includes("Struct Bag")) {
+  throw new Error(`Unexpected zeno-inspect output: ${inspectOutput}`);
+}
+const diffOutput = runCapture(
+  npxBin,
+  ["zeno-diff-layout", "./src/model.layout.json", "./src/model.layout.json"],
+  consumerDir,
+);
+if (diffOutput !== "No layout differences.") {
+  throw new Error(`Unexpected zeno-diff-layout output: ${diffOutput}`);
+}
 const generatedView = readFileSync(path.join(consumerDir, "src", "model.view.ts"), "utf8");
 if (!generatedView.includes('from "@exornea/zeno-runtime"')) {
   throw new Error("Generated view did not import the runtime package root.");

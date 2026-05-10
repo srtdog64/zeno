@@ -9,18 +9,20 @@ import {
   emitProjectionFile,
   emitProjectionFileWithSourceMap,
   formatDiagnosticLocation,
+  parseScanKernelMode,
 } from "../dist/index.js";
 
 const args = process.argv.slice(2);
 let sourceMap = false;
 let endianness = "little";
 let manifestPath;
+let scanKernels = "full";
 const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
 let diagnosticsFormat =
   diagnosticsArg === undefined ? "text" : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
 const usage =
-  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--manifest <layout.json>] [--endian=little|big] [--diagnostics=text|json]";
+  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--manifest <layout.json>] [--scan-kernels=none|sum|basic|full] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {
@@ -74,6 +76,11 @@ for (let index = 0; index < args.length; index += 1) {
     continue;
   }
 
+  if (arg.startsWith("--scan-kernels=")) {
+    scanKernels = arg.slice("--scan-kernels=".length);
+    continue;
+  }
+
   if (arg.startsWith("--diagnostics=")) {
     continue;
   }
@@ -100,6 +107,15 @@ if (endianness !== "little" && endianness !== "big") {
 if (diagnosticsFormat !== "text" && diagnosticsFormat !== "json") {
   console.error(`Invalid diagnostics format: ${diagnosticsFormat}. Expected "text" or "json".`);
   process.exit(1);
+}
+
+const scanKernelMode = parseScanKernelMode(scanKernels);
+if (scanKernelMode === null) {
+  fail(
+    "INVALID_SCAN_KERNEL_MODE",
+    `Invalid scan kernel mode: ${scanKernels}. Expected "none", "sum", "basic", or "full".`,
+    { scanKernels },
+  );
 }
 
 const rootName = path.resolve(inputPath);
@@ -131,12 +147,13 @@ if (result.diagnostics.length > 0) {
 }
 
 const resolvedOutputPath = path.resolve(outputPath);
+const emitOptions = { scanKernels: scanKernelMode };
 if (sourceMap) {
-  const emitted = emitProjectionFileWithSourceMap(result.layouts, resolvedOutputPath);
+  const emitted = emitProjectionFileWithSourceMap(result.layouts, resolvedOutputPath, emitOptions);
   await writeFile(resolvedOutputPath, emitted.code, "utf8");
   await writeFile(`${resolvedOutputPath}.map`, JSON.stringify(emitted.sourceMap, null, 2), "utf8");
 } else {
-  await writeFile(resolvedOutputPath, emitProjectionFile(result.layouts), "utf8");
+  await writeFile(resolvedOutputPath, emitProjectionFile(result.layouts, emitOptions), "utf8");
 }
 
 if (manifestPath !== undefined) {

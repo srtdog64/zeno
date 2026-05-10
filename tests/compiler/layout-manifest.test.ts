@@ -7,6 +7,7 @@ import {
   diffLayoutManifests,
   formatLayoutDiff,
   formatLayoutInspection,
+  isLayoutManifest,
 } from "../../packages/compiler/src/index.js";
 
 describe("layout manifests", () => {
@@ -87,6 +88,24 @@ export interface Instance {
     expect(diff.breaking).toContain("Instance.health.offset changed: 4 -> 8");
     expect(diff.versionRouted).toContain("Added Instance.teamId at offset 4 byteLength 2");
     expect(formatLayoutDiff(diff)).toContain("BREAKING:");
+  });
+
+  it("validates manifest input shape at IO boundaries", () => {
+    const manifest = manifestFor(`import type { z } from "@exornea/zeno-types";
+
+export interface Instance {
+  id: z.u32;
+}
+`);
+
+    expect(isLayoutManifest(manifest)).toBe(true);
+    expect(isLayoutManifest({ ...manifest, version: 2 })).toBe(false);
+    expect(
+      isLayoutManifest({
+        ...manifest,
+        structs: [{ ...manifest.structs[0], fields: [{ name: "id", kind: "scalar" }] }],
+      }),
+    ).toBe(false);
   });
 });
 

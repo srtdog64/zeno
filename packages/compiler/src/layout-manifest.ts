@@ -38,6 +38,25 @@ export interface LayoutDiffResult {
   readonly versionRouted: readonly string[];
 }
 
+export function isLayoutManifest(value: unknown): value is LayoutManifest {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.version === 1 && Array.isArray(value.structs) && value.structs.every(isManifestStruct)
+  );
+}
+
+export function assertLayoutManifest(
+  value: unknown,
+  label = "layout manifest",
+): asserts value is LayoutManifest {
+  if (!isLayoutManifest(value)) {
+    throw new Error(`Invalid ${label}.`);
+  }
+}
+
 export function createLayoutManifest(layouts: readonly StructLayout[]): LayoutManifest {
   return {
     version: 1,
@@ -163,6 +182,54 @@ function compareLayout(
       );
     }
   }
+}
+
+function isManifestStruct(value: unknown): value is LayoutManifestStruct {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.name === "string" &&
+    isNonNegativeInteger(value.byteLength) &&
+    isNonNegativeInteger(value.alignment) &&
+    (value.endianness === "little" || value.endianness === "big") &&
+    typeof value.layoutHash === "string" &&
+    Array.isArray(value.fields) &&
+    value.fields.every(isManifestField)
+  );
+}
+
+function isManifestField(value: unknown): value is LayoutManifestField {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.name === "string" &&
+    typeof value.kind === "string" &&
+    isNonNegativeInteger(value.offset) &&
+    isNonNegativeInteger(value.byteLength) &&
+    isNonNegativeInteger(value.alignment) &&
+    isOptionalString(value.scalar) &&
+    isOptionalString(value.encoding) &&
+    isOptionalString(value.descriptor) &&
+    isOptionalString(value.element) &&
+    isOptionalString(value.typeName) &&
+    isOptionalString(value.targetTypeName)
+  );
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === "string";
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) >= 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function compareField(

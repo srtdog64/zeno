@@ -114,7 +114,10 @@ Rules:
 - `countXWhereEq(view, count, expected)` and
   `findFirstXWhereEq(view, count, expected)` are generated for integer and
   boolean scalar fields. Floating-point equality and bigint predicates are not
-  generated in v2.1.
+  generated in v2.
+- `--scan-kernels=none|sum|basic|full` controls the generated aggregate surface:
+  `none` emits no scan kernels, `sum` emits only numeric sums, `basic` emits
+  sums plus min/max, and `full` also emits integer/bool equality predicates.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
 - Cursor offset caching is removed from the public emitter.

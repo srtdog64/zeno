@@ -35,10 +35,17 @@ export {
   type EmitOptions,
 } from "./emitter.js";
 export {
+  normalizeScanKernelMode,
+  parseScanKernelMode,
+  type ScanKernelMode,
+} from "./emitter-scan-kernels.js";
+export {
+  assertLayoutManifest,
   createLayoutManifest,
   diffLayoutManifests,
   formatLayoutDiff,
   formatLayoutInspection,
+  isLayoutManifest,
   type LayoutDiffResult,
   type LayoutManifest,
   type LayoutManifestField,

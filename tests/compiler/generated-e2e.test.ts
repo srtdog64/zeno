@@ -112,6 +112,36 @@ export interface Packet {
     expect(packet.nameView().text()).toBe("zeno");
     expect(packet.scoresView().toArray()).toEqual([10, 20, 30]);
   });
+
+  it("honors scan kernel emission modes", () => {
+    const source = `import type { z } from "@exornea/zeno-types";
+
+export interface Row {
+  age: z.i32;
+  active: z.bool;
+}
+`;
+
+    const none = compileSchema(source, "little", "none");
+    expect(none).not.toContain("sumAge");
+    expect(none).not.toContain("countAgeWhereEq");
+
+    const sum = compileSchema(source, "little", "sum");
+    expect(sum).toContain("sumAge");
+    expect(sum).not.toContain("minAge");
+    expect(sum).not.toContain("countAgeWhereEq");
+
+    const basic = compileSchema(source, "little", "basic");
+    expect(basic).toContain("sumAge");
+    expect(basic).toContain("minAge");
+    expect(basic).not.toContain("countAgeWhereEq");
+
+    const full = compileSchema(source, "little", "full");
+    expect(full).toContain("sumAge");
+    expect(full).toContain("minAge");
+    expect(full).toContain("countAgeWhereEq");
+    expect(full).toContain("countActiveWhereEq");
+  });
 });
 
 interface GeneratedViewConstructor {
@@ -137,11 +167,15 @@ ${declarations}
 `;
 }
 
-function compileSchema(sourceText: string, endianness: "little" | "big" = "little"): string {
+function compileSchema(
+  sourceText: string,
+  endianness: "little" | "big" = "little",
+  scanKernels: "none" | "sum" | "basic" | "full" = "full",
+): string {
   const sourceFile = ts.createSourceFile("generated.zeno.ts", sourceText, ts.ScriptTarget.ES2022);
   const result = analyzeProjectionSourceFile(sourceFile, { endianness });
   expect(result.diagnostics).toEqual([]);
-  return emitProjectionFile(result.layouts);
+  return emitProjectionFile(result.layouts, { scanKernels });
 }
 
 function typeCheckGenerated(sourceText: string): void {

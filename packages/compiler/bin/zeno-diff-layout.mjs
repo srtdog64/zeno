@@ -2,7 +2,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { diffLayoutManifests, formatLayoutDiff } from "../dist/index.js";
+import { diffLayoutManifests, formatLayoutDiff, isLayoutManifest } from "../dist/index.js";
 
 const args = process.argv.slice(2);
 const usage = "Usage: zeno-diff-layout <old.layout.json> <new.layout.json> [--json]";
@@ -29,8 +29,8 @@ if (previousPath === undefined || nextPath === undefined) {
   fail(usage);
 }
 
-const previous = JSON.parse(await readFile(path.resolve(previousPath), "utf8"));
-const next = JSON.parse(await readFile(path.resolve(nextPath), "utf8"));
+const previous = await readManifest(previousPath, "old");
+const next = await readManifest(nextPath, "new");
 const diff = diffLayoutManifests(previous, next);
 
 console.log(json ? JSON.stringify(diff, null, 2) : formatLayoutDiff(diff));
@@ -41,4 +41,20 @@ if (diff.breaking.length > 0) {
 function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+async function readManifest(filePath, label) {
+  const resolvedPath = path.resolve(filePath);
+  let parsed;
+  try {
+    parsed = JSON.parse(await readFile(resolvedPath, "utf8"));
+  } catch (error) {
+    fail(`Could not read ${label} layout manifest: ${resolvedPath}\n${error.message}`);
+  }
+
+  if (!isLayoutManifest(parsed)) {
+    fail(`Invalid ${label} layout manifest: ${resolvedPath}`);
+  }
+
+  return parsed;
 }

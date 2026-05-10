@@ -34,6 +34,28 @@ export class UserView extends ProjectionView {
   static readonly tagsOffset = 68;
   static readonly avatarOffset = 76;
 
+  private static assertScanRange(
+    view: DataView,
+    count: number,
+    baseOffset: number,
+    fieldOffset: number,
+    fieldByteLength: number,
+  ): void {
+    if (!Number.isInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (count === 0) {
+      return;
+    }
+    const lastByte = baseOffset + fieldOffset + (count - 1) * UserView.byteLength + fieldByteLength;
+    if (lastByte > view.byteLength) {
+      throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
+    }
+  }
+
   constructor(view: DataView, baseOffset = 0, littleEndian = true) {
     super(view, baseOffset, littleEndian);
   }
@@ -116,87 +138,20 @@ export class UserView extends ProjectionView {
     view.setInt32(index * 88 + 8, value, littleEndian);
   }
   static sumAge(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
+    UserView.assertScanRange(view, count, baseOffset, 8, 4);
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 8;
     const limit = start + count * 88;
-    const lastByte = start + (count - 1) * 88 + 4;
-    if (lastByte > view.byteLength) {
-      throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-    }
     let sum = 0;
     for (let offset = start; offset < limit; offset += 88) {
       sum += view.getInt32(offset, littleEndian);
     }
     return sum;
   }
-  static countAgeWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    let matched = 0;
-    const start = baseOffset + 8;
-    const limit = start + count * 88;
-    for (let offset = start; offset < limit; offset += 88) {
-      if (view.getInt32(offset, littleEndian) === expected) {
-        matched += 1;
-      }
-    }
-    return matched;
-  }
-  static findFirstAgeWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
-    const start = baseOffset + 8;
-    const limit = start + count * 88;
-    let index = 0;
-    for (let offset = start; offset < limit; offset += 88) {
-      if (view.getInt32(offset, littleEndian) === expected) {
-        return index;
-      }
-      index += 1;
-    }
-    return -1;
-  }
   static minAge(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 8, 4);
     if (count === 0) {
       return Number.POSITIVE_INFINITY;
     }
@@ -212,18 +167,7 @@ export class UserView extends ProjectionView {
     return minimum;
   }
   static maxAge(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 8 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 8, 4);
     if (count === 0) {
       return Number.NEGATIVE_INFINITY;
     }
@@ -237,6 +181,31 @@ export class UserView extends ProjectionView {
       }
     }
     return maximum;
+  }
+  static countAgeWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+    UserView.assertScanRange(view, count, baseOffset, 8, 4);
+    let matched = 0;
+    const start = baseOffset + 8;
+    const limit = start + count * 88;
+    for (let offset = start; offset < limit; offset += 88) {
+      if (view.getInt32(offset, littleEndian) === expected) {
+        matched += 1;
+      }
+    }
+    return matched;
+  }
+  static findFirstAgeWhereEq(view: DataView, count: number, expected: number, baseOffset = 0, littleEndian = true): number {
+    UserView.assertScanRange(view, count, baseOffset, 8, 4);
+    const start = baseOffset + 8;
+    const limit = start + count * 88;
+    let index = 0;
+    for (let offset = start; offset < limit; offset += 88) {
+      if (view.getInt32(offset, littleEndian) === expected) {
+        return index;
+      }
+      index += 1;
+    }
+    return -1;
   }
 
   get age(): number {
@@ -259,21 +228,12 @@ export class UserView extends ProjectionView {
     view.setFloat64(index * 88 + 16, value, littleEndian);
   }
   static sumScore(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
+    UserView.assertScanRange(view, count, baseOffset, 16, 8);
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 16;
     const limit = start + count * 88;
-    const lastByte = start + (count - 1) * 88 + 8;
-    if (lastByte > view.byteLength) {
-      throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-    }
     let sum = 0;
     for (let offset = start; offset < limit; offset += 88) {
       sum += view.getFloat64(offset, littleEndian);
@@ -281,18 +241,7 @@ export class UserView extends ProjectionView {
     return sum;
   }
   static minScore(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 16 + (count - 1) * 88 + 8;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 16, 8);
     if (count === 0) {
       return Number.POSITIVE_INFINITY;
     }
@@ -308,18 +257,7 @@ export class UserView extends ProjectionView {
     return minimum;
   }
   static maxScore(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 16 + (count - 1) * 88 + 8;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 16, 8);
     if (count === 0) {
       return Number.NEGATIVE_INFINITY;
     }
@@ -355,21 +293,12 @@ export class UserView extends ProjectionView {
     view.setFloat32(index * 88 + 24, value, littleEndian);
   }
   static sumRatio(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
+    UserView.assertScanRange(view, count, baseOffset, 24, 4);
     if (count === 0) {
       return 0;
     }
     const start = baseOffset + 24;
     const limit = start + count * 88;
-    const lastByte = start + (count - 1) * 88 + 4;
-    if (lastByte > view.byteLength) {
-      throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-    }
     let sum = 0;
     for (let offset = start; offset < limit; offset += 88) {
       sum += view.getFloat32(offset, littleEndian);
@@ -377,18 +306,7 @@ export class UserView extends ProjectionView {
     return sum;
   }
   static minRatio(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 24, 4);
     if (count === 0) {
       return Number.POSITIVE_INFINITY;
     }
@@ -404,18 +322,7 @@ export class UserView extends ProjectionView {
     return minimum;
   }
   static maxRatio(view: DataView, count: number, baseOffset = 0, littleEndian = true): number {
-    if (!Number.isInteger(count) || count < 0) {
-      throw new RangeError(`Invalid record count: ${count}`);
-    }
-    if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-      throw new RangeError(`Invalid base offset: ${baseOffset}`);
-    }
-    if (count !== 0) {
-      const lastByte = baseOffset + 24 + (count - 1) * 88 + 4;
-      if (lastByte > view.byteLength) {
-        throw new RangeError(`scan range exceeds DataView length ${view.byteLength}`);
-      }
-    }
+    UserView.assertScanRange(view, count, baseOffset, 24, 4);
     if (count === 0) {
       return Number.NEGATIVE_INFINITY;
     }

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.2.0
+
+Status: binary table scan and layout tooling minor release.
+
+- Added `zeno-codegen --scan-kernels=none|sum|basic|full` so generated scan
+  kernel surface can be controlled per schema.
+- Moved scan kernel emission into an explicit compiler layer instead of keeping
+  it as helper code inside the main emitter.
+- Added `zeno-codegen --manifest`, `zeno-inspect`, and `zeno-diff-layout` for
+  layout review and version-routed migration checks.
+- Added layout manifest validation for `zeno-diff-layout` input files.
+- Added the scalar-only example to show Zeno's fixed-layout hot path without
+  dynamic tail fields.
+- Consumer smoke now verifies packed `zeno-inspect`, `zeno-diff-layout`, and a
+  manifest round trip.
+- Documented that `layoutHash` is a deterministic compatibility fingerprint,
+  not a cryptographic integrity hash.
+- Package manifests and workspace lockfile are aligned at `2.2.0`.
+
 ## 2.1.0
 
 Status: browser/runtime/compiler observability minor release.

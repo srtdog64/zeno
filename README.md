@@ -183,6 +183,13 @@ const totalAge = UserView.sumAge(view, count);
 fields. These kernels validate the record count and buffer range once, then run
 a generated stride loop without per-record view allocation or callbacks.
 
+Use `--scan-kernels=none|sum|basic|full` when generated file size matters:
+
+- `none`: scalar accessors only
+- `sum`: add `sum<Field>()`
+- `basic`: add `sum<Field>()`, `min<Field>()`, and `max<Field>()`
+- `full`: add all scan kernels, including equality predicates
+
 ## Fast Path Mental Model
 
 Use Zeno like a generated `DataView` table scanner.
@@ -246,6 +253,10 @@ zeno-diff-layout ./old.layout.json ./new.layout.json
 Layout diffs do not make incompatible layouts magically compatible. They make
 the breaking wire-format change explicit so the application can route by
 version when old and new layouts must coexist.
+
+`layoutHash` is a deterministic compatibility fingerprint, not a cryptographic
+hash. Do not use it as an integrity check for untrusted payloads; use an
+application-level digest or signature when integrity matters.
 
 ## WebGL Demo
 
@@ -367,4 +378,6 @@ CI adds a Playwright browser smoke matrix for the WebGL demo.
   map, and WebGL demo additions.
 - [docs/release-v2.0.md](docs/release-v2.0.md): projection-first string vector
   cleanup and retired optimizer removal.
+- [docs/release-v2.2.md](docs/release-v2.2.md): scan kernel modes and layout
+  tooling.
 - [CHANGELOG.md](CHANGELOG.md): release history.

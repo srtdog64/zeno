@@ -21,6 +21,13 @@ import {
 import { emitInputInterface } from "./emitter-input.js";
 import { encodingLiteral, toLittleEndianLiteral, toPascalCase } from "./emitter-names.js";
 import { collectRuntimeImports } from "./emitter-runtime-imports.js";
+import {
+  emitScalarScanKernels,
+  emitScanRangeHelper,
+  hasScanKernels,
+  normalizeScanKernelMode,
+  type ScanKernelMode,
+} from "./emitter-scan-kernels.js";
 import { method } from "./emitter-template.js";
 import { createProjectionSourceMap, type ProjectionSourceMap } from "./source-map.js";
 
@@ -48,7 +55,7 @@ type VectorWriterEmitter<K extends VectorElementLayout["kind"]> = (
 ) => string[];
 
 export interface EmitOptions {
-  readonly reserved?: never;
+  readonly scanKernels?: ScanKernelMode;
 }
 
 export interface EmitProjectionFileResult {
@@ -118,10 +125,11 @@ function emitLayoutConstants(layout: StructLayout): string[] {
 
 function emitStructClass(
   layout: StructLayout,
-  _options: EmitOptions,
+  options: EmitOptions,
   layoutMap: ReadonlyMap<string, StructLayout>,
 ): string[] {
   const littleEndianDefault = toLittleEndianLiteral(layout);
+  const scanKernelMode = normalizeScanKernelMode(options.scanKernels);
   const lines: string[] = [`export class ${layout.name}View extends ProjectionView {`];
   lines.push(
     ...method`
@@ -152,6 +160,11 @@ private static assertPointerTargetRange(view: DataView, targetOffset: number, by
   }
 }`,
     );
+  }
+
+  if (hasScanKernels(layout, scanKernelMode)) {
+    lines.push("");
+    lines.push(...emitScanRangeHelper(layout));
   }
 
   lines.push("");
@@ -203,7 +216,7 @@ moveToUnchecked(index: number): this {
   }
 
   for (const field of layout.fields) {
-    const staticAccessorLines = emitStaticFieldAccessor(layout, field);
+    const staticAccessorLines = emitStaticFieldAccessor(layout, field, scanKernelMode);
     for (const line of staticAccessorLines) {
       lines.push(line);
     }
@@ -516,17 +529,22 @@ function emitVectorObjectFieldWriteAtBase(
   }
 }
 
-function emitStaticFieldAccessor(layout: StructLayout, field: FieldLayout): string[] {
+function emitStaticFieldAccessor(
+  layout: StructLayout,
+  field: FieldLayout,
+  scanKernelMode: ScanKernelMode,
+): string[] {
   if (field.kind === "pointer") {
     return emitStaticPointerAccessor(layout, field);
   }
 
-  return field.kind === "scalar" ? emitStaticScalarAccessor(layout, field) : [];
+  return field.kind === "scalar" ? emitStaticScalarAccessor(layout, field, scanKernelMode) : [];
 }
 
 function emitStaticScalarAccessor(
   layout: StructLayout,
   field: Extract<FieldLayout, { kind: "scalar" }>,
+  scanKernelMode: ScanKernelMode,
 ): string[] {
   const getterMethod = scalarGetterMethod(field.scalar);
   const setterMethod = scalarSetterMethod(field.scalar);
@@ -549,9 +567,14 @@ function emitStaticScalarAccessor(
     `  static set${pascalName}At(view: DataView, value: ${typeName}, index: number, littleEndian = ${littleEndianDefault}): void {`,
     emitStaticScalarWriteBody(field, setterMethod, indexOffset, endianArg),
     "  }",
-    ...emitScalarSumKernel(layout, field, getterMethod, littleEndianDefault, pascalName),
-    ...emitScalarEqualityKernels(layout, field, getterMethod, littleEndianDefault, pascalName),
-    ...emitScalarMinMaxKernels(layout, field, getterMethod, littleEndianDefault, pascalName),
+    ...emitScalarScanKernels(
+      layout,
+      field,
+      getterMethod,
+      littleEndianDefault,
+      pascalName,
+      scanKernelMode,
+    ),
   ];
 }
 
@@ -648,164 +671,6 @@ static set${pascalName}RelativeOffsetAt(view: DataView, value: number | null, in
   ${layout.name}View.assertPointer32Payload(value);
   view.setInt32(${indexOffset}, value, littleEndian);
 }`;
-}
-
-function emitScalarSumKernel(
-  layout: StructLayout,
-  field: Extract<FieldLayout, { kind: "scalar" }>,
-  getterMethod: string,
-  littleEndianDefault: "true" | "false",
-  pascalName: string,
-): string[] {
-  if (!isNumberSumScalar(field.scalar)) {
-    return [];
-  }
-
-  const endianArg = field.byteLength === 1 ? "" : ", littleEndian";
-  return method`
-static sum${pascalName}(view: DataView, count: number, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
-  if (!Number.isInteger(count) || count < 0) {
-    throw new RangeError(\`Invalid record count: \${count}\`);
-  }
-  if (!Number.isFinite(baseOffset) || !Number.isInteger(baseOffset) || baseOffset < 0) {
-    throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
-  }
-  if (count === 0) {
-    return 0;
-  }
-  const start = baseOffset + ${field.offset};
-  const limit = start + count * ${layout.byteLength};
-  const lastByte = start + (count - 1) * ${layout.byteLength} + ${field.byteLength};
-  if (lastByte > view.byteLength) {
-    throw new RangeError(\`scan range exceeds DataView length \${view.byteLength}\`);
-  }
-  let sum = 0;
-  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
-    sum += view.${getterMethod}(offset${endianArg});
-  }
-  return sum;
-}`;
-}
-
-function emitScalarEqualityKernels(
-  layout: StructLayout,
-  field: Extract<FieldLayout, { kind: "scalar" }>,
-  getterMethod: string,
-  littleEndianDefault: "true" | "false",
-  pascalName: string,
-): string[] {
-  if (!isEqualityKernelScalar(field.scalar)) {
-    return [];
-  }
-
-  const typeName = scalarTsType(field.scalar);
-  const endianArg = field.byteLength === 1 || field.scalar === "bool" ? "" : ", littleEndian";
-  const readExpression =
-    field.scalar === "bool"
-      ? `view.${getterMethod}(offset) !== 0`
-      : `view.${getterMethod}(offset${endianArg})`;
-  return method`
-static count${pascalName}WhereEq(view: DataView, count: number, expected: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
-  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
-  let matched = 0;
-  const start = baseOffset + ${field.offset};
-  const limit = start + count * ${layout.byteLength};
-  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
-    if (${readExpression} === expected) {
-      matched += 1;
-    }
-  }
-  return matched;
-}
-static findFirst${pascalName}WhereEq(view: DataView, count: number, expected: ${typeName}, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
-  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
-  const start = baseOffset + ${field.offset};
-  const limit = start + count * ${layout.byteLength};
-  let index = 0;
-  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
-    if (${readExpression} === expected) {
-      return index;
-    }
-    index += 1;
-  }
-  return -1;
-}`;
-}
-
-function emitScalarMinMaxKernels(
-  layout: StructLayout,
-  field: Extract<FieldLayout, { kind: "scalar" }>,
-  getterMethod: string,
-  littleEndianDefault: "true" | "false",
-  pascalName: string,
-): string[] {
-  if (!isNumberSumScalar(field.scalar)) {
-    return [];
-  }
-
-  const endianArg = field.byteLength === 1 ? "" : ", littleEndian";
-  return method`
-static min${pascalName}(view: DataView, count: number, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
-  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
-  if (count === 0) {
-    return Number.POSITIVE_INFINITY;
-  }
-  const start = baseOffset + ${field.offset};
-  const limit = start + count * ${layout.byteLength};
-  let minimum = Number.POSITIVE_INFINITY;
-  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
-    const value = view.${getterMethod}(offset${endianArg});
-    if (value < minimum) {
-      minimum = value;
-    }
-  }
-  return minimum;
-}
-static max${pascalName}(view: DataView, count: number, baseOffset = 0, littleEndian = ${littleEndianDefault}): number {
-  ${scanRangeGuard("count", "baseOffset", layout.byteLength, field.offset, field.byteLength)}
-  if (count === 0) {
-    return Number.NEGATIVE_INFINITY;
-  }
-  const start = baseOffset + ${field.offset};
-  const limit = start + count * ${layout.byteLength};
-  let maximum = Number.NEGATIVE_INFINITY;
-  for (let offset = start; offset < limit; offset += ${layout.byteLength}) {
-    const value = view.${getterMethod}(offset${endianArg});
-    if (value > maximum) {
-      maximum = value;
-    }
-  }
-  return maximum;
-}`;
-}
-
-function scanRangeGuard(
-  countName: string,
-  baseOffsetName: string,
-  byteLength: number,
-  fieldOffset: number,
-  fieldByteLength: number,
-): string {
-  return `if (!Number.isInteger(${countName}) || ${countName} < 0) {
-    throw new RangeError(\`Invalid record count: \${${countName}}\`);
-  }
-  if (!Number.isFinite(${baseOffsetName}) || !Number.isInteger(${baseOffsetName}) || ${baseOffsetName} < 0) {
-    throw new RangeError(\`Invalid base offset: \${${baseOffsetName}}\`);
-  }
-  if (${countName} !== 0) {
-    const lastByte = ${baseOffsetName} + ${fieldOffset} + (${countName} - 1) * ${byteLength} + ${fieldByteLength};
-    if (lastByte > view.byteLength) {
-      throw new RangeError(\`scan range exceeds DataView length \${view.byteLength}\`);
-    }
-  }`;
-}
-
-function isNumberSumScalar(kind: string): boolean {
-  return kind !== "i64" && kind !== "u64" && kind !== "bool";
-}
-
-function isEqualityKernelScalar(kind: string): boolean {
-  return kind !== "i64" && kind !== "u64" && kind !== "f32" && kind !== "f64";
 }
 
 function emitField(layout: StructLayout, field: FieldLayout): string[] {

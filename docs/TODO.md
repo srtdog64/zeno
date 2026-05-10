@@ -204,10 +204,14 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `2.0.0` after human release review
+- tag and publish `2.2.0` after human release review
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
+- verify packed `zeno-codegen`, `zeno-inspect`, and `zeno-diff-layout` execution
+  in the consumer smoke gate
+- keep `--scan-kernels=none|sum|basic|full` documented when scan kernel output
+  changes
 - keep [performance-comparison.md](performance-comparison.md) synced when
   benchmark code or generated hot-path code changes
 - use [release-checklist.md](release-checklist.md) as the release gate before

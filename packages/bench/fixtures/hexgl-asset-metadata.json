@@ -1,0 +1,1512 @@
+{
+  "source": {
+    "name": "HexGL",
+    "repository": "https://github.com/BKcore/HexGL",
+    "commit": "6addc95a2fce3bf05f4d751823cc054c61a16d68",
+    "license": "MIT"
+  },
+  "note": "Path and byte-size metadata only. No HexGL asset payload bytes are stored in this fixture.",
+  "kindCodes": {
+    "other": 0,
+    "texture": 1,
+    "geometry": 2,
+    "audio": 3,
+    "shader": 4,
+    "script": 5,
+    "style": 6,
+    "font": 7,
+    "document": 8,
+    "metadata": 9
+  },
+  "extensionCodes": {
+    "": 0,
+    ".css": 1,
+    ".eot": 2,
+    ".gif": 3,
+    ".html": 4,
+    ".jpg": 5,
+    ".js": 6,
+    ".json": 7,
+    ".md": 8,
+    ".ogg": 9,
+    ".png": 10,
+    ".svg": 11,
+    ".ttf": 12,
+    ".txt": 13,
+    ".woff": 14
+  },
+  "records": [
+    {
+      "path": "audio/bg.ogg",
+      "byteLength": 1546870,
+      "kind": "audio",
+      "extension": ".ogg",
+      "pathHash": 3383185152,
+      "depth": 1
+    },
+    {
+      "path": "audio/boost.ogg",
+      "byteLength": 30388,
+      "kind": "audio",
+      "extension": ".ogg",
+      "pathHash": 4092284924,
+      "depth": 1
+    },
+    {
+      "path": "audio/crash.ogg",
+      "byteLength": 12447,
+      "kind": "audio",
+      "extension": ".ogg",
+      "pathHash": 2223620112,
+      "depth": 1
+    },
+    {
+      "path": "audio/destroyed.ogg",
+      "byteLength": 145937,
+      "kind": "audio",
+      "extension": ".ogg",
+      "pathHash": 3717676120,
+      "depth": 1
+    },
+    {
+      "path": "audio/LICENSE",
+      "byteLength": 744,
+      "kind": "audio",
+      "extension": "",
+      "pathHash": 2340425133,
+      "depth": 1
+    },
+    {
+      "path": "audio/wind.ogg",
+      "byteLength": 402462,
+      "kind": "audio",
+      "extension": ".ogg",
+      "pathHash": 385012525,
+      "depth": 1
+    },
+    {
+      "path": "bkcore.coffee/controllers/GamepadController.js",
+      "byteLength": 1952,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3229786392,
+      "depth": 2
+    },
+    {
+      "path": "bkcore.coffee/controllers/OrientationController.js",
+      "byteLength": 3338,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2492987563,
+      "depth": 2
+    },
+    {
+      "path": "bkcore.coffee/controllers/TouchController.js",
+      "byteLength": 4665,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2580030980,
+      "depth": 2
+    },
+    {
+      "path": "bkcore.coffee/ImageData.js",
+      "byteLength": 4193,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3481936188,
+      "depth": 1
+    },
+    {
+      "path": "bkcore.coffee/tests.html",
+      "byteLength": 206,
+      "kind": "document",
+      "extension": ".html",
+      "pathHash": 3152250038,
+      "depth": 1
+    },
+    {
+      "path": "bkcore.coffee/threejs/Particles.js",
+      "byteLength": 6819,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3732511482,
+      "depth": 2
+    },
+    {
+      "path": "bkcore.coffee/Timer.js",
+      "byteLength": 3181,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1099326656,
+      "depth": 1
+    },
+    {
+      "path": "bkcore.coffee/Utils.js",
+      "byteLength": 6688,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3658349756,
+      "depth": 1
+    },
+    {
+      "path": "bkcore/Audio.js",
+      "byteLength": 3166,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2672780937,
+      "depth": 1
+    },
+    {
+      "path": "bkcore/hexgl/CameraChase.js",
+      "byteLength": 2270,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1471389133,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/Gameplay.js",
+      "byteLength": 5742,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 206343978,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/HexGL.js",
+      "byteLength": 12665,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3699262982,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/HUD.js",
+      "byteLength": 7227,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 650114443,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/Ladder.js",
+      "byteLength": 1376,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2790783006,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/RaceData.js",
+      "byteLength": 2233,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1926556181,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/ShipControls.js",
+      "byteLength": 21576,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1564843414,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/ShipEffects.js",
+      "byteLength": 5235,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3984625000,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/hexgl/tracks/Cityscape.js",
+      "byteLength": 18010,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1958659862,
+      "depth": 3
+    },
+    {
+      "path": "bkcore/threejs/Loader.js",
+      "byteLength": 5559,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 4130013626,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/threejs/Particles.js",
+      "byteLength": 5167,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2630808330,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/threejs/Preloader.js",
+      "byteLength": 3599,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1331099789,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/threejs/RenderManager.js",
+      "byteLength": 3167,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 885830394,
+      "depth": 2
+    },
+    {
+      "path": "bkcore/threejs/Shaders.js",
+      "byteLength": 25563,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1691397797,
+      "depth": 2
+    },
+    {
+      "path": "css/BebasNeue-webfont.eot",
+      "byteLength": 15438,
+      "kind": "font",
+      "extension": ".eot",
+      "pathHash": 1741440289,
+      "depth": 1
+    },
+    {
+      "path": "css/BebasNeue-webfont.svg",
+      "byteLength": 40456,
+      "kind": "font",
+      "extension": ".svg",
+      "pathHash": 4186560119,
+      "depth": 1
+    },
+    {
+      "path": "css/BebasNeue-webfont.ttf",
+      "byteLength": 41128,
+      "kind": "font",
+      "extension": ".ttf",
+      "pathHash": 4106297879,
+      "depth": 1
+    },
+    {
+      "path": "css/BebasNeue-webfont.woff",
+      "byteLength": 18036,
+      "kind": "font",
+      "extension": ".woff",
+      "pathHash": 1150246089,
+      "depth": 1
+    },
+    {
+      "path": "css/bg.jpg",
+      "byteLength": 83997,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3022334215,
+      "depth": 1
+    },
+    {
+      "path": "css/fonts.css",
+      "byteLength": 511,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 3503611976,
+      "depth": 1
+    },
+    {
+      "path": "css/help-0.png",
+      "byteLength": 31972,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1235974158,
+      "depth": 1
+    },
+    {
+      "path": "css/help-1.png",
+      "byteLength": 33539,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1241765953,
+      "depth": 1
+    },
+    {
+      "path": "css/help-2.png",
+      "byteLength": 40214,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2019537000,
+      "depth": 1
+    },
+    {
+      "path": "css/help-3.png",
+      "byteLength": 39917,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1966813755,
+      "depth": 1
+    },
+    {
+      "path": "css/mobile-controls-1.jpg",
+      "byteLength": 190883,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3044979635,
+      "depth": 1
+    },
+    {
+      "path": "css/mobile-controls-2.jpg",
+      "byteLength": 204535,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2229780394,
+      "depth": 1
+    },
+    {
+      "path": "css/mobile-over.jpg",
+      "byteLength": 178381,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 299583697,
+      "depth": 1
+    },
+    {
+      "path": "css/mobile.jpg",
+      "byteLength": 251974,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3355498978,
+      "depth": 1
+    },
+    {
+      "path": "css/multi.css",
+      "byteLength": 7150,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 1267847355,
+      "depth": 1
+    },
+    {
+      "path": "css/title.png",
+      "byteLength": 484372,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 218694084,
+      "depth": 1
+    },
+    {
+      "path": "css/touchcontroller.css",
+      "byteLength": 432,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 532255033,
+      "depth": 1
+    },
+    {
+      "path": "favicon.png",
+      "byteLength": 1459,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 674870782,
+      "depth": 0
+    },
+    {
+      "path": "geometries/bonus/base/base.js",
+      "byteLength": 12141,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 1600690070,
+      "depth": 3
+    },
+    {
+      "path": "geometries/booster/booster.js",
+      "byteLength": 6427,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 3825856938,
+      "depth": 2
+    },
+    {
+      "path": "geometries/ships/feisar/feisar.js",
+      "byteLength": 139136,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 3046730300,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/cityscape/bonus/speed.js",
+      "byteLength": 15257,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 1488632399,
+      "depth": 4
+    },
+    {
+      "path": "geometries/tracks/cityscape/scrapers1.js",
+      "byteLength": 9864,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 1361239584,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/cityscape/scrapers2.js",
+      "byteLength": 9689,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 2774509635,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/cityscape/start.js",
+      "byteLength": 11515,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 4218920274,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/cityscape/startbanner.js",
+      "byteLength": 1679,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 3967149628,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/cityscape/track.js",
+      "byteLength": 739195,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 1171320491,
+      "depth": 3
+    },
+    {
+      "path": "geometries/tracks/edge/track.js",
+      "byteLength": 387450,
+      "kind": "geometry",
+      "extension": ".js",
+      "pathHash": 404717055,
+      "depth": 3
+    },
+    {
+      "path": "icon_128.png",
+      "byteLength": 19903,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 470484103,
+      "depth": 0
+    },
+    {
+      "path": "icon_256.png",
+      "byteLength": 52713,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 134628875,
+      "depth": 0
+    },
+    {
+      "path": "icon_32.png",
+      "byteLength": 2699,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2695104749,
+      "depth": 0
+    },
+    {
+      "path": "icon_64.png",
+      "byteLength": 6730,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 4266584998,
+      "depth": 0
+    },
+    {
+      "path": "index.html",
+      "byteLength": 5145,
+      "kind": "document",
+      "extension": ".html",
+      "pathHash": 4024653090,
+      "depth": 0
+    },
+    {
+      "path": "launch.js",
+      "byteLength": 3336,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 195346719,
+      "depth": 0
+    },
+    {
+      "path": "libs/DAT.GUI.min.js",
+      "byteLength": 20183,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1539883857,
+      "depth": 1
+    },
+    {
+      "path": "libs/Detector.js",
+      "byteLength": 1907,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2414619521,
+      "depth": 1
+    },
+    {
+      "path": "libs/Editor_files/ace.js",
+      "byteLength": 277697,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3037925472,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/App.js",
+      "byteLength": 4538,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2304738556,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/CanvasRenderer.js",
+      "byteLength": 7842,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1272244876,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/class.js",
+      "byteLength": 35829,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3554788841,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Diagram.js",
+      "byteLength": 3057,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3187666814,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/editor.css",
+      "byteLength": 249,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 3824963208,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/font.css",
+      "byteLength": 737,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 2330310292,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/gamecore.js",
+      "byteLength": 3217,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3418626526,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/hashlist.js",
+      "byteLength": 1026,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 335117289,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Iterator.js",
+      "byteLength": 1645,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1011033931,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/jhashtable.js",
+      "byteLength": 14196,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1658082663,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/jquery-1.8.js",
+      "byteLength": 93436,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1049293843,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/kinetic.js",
+      "byteLength": 68851,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3699498104,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Links.js",
+      "byteLength": 1155,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3389245122,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/main.css",
+      "byteLength": 3820,
+      "kind": "style",
+      "extension": ".css",
+      "pathHash": 2029677348,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/mode-json.js",
+      "byteLength": 8311,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2709779621,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/ModuleList.js",
+      "byteLength": 1199,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1484628449,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Node.js",
+      "byteLength": 2406,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 4288764365,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Parser.js",
+      "byteLength": 2826,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3771210264,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/pooled.js",
+      "byteLength": 15536,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3748983024,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Project.js",
+      "byteLength": 2832,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 465661470,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/theme-monokai.js",
+      "byteLength": 2681,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1777542571,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor_files/Timer.js",
+      "byteLength": 3010,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2160702474,
+      "depth": 2
+    },
+    {
+      "path": "libs/Editor.html",
+      "byteLength": 44149,
+      "kind": "document",
+      "extension": ".html",
+      "pathHash": 1419030630,
+      "depth": 1
+    },
+    {
+      "path": "libs/leap-0.4.1.min.js",
+      "byteLength": 83438,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 741636493,
+      "depth": 1
+    },
+    {
+      "path": "libs/postprocessing/BloomPass.js",
+      "byteLength": 3214,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3456289595,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/DotScreenPass.js",
+      "byteLength": 1206,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3206577563,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/EffectComposer.js",
+      "byteLength": 3637,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3600032236,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/FilmPass.js",
+      "byteLength": 1320,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 893921212,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/MaskPass.js",
+      "byteLength": 1622,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3162149270,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/RenderPass.js",
+      "byteLength": 1235,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1055130550,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/SavePass.js",
+      "byteLength": 1201,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1333902965,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/ShaderPass.js",
+      "byteLength": 1009,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 3386852537,
+      "depth": 2
+    },
+    {
+      "path": "libs/postprocessing/TexturePass.js",
+      "byteLength": 811,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1599983331,
+      "depth": 2
+    },
+    {
+      "path": "libs/ShaderExtras.js",
+      "byteLength": 45027,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 1561589257,
+      "depth": 1
+    },
+    {
+      "path": "libs/Stats.js",
+      "byteLength": 2243,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 757598206,
+      "depth": 1
+    },
+    {
+      "path": "libs/Three.dev.js",
+      "byteLength": 382352,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 2819649624,
+      "depth": 1
+    },
+    {
+      "path": "libs/Three.r53.js",
+      "byteLength": 392908,
+      "kind": "script",
+      "extension": ".js",
+      "pathHash": 654977759,
+      "depth": 1
+    },
+    {
+      "path": "LICENSE",
+      "byteLength": 1085,
+      "kind": "document",
+      "extension": "",
+      "pathHash": 2524985956,
+      "depth": 0
+    },
+    {
+      "path": "README.md",
+      "byteLength": 792,
+      "kind": "document",
+      "extension": ".md",
+      "pathHash": 418062562,
+      "depth": 0
+    },
+    {
+      "path": "replays/cityscape-casual/bkcore.replay.json",
+      "byteLength": 615416,
+      "kind": "metadata",
+      "extension": ".json",
+      "pathHash": 4219839987,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/bonus/base/diffuse.jpg",
+      "byteLength": 102448,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3531946840,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/bonus/base/normal.jpg",
+      "byteLength": 48284,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 865005103,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/bonus/base/specular.jpg",
+      "byteLength": 112338,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2127939281,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/checker.png",
+      "byteLength": 340,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 119498841,
+      "depth": 1
+    },
+    {
+      "path": "textures.full/hud/hex.jpg",
+      "byteLength": 53410,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1444990377,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/hud/hud-bg.png",
+      "byteLength": 83435,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1645347821,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/hud/hud-fg-shield.png",
+      "byteLength": 30092,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 248916395,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/hud/hud-fg-speed.png",
+      "byteLength": 77277,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2196666551,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/particles/cloud - Copie.png",
+      "byteLength": 60512,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2074335736,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/particles/cloud.png",
+      "byteLength": 60512,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 3391433747,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/particles/damage.png",
+      "byteLength": 25050,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 4288788793,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/particles/spark - Copie.png",
+      "byteLength": 3472,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 351787972,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/particles/spark.png",
+      "byteLength": 2882,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 234890199,
+      "depth": 2
+    },
+    {
+      "path": "textures.full/ships/feisar/booster/booster.png",
+      "byteLength": 428605,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1653758206,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/ships/feisar/booster/boostersprite.jpg",
+      "byteLength": 16055,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2869398343,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/ships/feisar/diffuse.jpg",
+      "byteLength": 294683,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2692786227,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/ships/feisar/normal.jpg",
+      "byteLength": 314506,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 59724946,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/ships/feisar/specular.jpg",
+      "byteLength": 335448,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 40487644,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/nx.jpg",
+      "byteLength": 55756,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 4198161862,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/ny.jpg",
+      "byteLength": 52198,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1238706293,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/nz.jpg",
+      "byteLength": 54574,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1970693184,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/px.jpg",
+      "byteLength": 60050,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3707001396,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/py.jpg",
+      "byteLength": 19634,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3808322243,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/skybox/dawnclouds/pz.jpg",
+      "byteLength": 58868,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1586107450,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/collision.png",
+      "byteLength": 146459,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1587341835,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/diffuse.jpg",
+      "byteLength": 394118,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1781932765,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/height.png",
+      "byteLength": 209516,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 3365047084,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/normal.jpg",
+      "byteLength": 648304,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3673303920,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers1/diffuse.jpg",
+      "byteLength": 87923,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2569095440,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers1/normal.jpg",
+      "byteLength": 112111,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2940217767,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers1/specular.jpg",
+      "byteLength": 315830,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 4182117561,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers2/diffuse.jpg",
+      "byteLength": 120659,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1657837209,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers2/normal.jpg",
+      "byteLength": 59219,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3126138700,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/scrapers2/specular.jpg",
+      "byteLength": 207975,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1485595046,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/specular.jpg",
+      "byteLength": 444304,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2987724642,
+      "depth": 3
+    },
+    {
+      "path": "textures.full/tracks/cityscape/start/diffuse.jpg",
+      "byteLength": 75560,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3399340138,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/start/normal.jpg",
+      "byteLength": 111293,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2432181,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/start/specular.jpg",
+      "byteLength": 80452,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3507322007,
+      "depth": 4
+    },
+    {
+      "path": "textures.full/tracks/cityscape/start/start.jpg",
+      "byteLength": 32273,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 538132676,
+      "depth": 4
+    },
+    {
+      "path": "textures/bonus/base/diffuse.jpg",
+      "byteLength": 35098,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2092880255,
+      "depth": 3
+    },
+    {
+      "path": "textures/bonus/base/normal.jpg",
+      "byteLength": 48284,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 4252063742,
+      "depth": 3
+    },
+    {
+      "path": "textures/bonus/base/specular.jpg",
+      "byteLength": 112338,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3920451488,
+      "depth": 3
+    },
+    {
+      "path": "textures/checker.png",
+      "byteLength": 340,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1845111148,
+      "depth": 1
+    },
+    {
+      "path": "textures/hud/hex.jpg",
+      "byteLength": 53410,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3722486200,
+      "depth": 2
+    },
+    {
+      "path": "textures/hud/hud-bg.png",
+      "byteLength": 83435,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 4240479018,
+      "depth": 2
+    },
+    {
+      "path": "textures/hud/hud-fg-shield.png",
+      "byteLength": 30092,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1035948082,
+      "depth": 2
+    },
+    {
+      "path": "textures/hud/hud-fg-speed.png",
+      "byteLength": 77277,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2273691060,
+      "depth": 2
+    },
+    {
+      "path": "textures/particles/cloud - Copie.png",
+      "byteLength": 60512,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2492688229,
+      "depth": 2
+    },
+    {
+      "path": "textures/particles/cloud.png",
+      "byteLength": 60512,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2968609566,
+      "depth": 2
+    },
+    {
+      "path": "textures/particles/damage.png",
+      "byteLength": 25050,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1792914998,
+      "depth": 2
+    },
+    {
+      "path": "textures/particles/spark - Copie.png",
+      "byteLength": 3472,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2003509261,
+      "depth": 2
+    },
+    {
+      "path": "textures/particles/spark.png",
+      "byteLength": 2882,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1076237398,
+      "depth": 2
+    },
+    {
+      "path": "textures/ships/feisar/booster/booster.png",
+      "byteLength": 81100,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2738674781,
+      "depth": 4
+    },
+    {
+      "path": "textures/ships/feisar/booster/boostersprite.jpg",
+      "byteLength": 13234,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1927767032,
+      "depth": 4
+    },
+    {
+      "path": "textures/ships/feisar/diffuse.jpg",
+      "byteLength": 115601,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3416911664,
+      "depth": 3
+    },
+    {
+      "path": "textures/ships/feisar/normal.jpg",
+      "byteLength": 314506,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2243844807,
+      "depth": 3
+    },
+    {
+      "path": "textures/ships/feisar/specular.jpg",
+      "byteLength": 335448,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3186321881,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/nx.jpg",
+      "byteLength": 35046,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1911394829,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/ny.jpg",
+      "byteLength": 34726,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3170114430,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/nz.jpg",
+      "byteLength": 34537,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 3978893447,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/px.jpg",
+      "byteLength": 36766,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2487584159,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/py.jpg",
+      "byteLength": 20815,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1848765424,
+      "depth": 3
+    },
+    {
+      "path": "textures/skybox/dawnclouds/pz.jpg",
+      "byteLength": 36546,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1408449765,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/collision.png",
+      "byteLength": 146459,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 2771803464,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/diffuse.jpg",
+      "byteLength": 63186,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 759708190,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/height.png",
+      "byteLength": 209516,
+      "kind": "texture",
+      "extension": ".png",
+      "pathHash": 1091442833,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/normal.jpg",
+      "byteLength": 648304,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2831319977,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers1/diffuse.jpg",
+      "byteLength": 60434,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 844025751,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers1/normal.jpg",
+      "byteLength": 112111,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 163161942,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers1/specular.jpg",
+      "byteLength": 315830,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1059024712,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers2/diffuse.jpg",
+      "byteLength": 65749,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1138427018,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers2/normal.jpg",
+      "byteLength": 59219,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 604712917,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/scrapers2/specular.jpg",
+      "byteLength": 207975,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1559173687,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/specular.jpg",
+      "byteLength": 444304,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2180739139,
+      "depth": 3
+    },
+    {
+      "path": "textures/tracks/cityscape/start/diffuse.jpg",
+      "byteLength": 75560,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 142460341,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/start/normal.jpg",
+      "byteLength": 111293,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 2835776904,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/start/specular.jpg",
+      "byteLength": 80452,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 1981680458,
+      "depth": 4
+    },
+    {
+      "path": "textures/tracks/cityscape/start/start.jpg",
+      "byteLength": 32273,
+      "kind": "texture",
+      "extension": ".jpg",
+      "pathHash": 4253308531,
+      "depth": 4
+    }
+  ]
+}

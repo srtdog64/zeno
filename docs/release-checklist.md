@@ -30,6 +30,7 @@ This runs:
 - package dry-runs
 - packed consumer smoke test
 - fixed-layout, dynamic-layout, and FlatBuffers comparison benchmark workloads
+- real WebGL game metadata benchmark over the pinned HexGL metadata fixture
 
 For a scoped public publish, use the release publisher:
 

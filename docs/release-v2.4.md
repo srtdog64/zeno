@@ -10,6 +10,7 @@ Status: frontend and runtime boundary hardening release.
 | Runtime boundary document    | load-bearing | Runtime hot projection paths explicitly reject `Result<T, E>`.                             |
 | Architecture wording cleanup | load-bearing | Architecture must not imply arbitrary TypeScript type checker semantics are accepted.      |
 | Documentation policy test    | load-bearing | Boundary claims are now tested so future docs do not drift silently.                       |
+| Real game metadata witness   | diagnostic   | HexGL metadata gives a pinned public WebGL game distribution without storing asset bytes.  |
 
 ## Frontend Boundary
 
@@ -24,6 +25,15 @@ Runtime hot paths remain value-returning APIs. Generated scalar getters, scan
 kernels, cursor movement, and tight vector loops must not return `Result<T, E>`.
 Boundary validation can be added as a separate wrapper layer when a concrete
 untrusted-buffer workload needs it.
+
+## Real Game Metadata
+
+`bench:real-game` uses a pinned HexGL repository tree fixture containing path,
+extension, size, kind, depth, and hash metadata. It intentionally stores no
+asset payload bytes. The benchmark compares JSON metadata ingestion,
+FlatBuffers JS table projection, and Zeno binary fixed-record scans. It remains
+diagnostic until a browser version measures fetch, parse, and WebGL upload-list
+preparation separately.
 
 ## Non-Goals
 

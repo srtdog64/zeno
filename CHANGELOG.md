@@ -12,6 +12,9 @@ Status: frontend and runtime boundary hardening release.
   TypeScript checker semantics.
 - Added a documentation policy test covering frontend, runtime boundary, and
   emitter growth guardrails.
+- Added a pinned HexGL real-game metadata fixture and `bench:real-game` workload
+  to compare JSON metadata ingestion, FlatBuffers JS table projection, and
+  binary fixed-record scans.
 - Package manifests and workspace lockfile are aligned at `2.4.0`.
 
 ## 2.3.0

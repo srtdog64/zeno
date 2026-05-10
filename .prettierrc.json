@@ -1,4 +1,12 @@
 {
   "printWidth": 100,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "llms.txt",
+      "options": {
+        "parser": "markdown"
+      }
+    }
+  ]
 }

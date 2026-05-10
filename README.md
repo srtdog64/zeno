@@ -374,13 +374,19 @@ comparison benchmark workloads.
 The release gate also includes generated-code compile/run fuzzing, hostile
 malformed-descriptor property tests, a frozen layout compatibility fixture,
 SharedArrayBuffer worker stress, and packed consumer import-resolution checks.
-CI adds a Playwright browser smoke matrix for the WebGL demo.
+CI adds a Playwright browser smoke matrix for the WebGL demo. The benchmark gate
+also includes a real WebGL game metadata fixture derived from a pinned HexGL
+repository tree; it stores metadata only, not game asset payload bytes. That
+witness compares JSON metadata ingestion and FlatBuffers JS table projection
+against fixed-record binary scans. The fixture and benchmark are repository
+validation assets, not files published inside the npm packages.
 
 Benchmark execution is load-bearing for release confidence, but exact timing
 thresholds stay diagnostic because CI hardware noise is high.
 
 ## Documentation
 
+- [llms.txt](llms.txt): compact LLM orientation and repository map.
 - [docs/getting-started.md](docs/getting-started.md): detailed walkthrough.
 - [docs/schema-grammar.md](docs/schema-grammar.md) /
   [docs/schema-grammar.ko.md](docs/schema-grammar.ko.md): supported `.zeno.ts`

@@ -420,6 +420,9 @@ Status: satisfied as a diagnostic release gate.
 - package versions, workspace internal dependencies, and `package-lock.json` are
   aligned at `2.4.0`.
 - `release:check` keeps `bench:check` in the publish gate.
+- `bench:check` includes a real WebGL game metadata fixture derived from the
+  pinned HexGL repository tree. The fixture stores metadata only, not asset
+  payload bytes.
 
 ## Candidate Work
 
@@ -466,6 +469,9 @@ Status: satisfied as a diagnostic release gate.
 - keep the WebGL instance demo benchmark in
   [performance-comparison.md](performance-comparison.md), not only as a TODO;
   rerun it when the demo schema or render cap changes
+- keep the HexGL metadata fixture pinned and metadata-only; rerun
+  `scripts/update-real-game-metadata-fixture.mjs` only when intentionally
+  refreshing the source repository witness
 
 ### Runtime and ABI safety
 

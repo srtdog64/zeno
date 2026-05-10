@@ -1,0 +1,198 @@
+# Zeno LLM Context
+
+This file is the shortest reliable orientation for language-model agents reading
+the Zeno repository. Prefer this first, then follow the file map below.
+
+## One-line identity
+
+Zeno is a TypeScript-only zero-copy binary projection compiler without IDL
+overhead. It lowers schema-only `.zeno.ts` interfaces into Layout IR and emits
+`DataView`-backed projection views.
+
+```txt
+.zeno.ts interfaces -> Layout IR -> generated DataView views
+```
+
+## Correct mental model
+
+Zeno is not a general serializer. Treat it as a generated `DataView` table
+scanner for TypeScript-owned, fixed-layout, read-mostly data.
+
+Best fit:
+
+- one TypeScript codebase owns both writer and reader
+- producer and consumer ship together
+- many same-layout records are scanned in batches
+- JSON parse/object materialization is the bottleneck
+- named offsets are valuable, but a separate `.fbs`/IDL file is not
+- WebGL/WebGPU/game/editor/telemetry/worker metadata pipelines
+
+Poor fit:
+
+- cross-language protocols
+- public network contracts
+- long-lived storage requiring automatic schema evolution
+- arbitrary nested object serialization
+- security-critical untrusted binary parsing
+
+## Claim boundaries
+
+Load-bearing claim:
+
+- Zeno avoids per-record JS object materialization.
+- Fixed-stride scalar scans can stay near direct `DataView` timing.
+- Static generated accessors and generated scan kernels are the hot path.
+
+Diagnostic/candidate claims:
+
+- Dynamic strings/vectors are supported but are not the promoted hot path.
+- FlatBuffers comparisons are workload witnesses, not universal replacement
+  claims.
+- Real-game metadata benchmarks use a pinned HexGL repo tree distribution, but
+  repeat metadata rows to make a large scan workload.
+
+Never claim:
+
+- "Zeno is a universal FlatBuffers replacement."
+- "Zeno solves schema evolution."
+- "Zeno is for arbitrary untrusted binary parsing."
+- "Dynamic text decode is zero-allocation."
+
+## Why schema evolution is deferred
+
+Schema evolution means old readers and new writers, or new readers and old bytes,
+must coexist without coordinated deployment. That needs field ids, vtables,
+defaults, compatibility matrices, and usually read indirection.
+
+Zeno chooses explicit breaking layout changes for controlled TypeScript systems:
+
+- producer and consumer usually ship together
+- data is often transient, cached, or regenerated
+- layout changes are reviewed through manifests and `zeno-diff-layout`
+- old/new coexistence belongs in an application envelope when required
+
+Use FlatBuffers/protobuf if uncoordinated clients or long-lived binary files must
+remain compatible.
+
+## Runtime error policy
+
+Compiler/analyzer/validator code uses structured diagnostics and internal
+`Result<T, E>`.
+
+Runtime hot projection paths intentionally do not return `Result<T, E>`.
+Generated getters, scan kernels, cursor movement, and tight vector loops are
+value-returning APIs. Invalid offsets/descriptors/counts fail closed with
+`RangeError`. Unchecked APIs exist only for loops whose bounds were proven once
+outside the hot path.
+
+## API layers
+
+Use the lowest layer that fits the job:
+
+1. Wire ABI / Layout IR: byte layout, alignment, descriptors.
+2. Raw offsets/constants: generated `byteLength` and field offsets.
+3. Static scalar accessors: `getX`, `setX`, `getXAt`, `setXAt`.
+4. Generated scan kernels: `sumX`, `minX`, `maxX`, `countXWhereEq`,
+   `findFirstXWhereEq`.
+5. Cursor projection views: reusable ergonomic object over one record.
+6. Dynamic tail views/writers: `Span32`, `Vector32`, UTF-8/bytes/vector payloads.
+7. Shared memory writer/publication: `SharedArrayBuffer`, atomic tail cursor,
+   descriptor ready cells.
+8. Layout ops: manifest, inspect, diff, release checks.
+
+Do not collapse static hot-path APIs and cursor projection views into one
+abstraction.
+
+## Important files
+
+Start here:
+
+- `README.md`: user-facing overview, install, quick example, use cases.
+- `docs/getting-started.md`: walkthrough.
+- `docs/api-design.md`: public API layers and failure policy.
+- `docs/layers/*.md`: Layered Projection Model.
+- `docs/performance-comparison.md`: current benchmark witnesses and caveats.
+- `docs/schema-compatibility.md`: layout compatibility and version routing.
+- `docs/schema-grammar.md` / `docs/schema-grammar.ko.md`: accepted/rejected
+  `.zeno.ts` grammar.
+- `docs/runtime-boundary.md`: why hot runtime paths reject `Result<T, E>`.
+- `docs/frontend-model.md`: AST-first restricted frontend model.
+- `docs/TODO.md`: current candidate work and deferred design.
+
+Compiler:
+
+- `packages/compiler/src/analyzer.ts`: schema source hygiene and interface/type
+  analysis.
+- `packages/compiler/src/lowering.ts`: TypeScript AST/type syntax to Layout IR.
+- `packages/compiler/src/validator.ts`: Layout IR invariants.
+- `packages/compiler/src/emitter.ts`: assembly layer only.
+- `packages/compiler/src/emitter-*.ts`: layer-specific emitters.
+- `packages/compiler/src/layout-manifest.ts`: manifest, inspect, diff.
+- `packages/compiler/bin/zeno-codegen.mjs`: codegen CLI.
+- `packages/compiler/bin/zeno-inspect.mjs`: layout inspection CLI.
+- `packages/compiler/bin/zeno-diff-layout.mjs`: manifest diff CLI.
+
+Runtime:
+
+- `packages/runtime/src/range.ts`: checked boundary helpers.
+- `packages/runtime/src/scalar.ts`: scalar reads/writes.
+- `packages/runtime/src/descriptor32.ts`: `Span32`/`Vector32` descriptors.
+- `packages/runtime/src/view-base.ts`: cursor base.
+- `packages/runtime/src/vector-base.ts`: live vector view contract.
+- `packages/runtime/src/byte-vectors.ts`: bytes/text vector views.
+- `packages/runtime/src/scalar-vector.ts`: scalar vector views and native arrays.
+- `packages/runtime/src/writer*.ts`: dynamic tail and shared writer layers.
+
+Examples/benchmarks:
+
+- `examples/scalar-only`: strongest fixed-layout scan example.
+- `examples/basic`: mixed fixed/dynamic generated view example.
+- `examples/webgl-instance-streamer`: browser/WebGL JSON vs Zeno vs FlatBuffers
+  demo.
+- `packages/bench/index.mjs`: fixed scalar and allocation benchmark.
+- `packages/bench/dynamic-layout.mjs`: dynamic layout benchmark.
+- `packages/bench/flatbuffers-comparison.mjs`: FlatBuffers JS table witness.
+- `packages/bench/real-game-metadata.mjs`: HexGL metadata witness.
+
+## Package boundary
+
+Published packages:
+
+- `@exornea/zeno-types`: type-only ABI marker aliases.
+- `@exornea/zeno-schema`: Layout IR and ABI constants.
+- `@exornea/zeno-runtime`: runtime views, writers, descriptors.
+- `@exornea/zeno-compiler`: analyzer, emitter, CLI tools.
+
+Published npm package contents are restricted by `files` allowlists:
+
+- compiler publishes `dist/` and `bin/`
+- runtime/schema/types publish `dist/`
+- docs, tests, examples, `packages/bench`, and bench fixtures are repo
+  validation assets and are not included in npm tarballs
+
+## Common commands
+
+```sh
+npm run check
+npm run bench:check
+npm run pack:check
+npm run consumer:smoke
+npm run release:check
+```
+
+Use `npm.cmd` instead of `npm` on Windows PowerShell if script execution policy
+blocks `npm.ps1`.
+
+## Current release posture
+
+Version family is `2.4.0` in the working tree. v2.4 is a frontend/runtime
+boundary hardening release plus a real-game metadata benchmark witness.
+
+Before publishing, run:
+
+```sh
+npm run release:check
+```
+
+If npm cache permissions fail on Windows, set `npm_config_cache` to a writable
+workspace-local directory for dry-run packing.

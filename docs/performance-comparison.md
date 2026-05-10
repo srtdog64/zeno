@@ -14,6 +14,7 @@ baselines.
 | Per-record retained `UserView` objects still allocate heap                                | diagnostic   | It is useful for API design, but not the intended hot path.                                              |
 | Materialized JS objects retain more heap than view objects                                | diagnostic   | True for this witness, but schema shape can change the exact ratio.                                      |
 | Pointer dereference has a separate cost model                                             | candidate    | `pointer32` chasing is benchmarked separately from fixed-stride scalar scans.                            |
+| Real game metadata scans should use real asset distributions                              | diagnostic   | The HexGL witness uses a pinned public WebGL game repository tree, but repeats metadata rows to scale N. |
 
 ## Witness Case
 
@@ -237,6 +238,94 @@ string decode and dynamic writer UTF-8 encoding still dominate. Promote dynamic
 performance only after byte-slice predicates, generated dynamic scan helpers,
 or immutable descriptor snapshot APIs have repeated benchmark witnesses.
 
+## Real WebGL Game Metadata Witness
+
+This witness exists because synthetic rows are useful but not enough. The
+benchmark uses metadata from the public HexGL WebGL game repository, pinned to
+commit `6addc95a2fce3bf05f4d751823cc054c61a16d68`.
+
+Methodological note: the fixture stores path, extension, kind, byte size, depth,
+and path hash metadata only. It does not store HexGL asset payload bytes. The
+source metadata rows are repeated to create a large table-scan workload, so this
+is a real distribution witness rather than a claim about the exact original game
+load time.
+
+Command:
+
+```powershell
+npm run bench:real-game
+```
+
+The workload compares:
+
+- pre-parsed JSON metadata scan
+- `JSON.parse(...)` plus metadata scan
+- binary fixed-record scalar metadata scan
+- binary path-prefix scan over UTF-8 path bytes
+- FlatBuffers JS table scalar metadata scan
+- FlatBuffers JS table path-prefix scan over UTF-8 path bytes
+- binary metadata packing cost
+
+Latest local witness:
+
+- Date: 2026-05-10
+- Source rows: 184 HexGL metadata rows
+- Scaled rows: 200,000
+- JSON payload: 24.46 MiB
+- Binary payload: 10.39 MiB
+- FlatBuffers payload: 13.16 MiB
+- Warmup: 3 runs
+- Measured: 25 runs
+
+| Workload                                    |    Median |       p95 |       p99 |      Std | Median ns/record |
+| ------------------------------------------- | --------: | --------: | --------: | -------: | ---------------: |
+| JSON pre-parsed metadata scan               |   1.49 ms |   2.00 ms |   3.09 ms |  0.46 ms |          7.44 ns |
+| JSON.parse + metadata scan                  | 183.41 ms | 213.60 ms | 222.98 ms | 20.44 ms |        917.04 ns |
+| Zeno binary scalar metadata scan            |   0.93 ms |   2.34 ms |   6.16 ms |  1.08 ms |          4.67 ns |
+| Zeno binary path-prefix scan                |   2.58 ms |   3.77 ms |   7.40 ms |  1.01 ms |         12.89 ns |
+| FlatBuffers table scalar metadata scan      |  24.40 ms |  29.15 ms |  29.56 ms |  2.49 ms |        122.00 ns |
+| FlatBuffers table path-prefix metadata scan |  26.73 ms |  30.57 ms |  30.75 ms |  2.30 ms |        133.63 ns |
+| Zeno binary metadata pack                   | 223.93 ms | 420.66 ms | 444.13 ms | 71.07 ms |       1119.64 ns |
+| FlatBuffers metadata pack                   | 239.85 ms | 292.02 ms | 292.98 ms | 23.18 ms |       1199.27 ns |
+
+Delta interpretation against `JSON.parse + metadata scan`:
+
+| Comparison                         | Median delta |  Pooled std | Status       |
+| ---------------------------------- | -----------: | ----------: | ------------ |
+| JSON pre-parsed scan               | -909.60 ns/r | 102.24 ns/r | above-noise  |
+| Zeno binary scalar scan            | -912.37 ns/r | 102.35 ns/r | above-noise  |
+| Zeno binary path-prefix scan       | -904.16 ns/r | 102.33 ns/r | above-noise  |
+| FlatBuffers table scalar scan      | -795.04 ns/r | 102.96 ns/r | above-noise  |
+| FlatBuffers table path-prefix scan | -783.41 ns/r | 102.85 ns/r | above-noise  |
+| Zeno binary pack                   | +202.60 ns/r | 369.77 ns/r | within-noise |
+| FlatBuffers metadata pack          | +282.23 ns/r | 154.53 ns/r | above-noise  |
+
+Delta interpretation against Zeno binary fixed-record scans:
+
+| Comparison                         | Median delta | Pooled std | Status      |
+| ---------------------------------- | -----------: | ---------: | ----------- |
+| FlatBuffers table scalar scan      | +117.33 ns/r | 13.56 ns/r | above-noise |
+| FlatBuffers table path-prefix scan | +120.74 ns/r | 12.54 ns/r | above-noise |
+
+Interpretation: for this metadata-table witness, FlatBuffers JS is still much
+faster than JSON parse plus object scanning, but table/vector indirection is
+clearly slower than Zeno's fixed-record `DataView` scan. This is a narrow
+TypeScript/WebGL metadata workload, not a general FlatBuffers replacement
+claim.
+
+Packaging note: this benchmark, its HexGL metadata fixture, and its tests are
+root-repository validation assets. They are not included in the published npm
+packages, whose `files` allowlists publish only package `dist/` outputs plus
+the compiler `bin/` entrypoints.
+
+Promotion criterion:
+
+- keep this benchmark as a diagnostic workload until a browser version measures
+  fetch, parse, and WebGL upload-list preparation separately
+- do not use it to claim that Zeno accelerates arbitrary game asset loading;
+  this benchmark measures metadata ingestion and scans, not texture or geometry
+  decoding
+
 ## Scalar Read Timing
 
 | Access mode                                     |   Median |      p95 |      p99 |     Std | Median ns/record | Relative median | Allocation shape            |
@@ -366,6 +455,8 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)
 - FlatBuffers comparison benchmark: [packages/bench/flatbuffers-comparison.mjs](../packages/bench/flatbuffers-comparison.mjs)
+- Real game metadata benchmark: [packages/bench/real-game-metadata.mjs](../packages/bench/real-game-metadata.mjs)
+- HexGL metadata fixture: [packages/bench/fixtures/hexgl-asset-metadata.json](../packages/bench/fixtures/hexgl-asset-metadata.json)
 - Generated view witness: [examples/basic/src/model.view.ts](../examples/basic/src/model.view.ts)
 - Runtime cursor support: [packages/runtime/src/index.ts](../packages/runtime/src/index.ts)
 - Allocation test plan: [test-plan.md](test-plan.md)

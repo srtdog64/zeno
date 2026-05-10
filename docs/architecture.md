@@ -88,6 +88,30 @@ export class UserView {
    Reuse shared ABI, projection view, and writer layers for scalar, slice,
    vector, pointer, and tail-arena access.
 
+## Layout Ownership
+
+Zeno exists because buffer-heavy TypeScript applications often have no single
+owner for binary layout. WebGL, WebGPU, Three.js, Electron, worker, and local
+cache pipelines commonly move through `ArrayBuffer`, `DataView`, `Float32Array`,
+and `Uint32Array` values. The code stays fast, but field offsets, strides,
+command words, descriptor positions, and typed-array packing rules tend to
+spread across renderer, worker, cache, and tooling modules.
+
+That is the failure mode Zeno targets. It is not trying to become a renderer,
+scene graph, asset loader, or cross-language serialization format. It provides a
+layout layer that keeps byte-level access visible while making the layout:
+
+- named by TypeScript schema fields,
+- generated instead of handwritten,
+- inspectable through layout manifests and `zeno-inspect`,
+- diffable through `zeno-diff-layout`,
+- usable by both schema-aware generated scan kernels and generic typed-array
+  packing helpers.
+
+The lower layer remains available. Callers can still use raw `DataView` and
+typed-array APIs when that is the right hot path. Zeno's job is to prevent those
+raw offsets from becoming unowned application folklore.
+
 ## Package Architecture
 
 The package layering is load-bearing. Each package owns one level of the binary

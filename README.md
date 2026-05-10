@@ -10,6 +10,17 @@ without maintaining a separate `.fbs`/IDL file or cross-language codegen flow.
 .zeno.ts interfaces -> Layout IR -> generated DataView views
 ```
 
+The practical reason to use Zeno is layout ownership. Buffer-heavy TypeScript
+apps already pass around `ArrayBuffer`, `DataView`, `Float32Array`, and
+`Uint32Array` values, especially in renderer, worker, and Electron pipelines.
+Without a layout layer, byte offsets, strides, command words, and typed-array
+packing rules drift across files. JSON keeps the code easy but pays parse,
+allocation, and object materialization costs. Handwritten typed-array code keeps
+the hot path fast but loses names, reviewable layout, manifests, and diffs.
+
+Zeno sits between those extremes: it keeps the underlying bytes visible while
+making the layout named, generated, inspectable, and testable.
+
 ## Best Fit
 
 Zeno is strongest when one TypeScript codebase owns both the writer and reader
@@ -50,6 +61,8 @@ Use Zeno when:
 - You want browser workers to read `SharedArrayBuffer`-backed arena data without
   JSON serialization or object materialization.
 - Cross-language codegen is not required.
+- You need one place to own binary layout decisions before data is scanned,
+  packed into renderer-facing typed arrays, or shared between workers.
 
 Do not use Zeno when the schema is a cross-language contract. FlatBuffers,
 Cap'n Proto, protobuf, or MessagePack are better fits there.

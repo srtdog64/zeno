@@ -9,6 +9,14 @@ The goal is not to copy game assets or depend on a renderer. The goal is to
 identify repeated buffer shapes that a dependency-free buffer compiler could
 serve.
 
+The underlying product reason is layout ownership. Renderer-heavy TypeScript
+apps already use `ArrayBuffer`, `DataView`, and typed arrays. What tends to go
+missing is a single reviewable place for byte offsets, row strides, command
+words, visibility flags, and pack-output shapes. Zeno should own that layout
+description and the dependency-free pack helpers around it, while the renderer
+layer keeps ownership of GPU upload, draw calls, scene graphs, materials, and
+asset loading.
+
 ## Method
 
 - use public repository metadata only

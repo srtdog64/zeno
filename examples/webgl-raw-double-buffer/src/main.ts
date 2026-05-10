@@ -115,7 +115,10 @@ out vec4 vColor;
 
 void main() {
   mat4 model = mat4(iMatrix0, iMatrix1, iMatrix2, iMatrix3);
-  gl_Position = model * vec4(aPosition, 0.0, 1.0);
+  // Keep the third matrix column active across WebGL implementations. Firefox
+  // correctly optimizes an all-zero z input and then reports iMatrix2 as an
+  // inactive attribute.
+  gl_Position = model * vec4(aPosition, 1.0 / 4096.0, 1.0);
   vColor = iColor;
 }
 `;

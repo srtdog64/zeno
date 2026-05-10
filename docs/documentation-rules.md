@@ -15,14 +15,15 @@ benchmark results.
 
 ## Status Table
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Load-bearing vs diagnostic split | load-bearing | Zeno claims need explicit weight so architecture and benchmarks can be reviewed without status drift. |
-| Promotion criterion | load-bearing | New claims should not become phase goals or README claims without measurable gates. |
-| Witness case | load-bearing | Abstract compiler and performance claims need a concrete failing or passing case. |
-| Cross-reference graph | load-bearing | A claim must route to code, docs, tests, or external prior art. |
-| Methodological note | diagnostic | It improves source hygiene but does not decide whether Zeno works. |
-| Pattern note / structural rhyme | diagnostic | It records useful similarity without making a dependency claim. |
+| Property                         | Status       | Reason                                                                                                   |
+| -------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------- |
+| Load-bearing vs diagnostic split | load-bearing | Zeno claims need explicit weight so architecture and benchmarks can be reviewed without status drift.    |
+| Promotion criterion              | load-bearing | New claims should not become phase goals or README claims without measurable gates.                      |
+| Witness case                     | load-bearing | Abstract compiler and performance claims need a concrete failing or passing case.                        |
+| Cross-reference graph            | load-bearing | A claim must route to code, docs, tests, or external prior art.                                          |
+| Emitter layer boundary           | load-bearing | `emitter.ts` must stay an assembly layer; new emission behavior belongs in layer-specific emitter files. |
+| Methodological note              | diagnostic   | It improves source hygiene but does not decide whether Zeno works.                                       |
+| Pattern note / structural rhyme  | diagnostic   | It records useful similarity without making a dependency claim.                                          |
 
 Unclassified properties are TODO until assigned one of:
 `load-bearing`, `diagnostic`, `candidate`, or `retired`.
@@ -42,6 +43,25 @@ Do not promote a performance claim into README headline status unless:
 - the comparison includes at least one plain baseline
 
 Promotion is a review trigger, not an automatic edit.
+
+## Emitter Layer Rule
+
+`packages/compiler/src/emitter.ts` is an assembly layer. Do not add new feature
+emission directly to it.
+
+When adding generated-code behavior:
+
+- create or extend the narrow layer file that owns the behavior
+- keep `emitter.ts` responsible for import wiring, file/class assembly, and
+  delegation
+- add or update a test that proves the public layer still appears in generated
+  output
+- update [layers](layers/00-wire-abi.md) when the behavior changes the public
+  projection model
+
+Witness: the 2.3 emitter split moved static accessors, cursor/projection fields,
+and writers out of `emitter.ts`, while [layer-model.test.ts](../tests/layer-model.test.ts)
+keeps the documented layers connected to generated output.
 
 ## Witness Case
 
@@ -80,4 +100,3 @@ even if the compiler hierarchy changes.
 - publishing an abstract rule without a witness case
 - adding prior art without saying what was borrowed
 - saying two patterns are similar without separating dependency from rhyme
-

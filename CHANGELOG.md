@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.3.0
+
+Status: layered projection model release.
+
+- Added the Layered Projection Model documentation under `docs/layers/`.
+- Linked the layer model from the README so users can choose the lowest layer
+  that fits the job.
+- Split `emitter.ts` further into writer, static accessor, and cursor/projection
+  field emitter layers.
+- Added a layer consistency test that verifies the documented layers are linked
+  and represented by compiler/runtime surfaces.
+- Added `bench:check` to the release gate so fixed-layout, dynamic-layout, and
+  FlatBuffers comparison benchmarks must execute before publish.
+- Package manifests and workspace lockfile are aligned at `2.3.0`.
+
 ## 2.2.0
 
 Status: binary table scan and layout tooling minor release.

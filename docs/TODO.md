@@ -204,7 +204,7 @@ Status: local witness only.
 
 ## Immediate next tasks
 
-- tag and publish `2.2.0` after human release review
+- tag and publish `2.3.0` after human release review
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit: `@exornea/zeno-types`, `@exornea/zeno-schema`,
   `@exornea/zeno-runtime`, then `@exornea/zeno-compiler`
@@ -212,6 +212,14 @@ Status: local witness only.
   in the consumer smoke gate
 - keep `--scan-kernels=none|sum|basic|full` documented when scan kernel output
   changes
+- keep [layers](layers/00-wire-abi.md) and `tests/layer-model.test.ts` in sync
+  when moving public API between layers
+- do not grow `packages/compiler/src/emitter.ts` with new feature emission;
+  add or extend a layer-specific emitter file and keep `emitter.ts` as assembly
+  only
+- keep `bench:check` in `release:check`; benchmark workloads are part of the
+  publish gate, while exact timing thresholds stay diagnostic because CI
+  hardware noise is high
 - keep [performance-comparison.md](performance-comparison.md) synced when
   benchmark code or generated hot-path code changes
 - use [release-checklist.md](release-checklist.md) as the release gate before

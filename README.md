@@ -230,6 +230,22 @@ const bytes = user.nameView().bytes();
 const text = user.nameView().text();
 ```
 
+## Layered Projection Model
+
+Zeno exposes lower layers instead of hiding them. Use the lowest layer that fits
+the job:
+
+| Need                                                 | Layer                                         |
+| ---------------------------------------------------- | --------------------------------------------- |
+| ABI and descriptor facts                             | [Layer 0](docs/layers/00-wire-abi.md)         |
+| handwritten `DataView` loop with generated constants | [Layer 1](docs/layers/01-raw-offsets.md)      |
+| named scalar reads/writes                            | [Layer 2](docs/layers/02-static-accessors.md) |
+| aggregate hot scans                                  | [Layer 3](docs/layers/03-scan-kernels.md)     |
+| ergonomic record/nested/dynamic access               | [Layer 4](docs/layers/04-cursor-views.md)     |
+| text, bytes, vectors, and writers                    | [Layer 5](docs/layers/05-dynamic-tail.md)     |
+| worker/shared-memory publication                     | [Layer 6](docs/layers/06-shared-memory.md)    |
+| manifest, inspect, diff, release gates               | [Layer 7](docs/layers/07-layout-ops.md)       |
+
 ## Layout Inspection
 
 Generate a machine-readable layout manifest next to generated views:
@@ -352,12 +368,16 @@ npm run release:check
 `npm run release:check` is the release gate. It runs version/package policy
 checks, cleans and builds the workspaces, runs tests, regenerates examples,
 dry-runs package packing, and installs the packed tarballs into a fresh consumer
-project.
+project. It also executes fixed-layout, dynamic-layout, and FlatBuffers
+comparison benchmark workloads.
 
 The release gate also includes generated-code compile/run fuzzing, hostile
 malformed-descriptor property tests, a frozen layout compatibility fixture,
 SharedArrayBuffer worker stress, and packed consumer import-resolution checks.
 CI adds a Playwright browser smoke matrix for the WebGL demo.
+
+Benchmark execution is load-bearing for release confidence, but exact timing
+thresholds stay diagnostic because CI hardware noise is high.
 
 ## Documentation
 
@@ -380,4 +400,6 @@ CI adds a Playwright browser smoke matrix for the WebGL demo.
   cleanup and retired optimizer removal.
 - [docs/release-v2.2.md](docs/release-v2.2.md): scan kernel modes and layout
   tooling.
+- [docs/release-v2.3.md](docs/release-v2.3.md): layered projection model and
+  emitter layer split.
 - [CHANGELOG.md](CHANGELOG.md): release history.

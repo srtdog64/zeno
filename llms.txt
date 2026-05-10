@@ -13,10 +13,16 @@ overhead. It lowers schema-only `.zeno.ts` interfaces into Layout IR and emits
 .zeno.ts interfaces -> Layout IR -> generated DataView views
 ```
 
+The practical product identity is layout ownership for buffer-heavy TypeScript
+applications. Zeno keeps byte-level access visible while making offsets,
+strides, command words, typed-array packing, manifests, and diffs generated and
+reviewable.
+
 ## Correct mental model
 
 Zeno is not a general serializer. Treat it as a generated `DataView` table
-scanner for TypeScript-owned, fixed-layout, read-mostly data.
+scanner and buffer-layout compiler for TypeScript-owned, fixed-layout,
+read-mostly data.
 
 Best fit:
 
@@ -25,7 +31,9 @@ Best fit:
 - many same-layout records are scanned in batches
 - JSON parse/object materialization is the bottleneck
 - named offsets are valuable, but a separate `.fbs`/IDL file is not
-- WebGL/WebGPU/game/editor/telemetry/worker metadata pipelines
+- WebGL/WebGPU/Three.js/Electron/game/editor/telemetry/worker metadata
+  pipelines
+- renderer-facing typed-array outputs need one reviewable layout owner
 
 Poor fit:
 
@@ -57,6 +65,26 @@ Never claim:
 - "Zeno solves schema evolution."
 - "Zeno is for arbitrary untrusted binary parsing."
 - "Dynamic text decode is zero-allocation."
+- "Zeno is a WebGL, Three.js, WebGPU, or renderer framework."
+
+## Why Zeno is needed
+
+Buffer-heavy TS apps already use `ArrayBuffer`, `DataView`, `Float32Array`, and
+`Uint32Array`. The hard part is that byte offsets, row strides, command words,
+visibility flags, and pack-output shapes drift across renderer, worker, cache,
+and tooling modules.
+
+Zeno owns that binary layout boundary:
+
+- TypeScript schema names the record layout.
+- generated accessors remove handwritten offsets.
+- layout manifests and `zeno-diff-layout` make changes reviewable.
+- generated scan kernels answer schema-aware scalar table questions.
+- `@exornea/zeno-buffers` owns dependency-free typed-array pack/histogram
+  helpers for renderer-facing outputs.
+
+The renderer still owns GPU upload, draw calls, materials, scene graphs, and
+asset loading.
 
 ## Why schema evolution is deferred
 
@@ -94,11 +122,13 @@ Use the lowest layer that fits the job:
 3. Static scalar accessors: `getX`, `setX`, `getXAt`, `setXAt`.
 4. Generated scan kernels: `sumX`, `minX`, `maxX`, `countXWhereEq`,
    `findFirstXWhereEq`.
-5. Cursor projection views: reusable ergonomic object over one record.
-6. Dynamic tail views/writers: `Span32`, `Vector32`, UTF-8/bytes/vector payloads.
-7. Shared memory writer/publication: `SharedArrayBuffer`, atomic tail cursor,
+5. Buffer pack/histogram helpers: caller-owned typed-array outputs through
+   `@exornea/zeno-buffers`.
+6. Cursor projection views: reusable ergonomic object over one record.
+7. Dynamic tail views/writers: `Span32`, `Vector32`, UTF-8/bytes/vector payloads.
+8. Shared memory writer/publication: `SharedArrayBuffer`, atomic tail cursor,
    descriptor ready cells.
-8. Layout ops: manifest, inspect, diff, release checks.
+9. Layout ops: manifest, inspect, diff, release checks.
 
 Do not collapse static hot-path APIs and cursor projection views into one
 abstraction.
@@ -112,6 +142,8 @@ Start here:
 - `docs/api-design.md`: public API layers and failure policy.
 - `docs/layers/*.md`: Layered Projection Model.
 - `docs/performance-comparison.md`: current benchmark witnesses and caveats.
+- `docs/renderer-buffer-case-studies.md`: real public renderer/game metadata
+  surfaces and the `@exornea/zeno-buffers` package boundary.
 - `docs/schema-compatibility.md`: layout compatibility and version routing.
 - `docs/schema-grammar.md` / `docs/schema-grammar.ko.md`: accepted/rejected
   `.zeno.ts` grammar.
@@ -143,16 +175,31 @@ Runtime:
 - `packages/runtime/src/scalar-vector.ts`: scalar vector views and native arrays.
 - `packages/runtime/src/writer*.ts`: dynamic tail and shared writer layers.
 
+Buffers:
+
+- `packages/buffers/src/index.ts`: dependency-free fixed-row pack, command word,
+  and histogram helpers. This is not a second generated scan-kernel surface.
+
 Examples/benchmarks:
 
 - `examples/scalar-only`: strongest fixed-layout scan example.
 - `examples/basic`: mixed fixed/dynamic generated view example.
 - `examples/webgl-instance-streamer`: browser/WebGL JSON vs Zeno vs FlatBuffers
   demo.
+- `examples/webgl-raw-double-buffer`: raw WebGL2 SharedArrayBuffer
+  double-buffering experiment.
+- `examples/renderer-asset-catalog-buffer`: public renderer metadata rows to
+  fixed asset catalog buffers.
+- `examples/renderer-draw-batch-buffer`: draw command sorting/packing witness.
+- `examples/renderer-entity-transform-buffer`: entity transform rows to
+  renderer-facing typed arrays.
+- `examples/renderer-grid-buffer`: grid/cell visibility and packed positions.
+- `examples/renderer-sprite-atlas-buffer`: atlas/sprite metadata packing.
 - `packages/bench/index.mjs`: fixed scalar and allocation benchmark.
 - `packages/bench/dynamic-layout.mjs`: dynamic layout benchmark.
-- `packages/bench/flatbuffers-comparison.mjs`: FlatBuffers JS table witness.
 - `packages/bench/real-game-metadata.mjs`: HexGL metadata witness.
+- `packages/bench/renderer-surface-metadata.mjs`: renderer-surface metadata
+  benchmark from pinned public repository tree metadata.
 
 ## Package boundary
 
@@ -161,12 +208,14 @@ Published packages:
 - `@exornea/zeno-types`: type-only ABI marker aliases.
 - `@exornea/zeno-schema`: Layout IR and ABI constants.
 - `@exornea/zeno-runtime`: runtime views, writers, descriptors.
+- `@exornea/zeno-buffers`: dependency-free fixed-row typed-array pack,
+  command-word, and histogram helpers.
 - `@exornea/zeno-compiler`: analyzer, emitter, CLI tools.
 
 Published npm package contents are restricted by `files` allowlists:
 
 - compiler publishes `dist/` and `bin/`
-- runtime/schema/types publish `dist/`
+- runtime/schema/types/buffers publish `dist/`
 - docs, tests, examples, `packages/bench`, and bench fixtures are repo
   validation assets and are not included in npm tarballs
 
@@ -185,8 +234,9 @@ blocks `npm.ps1`.
 
 ## Current release posture
 
-Version family is `2.4.0` in the working tree. v2.4 is a frontend/runtime
-boundary hardening release plus a real-game metadata benchmark witness.
+Version family is `2.5.0` in the working tree. v2.5 adds the
+`@exornea/zeno-buffers` package, renderer-buffer case studies, renderer-specific
+examples, and a renderer-surface metadata benchmark witness.
 
 Before publishing, run:
 

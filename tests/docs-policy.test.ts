@@ -50,12 +50,51 @@ describe("documentation policy", () => {
     expect(todo).toContain("do not grow `packages/compiler/src/emitter.ts`");
   });
 
-  it("keeps release and roadmap documents aligned with the current v2.4 surface", () => {
+  it("keeps renderer buffer claims dependency-free and separate from WebGL wrappers", () => {
+    const readme = readRepoFile("README.md");
+    const todo = readRepoFile("docs/TODO.md");
+    const layers = readRepoFile("docs/layers/README.md");
+    const performance = readRepoFile("docs/performance-comparison.md");
+    const caseStudies = readRepoFile("docs/renderer-buffer-case-studies.md");
+
+    for (const documentText of [readme, todo, layers, performance]) {
+      expectPhrase(documentText, "renderer-facing");
+    }
+
+    expectPhrase(todo, "must not import renderer libraries");
+    expectPhrase(layers, "not a renderer framework");
+    expectPhrase(
+      performance,
+      "not WebGL, Three.js, Babylon.js, or WebGPU as a framework dependency",
+    );
+    expectPhrase(
+      performance,
+      "Array-of-struct to typed-array conversion remains a batching/pack-kernel path",
+    );
+    expectPhrase(caseStudies, "The fifth package now exists as `@exornea/zeno-buffers`");
+    expectPhrase(
+      caseStudies,
+      "Do not promote renderer upload, asset loading, ECS, or scene graph behavior",
+    );
+    expectPhrase(
+      caseStudies,
+      "Do not treat `@exornea/zeno-buffers` as a second generated scan-kernel surface",
+    );
+    expectPhrase(
+      todo,
+      "`@exornea/zeno-buffers` is the generic pack/histogram layer for caller-owned typed-array outputs",
+    );
+    expectPhrase(caseStudies, "NetHack 3D");
+    expectPhrase(caseStudies, "grid cells, visible entities, item/monster buffers");
+    expectPhrase(caseStudies, "examples/renderer-grid-buffer");
+  });
+
+  it("keeps release and roadmap documents aligned with the current v2.5 surface", () => {
     const architecture = readRepoFile("docs/architecture.md");
     const releaseChecklist = readRepoFile("docs/release-checklist.md");
     const todo = readRepoFile("docs/TODO.md");
 
-    expect(architecture).toContain("Current v2.4 status");
+    expect(architecture).toContain("Current v2.5 status");
     expect(architecture).not.toContain("Current v1 status");
     expect(todo).toContain("## Candidate Work");
     expect(todo).not.toContain("## v2.2 Candidate Work");

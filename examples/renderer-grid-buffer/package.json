@@ -1,0 +1,16 @@
+{
+  "name": "@exornea/zeno-example-renderer-grid-buffer",
+  "version": "2.5.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codegen": "node ../../packages/compiler/bin/zeno-codegen.mjs ./src/model.zeno.ts ./src/model.view.ts --manifest ./src/model.layout.json",
+    "build": "npm run codegen && tsc -b",
+    "start": "node ./dist/main.js"
+  },
+  "dependencies": {
+    "@exornea/zeno-compiler": "2.5.0",
+    "@exornea/zeno-runtime": "2.5.0",
+    "@exornea/zeno-types": "2.5.0"
+  }
+}

@@ -1,0 +1,95 @@
+:root {
+  color: #eef5ff;
+  background: #05090c;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(52, 183, 143, 0.18), transparent 30%),
+    radial-gradient(circle at 80% 20%, rgba(225, 87, 89, 0.12), transparent 28%), #05090c;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud {
+  position: absolute;
+  left: clamp(16px, 3vw, 30px);
+  top: clamp(16px, 3vw, 30px);
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid rgba(238, 245, 255, 0.14);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(5, 9, 12, 0.78);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: 0;
+}
+
+.status {
+  color: rgba(238, 245, 255, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.metric {
+  border-radius: 6px;
+  padding: 10px;
+  background: rgba(238, 245, 255, 0.08);
+}
+
+.label {
+  margin-bottom: 6px;
+  color: rgba(238, 245, 255, 0.62);
+  font-size: 11px;
+  font-weight: 680;
+  text-transform: uppercase;
+}
+
+.value {
+  color: #fff7d1;
+  font-size: 17px;
+  font-weight: 760;
+}

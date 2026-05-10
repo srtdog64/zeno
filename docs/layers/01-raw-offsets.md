@@ -1,4 +1,4 @@
-# Layer 1 — Raw Offsets
+﻿# Layer 1 - Raw Offsets
 
 ## Purpose
 

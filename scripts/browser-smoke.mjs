@@ -61,6 +61,12 @@ try {
     await page.getByRole("button", { name: "Zeno binary" }).click();
     await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
     browserBenchmarks.push(await waitForModeMetrics(page, "zeno", statusTimeoutMs));
+    await page.getByRole("button", { name: "Zeno vectors" }).click();
+    await page.waitForFunction(
+      () => document.querySelector("[data-testid='mode']")?.textContent === "VECTOR",
+    );
+    await waitForGpuStatus(page, pageErrors, statusTimeoutMs);
+    browserBenchmarks.push(await waitForModeMetrics(page, "zeno-vector", statusTimeoutMs));
     await page.getByRole("button", { name: "FlatBuffers" }).click();
     await page.waitForFunction(
       () => document.querySelector("[data-testid='mode']")?.textContent === "FLAT",

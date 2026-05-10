@@ -123,6 +123,11 @@ Rules:
   sums plus min/max, and `full` also emits integer/bool equality predicates.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
+- Generated scan kernels are the schema-aware scalar table-scan surface. They
+  answer scalar questions and return numbers or indexes.
+- `@exornea/zeno-buffers` is not the second scan-kernel surface. It is the
+  generic pack/histogram layer for callers that need typed-array outputs such as
+  renderer queues, command words, or attribute arrays.
 - Cursor offset caching is removed from the public emitter.
 - Do not reintroduce cursor offset caching globally; repeated witnesses show no
   stable timing win and higher retained heap.

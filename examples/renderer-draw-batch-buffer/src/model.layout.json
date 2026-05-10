@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "structs": [
+    {
+      "name": "DrawBatch",
+      "byteLength": 32,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "meshId",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "materialId",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "pass",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 12,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "firstIndex",
+          "kind": "scalar",
+          "offset": 16,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "indexCount",
+          "kind": "scalar",
+          "offset": 20,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "firstInstance",
+          "kind": "scalar",
+          "offset": 24,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "instanceCount",
+          "kind": "scalar",
+          "offset": 28,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        }
+      ],
+      "layoutHash": "0x086341e1"
+    }
+  ]
+}

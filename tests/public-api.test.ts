@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
 
+import * as buffers from "../packages/buffers/src/index.js";
 import * as compiler from "../packages/compiler/src/index.js";
 import * as runtime from "../packages/runtime/src/index.js";
 import * as schema from "../packages/schema/src/index.js";
 
 describe("public package runtime exports", () => {
+  it("keeps the @exornea/zeno-buffers root export surface stable", () => {
+    expect(Object.keys(buffers).sort()).toMatchInlineSnapshot(`
+      [
+        "histogramU16Field",
+        "histogramU8Field",
+        "packF32FieldsWhereU16Eq",
+        "packF32FieldsWhereU8Eq",
+        "packUintFields",
+        "packUintFieldsWhereU16Eq",
+        "packUintFieldsWhereU8Eq",
+      ]
+    `);
+  });
+
   it("keeps the @exornea/zeno-runtime root export surface stable", () => {
     expect(Object.keys(runtime).sort()).toMatchInlineSnapshot(`
       [

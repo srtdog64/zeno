@@ -44,29 +44,7 @@ export function createProjectionSourceMap(
 }
 
 function collectMappingPoints(code: string, layouts: readonly StructLayout[]): MappingPoint[] {
-  const astPoints = collectAstMappingPoints(code, layouts);
-  if (astPoints.length > 0) {
-    return astPoints;
-  }
-
-  const lines = code.split("\n");
-  const points: MappingPoint[] = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index] ?? "";
-    const source = findSourceForLine(line, layouts);
-    if (source === undefined) {
-      continue;
-    }
-
-    points.push({
-      generatedLine: index,
-      generatedColumn: firstNonWhitespaceColumn(line),
-      source,
-    });
-  }
-
-  return points;
+  return collectAstMappingPoints(code, layouts);
 }
 
 function collectAstMappingPoints(code: string, layouts: readonly StructLayout[]): MappingPoint[] {
@@ -236,6 +214,10 @@ function classMemberMatchesField(memberName: string, field: FieldLayout): boolea
     `get${pascalName}At`,
     `set${pascalName}At`,
     `sum${pascalName}`,
+    `min${pascalName}`,
+    `max${pascalName}`,
+    `count${pascalName}WhereEq`,
+    `findFirst${pascalName}WhereEq`,
     `write${pascalName}`,
   ]);
 
@@ -343,66 +325,6 @@ function dedupeMappingPoints(points: readonly MappingPoint[]): MappingPoint[] {
   });
 }
 
-function findSourceForLine(
-  line: string,
-  layouts: readonly StructLayout[],
-): SourceLocation | undefined {
-  for (const layout of layouts) {
-    if (layout.source !== undefined && line.includes(` ${layout.name}View`)) {
-      return layout.source;
-    }
-
-    const fieldSource = findFieldSourceForLine(line, layout);
-    if (fieldSource !== undefined) {
-      return fieldSource;
-    }
-  }
-
-  return undefined;
-}
-
-function findFieldSourceForLine(line: string, layout: StructLayout): SourceLocation | undefined {
-  for (const field of layout.fields) {
-    if (field.source === undefined) {
-      continue;
-    }
-
-    const pascalName = toPascalCase(field.name);
-    if (
-      line.includes(`${layout.name}View${pascalName}Offset`) ||
-      line.includes(`readonly ${field.name}:`) ||
-      line.includes(`readonly ${field.name}Offset`) ||
-      line.includes(`get${pascalName}`) ||
-      line.includes(`set${pascalName}`) ||
-      line.includes(`sum${pascalName}`) ||
-      line.includes(`write${pascalName}`) ||
-      line.includes(`get ${field.name}`) ||
-      line.includes(`set ${field.name}`) ||
-      line.includes(`${field.name}View`) ||
-      line.includes(`${field.name}Bytes`) ||
-      line.includes(`${field.name}Text`) ||
-      pointerAccessorMatches(line, field, pascalName)
-    ) {
-      return field.source;
-    }
-  }
-
-  return undefined;
-}
-
-function pointerAccessorMatches(line: string, field: FieldLayout, pascalName: string): boolean {
-  if (field.kind !== "pointer") {
-    return false;
-  }
-
-  return (
-    line.includes(`raw${pascalName}RelativeOffset`) ||
-    line.includes(`${field.name}RelativeOffset`) ||
-    line.includes(`${field.name}TargetOffset`) ||
-    line.includes(`${field.name}Into`)
-  );
-}
-
 function encodeMappings(
   points: readonly MappingPoint[],
   sourceIndexes: ReadonlyMap<string, number>,
@@ -454,11 +376,6 @@ function encodeVlq(value: number): string {
   } while (vlq > 0);
 
   return encoded;
-}
-
-function firstNonWhitespaceColumn(line: string): number {
-  const match = /\S/.exec(line);
-  return match?.index ?? 0;
 }
 
 function toPascalCase(name: string): string {

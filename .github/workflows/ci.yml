@@ -35,6 +35,9 @@ jobs:
       - name: WebGL example build
         run: npm run example:webgl:build
 
+      - name: Raw WebGL double-buffer build
+        run: npm run example:webgl-raw:build
+
   browser-smoke:
     runs-on: ubuntu-latest
     strategy:
@@ -62,6 +65,13 @@ jobs:
 
       - name: Browser smoke
         run: xvfb-run -a npm run browser:smoke
+        env:
+          ZENO_BROWSER: ${{ matrix.browser }}
+          ZENO_BROWSER_HEADLESS: "0"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+
+      - name: Raw WebGL double-buffer smoke
+        run: xvfb-run -a npm run browser:smoke:raw
         env:
           ZENO_BROWSER: ${{ matrix.browser }}
           ZENO_BROWSER_HEADLESS: "0"

@@ -5,7 +5,13 @@
     { "path": "./packages/types" },
     { "path": "./packages/runtime" },
     { "path": "./packages/compiler" },
+    { "path": "./packages/buffers" },
     { "path": "./examples/basic" },
-    { "path": "./examples/scalar-only" }
+    { "path": "./examples/scalar-only" },
+    { "path": "./examples/renderer-draw-batch-buffer" },
+    { "path": "./examples/renderer-asset-catalog-buffer" },
+    { "path": "./examples/renderer-entity-transform-buffer" },
+    { "path": "./examples/renderer-sprite-atlas-buffer" },
+    { "path": "./examples/renderer-grid-buffer" }
   ]
 }

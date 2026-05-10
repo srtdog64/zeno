@@ -26,15 +26,49 @@ const layerDocs = [
   "07-layout-ops.md",
 ] as const;
 
+const requiredLayerSections = [
+  "## Purpose",
+  "## Public API",
+  "## Guarantees",
+  "## Non-Guarantees",
+  "## When To Use",
+  "## Lower Layer Dependency",
+  "## Tests / Witness",
+] as const;
+
 describe("layered projection model", () => {
   it("keeps every documented layer present and linked from README", () => {
     const readme = readFileSync(path.join(rootDir, "README.md"), "utf8");
+
+    expect(existsSync(path.join(rootDir, "docs/layers/README.md"))).toBe(true);
+    expect(readme).toContain("docs/layers/README.md");
 
     for (const fileName of layerDocs) {
       const relativePath = `docs/layers/${fileName}`;
       expect(existsSync(path.join(rootDir, relativePath))).toBe(true);
       expect(readme).toContain(relativePath);
     }
+  });
+
+  it("keeps layer docs in the same reviewable shape", () => {
+    for (const fileName of layerDocs) {
+      const document = readFileSync(path.join(rootDir, "docs/layers", fileName), "utf8");
+
+      for (const section of requiredLayerSections) {
+        expect(document).toContain(section);
+      }
+    }
+  });
+
+  it("keeps renderer experiments outside the Zeno core layer stack", () => {
+    const overview = readFileSync(path.join(rootDir, "docs/layers/README.md"), "utf8");
+    const scanLayer = readFileSync(path.join(rootDir, "docs/layers/03-scan-kernels.md"), "utf8");
+
+    expect(overview).toContain("Renderer examples are witnesses");
+    expect(overview).toContain("not a renderer framework");
+    expect(overview).toContain("a hidden renderer layer inside Zeno core");
+    expect(scanLayer).toContain("renderer/concurrency witness");
+    expect(scanLayer).toContain("not a binary projection API");
   });
 
   it("keeps documented layer APIs aligned with runtime and compiler surfaces", () => {
@@ -68,6 +102,36 @@ describe("layered projection model", () => {
     expect(emitted).toContain("static at(view: DataView");
     expect(emitted).toContain("nameView(): Utf8SpanView");
     expect(emitted).toContain("static createWriter(");
+  });
+
+  it("keeps Layer 3 scan-kernel modes from leaking into lower layers", () => {
+    const result = analyzeProjectionSourceFile(sourceFileForLayeredSchema());
+    expect(result.diagnostics).toEqual([]);
+
+    const none = emitProjectionFile(result.layouts, { scanKernels: "none" });
+    const sum = emitProjectionFile(result.layouts, { scanKernels: "sum" });
+    const basic = emitProjectionFile(result.layouts, { scanKernels: "basic" });
+    const full = emitProjectionFile(result.layouts, { scanKernels: "full" });
+
+    expect(none).toContain("static getAge(");
+    expect(none).not.toContain("static sumAge(");
+    expect(none).not.toContain("static minAge(");
+    expect(none).not.toContain("static countAgeWhereEq(");
+
+    expect(sum).toContain("static sumAge(");
+    expect(sum).not.toContain("static minAge(");
+    expect(sum).not.toContain("static countAgeWhereEq(");
+
+    expect(basic).toContain("static sumAge(");
+    expect(basic).toContain("static minAge(");
+    expect(basic).toContain("static maxAge(");
+    expect(basic).not.toContain("static countAgeWhereEq(");
+
+    expect(full).toContain("static sumAge(");
+    expect(full).toContain("static minAge(");
+    expect(full).toContain("static maxAge(");
+    expect(full).toContain("static countAgeWhereEq(");
+    expect(full).toContain("static findFirstAgeWhereEq(");
   });
 });
 

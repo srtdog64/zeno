@@ -10,3 +10,8 @@ export interface Instance {
   scale: z.f32;
   color: z.flags32;
 }
+
+export interface GpuBuffers {
+  positions: z.vector<z.f32>;
+  colors: z.vector<z.f32>;
+}

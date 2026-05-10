@@ -25,7 +25,7 @@ Use it when:
 
 Good fits:
 
-- WebGL/WebGPU instance data and browser-side binary assets
+- renderer-facing 3D/GPU buffer data and browser-side binary assets
 - game/editor asset tables such as item stats, tiles, skills, nodes, and edges
 - telemetry or analytics rows with a stable fixed schema
 - worker/shared-memory pipelines where JSON serialization is the bottleneck
@@ -59,7 +59,7 @@ Cap'n Proto, protobuf, or MessagePack are better fits there.
 | Need                                  | Zeno | Better fit                                                |
 | ------------------------------------- | ---- | --------------------------------------------------------- |
 | TS-only fixed-layout hot scans        | yes  | handwritten `DataView` when schema codegen is unnecessary |
-| WebGL/game/worker binary projection   | yes  | custom typed arrays for very small schemas                |
+| 3D/GPU/game/worker binary projection  | yes  | custom typed arrays for very small schemas                |
 | Cross-language protocol               | no   | FlatBuffers, Cap'n Proto, protobuf                        |
 | Public API contract                   | no   | OpenAPI, protobuf, JSON Schema                            |
 | Schema evolution-heavy storage        | no   | protobuf, FlatBuffers tables, custom versioned format     |
@@ -97,6 +97,7 @@ v2 compatibility rule and the explicit `UserV1` / `UserV2` versioning pattern.
 
 ```sh
 npm install @exornea/zeno-runtime @exornea/zeno-types
+npm install @exornea/zeno-buffers
 npm install -D @exornea/zeno-compiler
 ```
 
@@ -190,6 +191,14 @@ Use `--scan-kernels=none|sum|basic|full` when generated file size matters:
 - `basic`: add `sum<Field>()`, `min<Field>()`, and `max<Field>()`
 - `full`: add all scan kernels, including equality predicates
 
+Generated scan kernels and `@exornea/zeno-buffers` are intentionally different
+surfaces. Use generated kernels for schema-aware scalar table scans such as
+`sumAge`, `countKindWhereEq`, and `findFirstKindWhereEq`. Use
+`@exornea/zeno-buffers` only when the next layer needs caller-owned typed-array
+outputs, for example renderer queues, command words, attribute arrays, or
+histograms. The buffers package is a pack/histogram layer, not a replacement for
+generated scalar scan kernels.
+
 ## Fast Path Mental Model
 
 Use Zeno like a generated `DataView` table scanner.
@@ -233,7 +242,8 @@ const text = user.nameView().text();
 ## Layered Projection Model
 
 Zeno exposes lower layers instead of hiding them. Use the lowest layer that fits
-the job:
+the job. The full maintainer-facing model is in
+[docs/layers/README.md](docs/layers/README.md):
 
 | Need                                                 | Layer                                         |
 | ---------------------------------------------------- | --------------------------------------------- |
@@ -274,10 +284,11 @@ version when old and new layouts must coexist.
 hash. Do not use it as an integrity check for untrusted payloads; use an
 application-level digest or signature when integrity matters.
 
-## WebGL Demo
+## 3D / GPU Buffer Witnesses
 
-The repository includes a browser demo that compares Zeno binary buffers,
-FlatBuffers JS, and JSON objects for instance-data upload:
+The repository includes browser demos that compare Zeno binary buffers, Zeno
+struct-of-arrays vectors, FlatBuffers JS, and JSON objects for instance-data
+upload:
 
 ```sh
 npm run example:webgl:build
@@ -287,6 +298,58 @@ npm run browser:smoke
 The demo is intentionally narrow: it represents the kind of fixed-stride,
 read-mostly browser workload where Zeno's projection-first model is meant to
 earn its keep.
+
+The target is not a WebGL wrapper. Zeno's target is renderer-facing memory:
+typed arrays and binary metadata that Three.js, raw WebGL, WebGPU, or a custom
+engine can consume.
+
+For the public WebGL / Three.js surfaces motivating this direction, see
+[docs/renderer-buffer-case-studies.md](docs/renderer-buffer-case-studies.md).
+
+For a dependency-free NetHack-style buffer example, see
+[examples/renderer-grid-buffer](examples/renderer-grid-buffer). It models dungeon
+cells, visible entities, and dirty upload ranges as Zeno fixed records, then
+packs caller-owned typed arrays without importing any renderer.
+
+For a dependency-free asset-catalog example over public game repository
+metadata, see
+[examples/renderer-asset-catalog-buffer](examples/renderer-asset-catalog-buffer).
+It lowers texture/script/audio/metadata rows into fixed records and packs
+kind-specific typed-array queues.
+
+Additional dependency-free renderer-buffer witnesses:
+
+- [examples/renderer-entity-transform-buffer](examples/renderer-entity-transform-buffer)
+  packs visible transforms, identity rows, and visible queues.
+- [examples/renderer-sprite-atlas-buffer](examples/renderer-sprite-atlas-buffer)
+  groups visible sprites by atlas and packs position, UV, and color arrays.
+- [examples/renderer-draw-batch-buffer](examples/renderer-draw-batch-buffer)
+  packs mesh/material/pass draw command rows.
+
+The repeated helper surface from these examples now lives in
+[`@exornea/zeno-buffers`](packages/buffers). It is dependency-free and only
+packs fixed Zeno rows into caller-owned typed arrays; it does not import or wrap
+WebGL, WebGPU, Three.js, Babylon.js, or a renderer.
+
+Routing rule:
+
+- use generated `*View.sum*`, `count*WhereEq`, and `findFirst*WhereEq` for
+  schema-aware scalar queries that return numbers or indexes
+- use `@exornea/zeno-buffers` for generic renderer-facing pack and histogram
+  helpers that write into caller-owned typed arrays
+
+The `Zeno vectors` mode is the current GPU-buffer witness. It writes
+`z.vector<z.f32>` position/color payloads, projects them with
+`ScalarVectorView.nativeArray()`, and feeds the resulting `Float32Array` views to
+Three.js buffer attributes without a per-record CPU packing loop.
+
+For the lower-level renderer experiment, see
+[examples/webgl-raw-double-buffer](examples/webgl-raw-double-buffer). It keeps
+Zeno out of the renderer layer and demonstrates the future
+`SharedArrayBuffer -> worker -> double-buffered Float32Array -> gl.bufferSubData`
+path directly in raw WebGL2. This is a separate witness: WebGL still copies CPU
+memory into a GPU buffer, but the source view avoids per-object JS allocation and
+per-record renderer packing.
 
 For the smallest hot-path example, see
 [examples/scalar-only](examples/scalar-only). It contains only fixed scalar
@@ -354,6 +417,7 @@ criteria.
 - `@exornea/zeno-types`: type-only ABI marker namespace for schema authors.
 - `@exornea/zeno-schema`: Layout IR and ABI constants.
 - `@exornea/zeno-runtime`: runtime views, descriptors, frame helpers, and writers.
+- `@exornea/zeno-buffers`: dependency-free typed-array packing helpers for fixed rows.
 - `@exornea/zeno-compiler`: analyzer, validator, emitter, and `zeno-codegen`.
 
 ## Repository Commands
@@ -416,4 +480,6 @@ thresholds stay diagnostic because CI hardware noise is high.
   emitter layer split.
 - [docs/release-v2.4.md](docs/release-v2.4.md): frontend and runtime boundary
   hardening.
+- [docs/release-v2.5.md](docs/release-v2.5.md): renderer-facing buffer helper
+  package.
 - [CHANGELOG.md](CHANGELOG.md): release history.

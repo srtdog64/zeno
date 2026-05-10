@@ -1,4 +1,4 @@
-# Layer 2 — Static Scalar Accessors
+﻿# Layer 2 - Static Scalar Accessors
 
 ## Purpose
 

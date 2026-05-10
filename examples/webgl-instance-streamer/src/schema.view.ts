@@ -1,4 +1,4 @@
-import { ProjectionView } from "@exornea/zeno-runtime";
+import { DynamicLayoutWriter, ProjectionView, ScalarVectorView } from "@exornea/zeno-runtime";
 
 export interface InstanceViewInput {
   readonly id: number;
@@ -701,6 +701,71 @@ export class InstanceView extends ProjectionView {
   }
   set color(value: number) {
     this.view.setUint32(this.baseOffset + 24, value, this.littleEndian);
+  }
+
+}
+
+export interface GpuBuffersViewInput {
+  readonly positions: ArrayLike<number>;
+  readonly colors: ArrayLike<number>;
+}
+
+export const GpuBuffersViewByteLength = 16;
+export const GpuBuffersViewAlignment = 4;
+export const GpuBuffersViewPositionsOffset = 0;
+export const GpuBuffersViewColorsOffset = 8;
+
+export class GpuBuffersView extends ProjectionView {
+  static readonly byteLength = 16;
+  static readonly alignment = 4;
+  static readonly positionsOffset = 0;
+  static readonly colorsOffset = 8;
+
+  constructor(view: DataView, baseOffset = 0, littleEndian = true) {
+    super(view, baseOffset, littleEndian);
+  }
+
+  static at(view: DataView, baseOffset = 0, littleEndian = true): GpuBuffersView {
+    return new GpuBuffersView(view, baseOffset, littleEndian);
+  }
+
+  moveTo(index: number): this {
+    return this.moveToIndex(index, GpuBuffersView.byteLength);
+  }
+
+  moveToUnchecked(index: number): this {
+    return this.rebaseUnchecked(index * 16);
+  }
+
+  static createWriter(view: DataView, baseOffset = 0, tailOffset = GpuBuffersView.byteLength, littleEndian = true): DynamicLayoutWriter {
+    return new DynamicLayoutWriter(view, tailOffset, baseOffset, littleEndian);
+  }
+
+  static writePositions(writer: DynamicLayoutWriter, values: ArrayLike<number>) {
+    return writer.writeScalarVector(GpuBuffersView.positionsOffset, "f32", values);
+  }
+
+  static writeColors(writer: DynamicLayoutWriter, values: ArrayLike<number>) {
+    return writer.writeScalarVector(GpuBuffersView.colorsOffset, "f32", values);
+  }
+
+  static write(view: DataView, value: GpuBuffersViewInput, baseOffset = 0, littleEndian = true): DynamicLayoutWriter {
+    const writer = GpuBuffersView.createWriter(view, baseOffset, GpuBuffersView.byteLength, littleEndian);
+    GpuBuffersView.writeInto(view, writer, value, baseOffset, littleEndian);
+    return writer;
+  }
+
+  static writeInto(view: DataView, writer: DynamicLayoutWriter, value: GpuBuffersViewInput, baseOffset = 0, littleEndian = true): void {
+    writer.writeScalarVectorAtBase(baseOffset, GpuBuffersView.positionsOffset, "f32", value.positions);
+    writer.writeScalarVectorAtBase(baseOffset, GpuBuffersView.colorsOffset, "f32", value.colors);
+  }
+
+  positionsView(): ScalarVectorView<number> {
+    return new ScalarVectorView(this.view, 0, "f32", this.baseOffset, this.littleEndian);
+  }
+
+  colorsView(): ScalarVectorView<number> {
+    return new ScalarVectorView(this.view, 8, "f32", this.baseOffset, this.littleEndian);
   }
 
 }

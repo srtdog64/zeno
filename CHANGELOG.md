@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.5.0
+
+Status: renderer-facing buffer helper package release.
+
+- Added `@exornea/zeno-buffers`, a dependency-free package for fixed-row
+  `DataView` to caller-owned `TypedArray` packing helpers.
+- Added renderer buffer case studies from pinned public WebGL / Three.js game
+  repository metadata, without storing texture, model, audio, or source payload
+  bytes.
+- Added renderer-facing examples for asset catalogs, draw batches, entity
+  transforms, grid buffers, and sprite atlas buffers.
+- Added a renderer-surface metadata benchmark over HexGL, Nemesis, xwing, and
+  NetHack 3D metadata.
+- Consumer smoke now verifies the packed `@exornea/zeno-buffers` root export and
+  deep-import rejection.
+- Package manifests and workspace lockfile are aligned at `2.5.0`.
+
 ## 2.4.0
 
 Status: frontend and runtime boundary hardening release.

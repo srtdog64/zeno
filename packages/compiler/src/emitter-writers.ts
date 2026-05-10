@@ -147,7 +147,7 @@ static write${pascalName}(writer: DynamicLayoutWriter, values: readonly string[]
   return writer.writeFixedTextVector(${layout.name}View.${field.name}Offset, values, ${field.element.byteLength}, ${encodingLiteral(field.element.encoding)});
 }`,
   scalar: ({ layout, field, pascalName }) => method`
-static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${scalarTsType(field.element.scalar)}[]) {
+static write${pascalName}(writer: DynamicLayoutWriter, values: ArrayLike<${scalarTsType(field.element.scalar)}>) {
   return writer.writeScalarVector(${layout.name}View.${field.name}Offset, "${field.element.scalar}", values);
 }`,
   struct: ({ layout, layoutMap, field, pascalName }) => {

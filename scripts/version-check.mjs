@@ -18,6 +18,7 @@ function assertEqual(actual, expected, label) {
 const rootPackage = readJson("package.json");
 const lockfile = readJson("package-lock.json");
 const packagePaths = [
+  ["packages/buffers", "packages/buffers/package.json"],
   ["packages/compiler", "packages/compiler/package.json"],
   ["packages/runtime", "packages/runtime/package.json"],
   ["packages/schema", "packages/schema/package.json"],

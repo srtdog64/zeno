@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Builder, ByteBuffer } from "flatbuffers";
 
 import {
+  GpuBuffersView,
   InstanceView,
   InstanceViewByteLength,
   InstanceViewColorOffset,
@@ -15,7 +16,7 @@ import {
 } from "./schema.view";
 import "./style.css";
 
-type Mode = "zeno" | "flatbuffers" | "json";
+type Mode = "zeno" | "zeno-vector" | "flatbuffers" | "json";
 
 type JsonInstance = {
   id: number;
@@ -84,6 +85,7 @@ app.innerHTML = `
             ).join("")}
           </select>
           <button class="run-button" data-mode="zeno" data-active="true">Zeno binary</button>
+          <button class="run-button" data-mode="zeno-vector">Zeno vectors</button>
           <button class="run-button" data-mode="flatbuffers">FlatBuffers</button>
           <button class="run-button" data-mode="json">JSON objects</button>
         </div>
@@ -149,33 +151,70 @@ const fill = new THREE.DirectionalLight(0x34b78f, 1.1);
 fill.position.set(-120, 60, -90);
 scene.add(fill);
 
-let mesh: THREE.InstancedMesh | undefined;
+let instanceMesh: THREE.InstancedMesh | undefined;
+let pointCloud: THREE.Points | undefined;
 let activeMode: Mode = "zeno";
 let activeCount = INITIAL_COUNT;
 let running = false;
 let frameCount = 0;
 
-function createMesh(count: number) {
-  if (mesh) {
-    group.remove(mesh);
-    mesh.geometry.dispose();
-    if (Array.isArray(mesh.material)) {
-      for (const material of mesh.material) {
-        material.dispose();
-      }
-    } else {
-      mesh.material.dispose();
-    }
+function disposeRenderable() {
+  if (instanceMesh) {
+    group.remove(instanceMesh);
+    instanceMesh.geometry.dispose();
+    disposeMaterial(instanceMesh.material);
+    instanceMesh = undefined;
   }
 
+  if (pointCloud) {
+    group.remove(pointCloud);
+    pointCloud.geometry.dispose();
+    disposeMaterial(pointCloud.material);
+    pointCloud = undefined;
+  }
+}
+
+function disposeMaterial(material: THREE.Material | THREE.Material[]) {
+  if (Array.isArray(material)) {
+    for (const item of material) {
+      item.dispose();
+    }
+    return;
+  }
+
+  material.dispose();
+}
+
+function createMesh(count: number) {
+  disposeRenderable();
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshBasicMaterial({
     color: 0x34b78f,
     fog: false,
   });
-  mesh = new THREE.InstancedMesh(geometry, material, count);
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  group.add(mesh);
+  instanceMesh = new THREE.InstancedMesh(geometry, material, count);
+  instanceMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  group.add(instanceMesh);
+}
+
+function createPointCloud(count: number, positions: Float32Array, colors: Float32Array) {
+  disposeRenderable();
+  const geometry = new THREE.BufferGeometry();
+  const positionAttribute = new THREE.BufferAttribute(positions.subarray(0, count * 3), 3);
+  const colorAttribute = new THREE.BufferAttribute(colors.subarray(0, count * 3), 3);
+  positionAttribute.setUsage(THREE.StaticDrawUsage);
+  colorAttribute.setUsage(THREE.StaticDrawUsage);
+  geometry.setAttribute("position", positionAttribute);
+  geometry.setAttribute("color", colorAttribute);
+  geometry.computeBoundingSphere();
+
+  const material = new THREE.PointsMaterial({
+    size: 2.4,
+    vertexColors: true,
+    fog: false,
+  });
+  pointCloud = new THREE.Points(geometry, material);
+  group.add(pointCloud);
 }
 
 function resize() {
@@ -197,6 +236,14 @@ function packColor(materialId: number) {
     return 0xe15759;
   }
   return 0xf2c14e;
+}
+
+function writeColorComponents(array: Float32Array, index: number, materialId: number) {
+  const color = packColor(materialId);
+  const offset = index * 3;
+  array[offset] = ((color >> 16) & 0xff) / 255;
+  array[offset + 1] = ((color >> 8) & 0xff) / 255;
+  array[offset + 2] = (color & 0xff) / 255;
 }
 
 function instancePosition(index: number) {
@@ -237,6 +284,33 @@ function makeZenoBuffer(count: number) {
   }
 
   return { buffer, buildMs: performance.now() - started };
+}
+
+function makeZenoVectorBuffer(count: number) {
+  const started = performance.now();
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  for (let index = 0; index < count; index += 1) {
+    const position = instancePosition(index);
+    const positionOffset = index * 3;
+    positions[positionOffset] = position.x;
+    positions[positionOffset + 1] = position.y;
+    positions[positionOffset + 2] = position.z;
+    writeColorComponents(colors, index, index % 3);
+  }
+
+  const buffer = new ArrayBuffer(
+    GpuBuffersView.byteLength + positions.byteLength + colors.byteLength + 64,
+  );
+  const view = new DataView(buffer);
+  const writer = GpuBuffersView.write(view, { positions, colors });
+
+  return {
+    buffer,
+    buildMs: performance.now() - started,
+    payloadBytes: writer.tailOffset,
+  };
 }
 
 function makeJsonPayload(count: number) {
@@ -393,7 +467,7 @@ function writeMatrix(
 function uploadZeno(buffer: ArrayBuffer, count: number) {
   const visibleCount = Math.min(count, MAX_RENDERED);
   createMesh(visibleCount);
-  const target = mesh!;
+  const target = instanceMesh!;
   const matrixArray = target.instanceMatrix.array as Float32Array;
   const view = new DataView(buffer);
 
@@ -416,13 +490,30 @@ function uploadZeno(buffer: ArrayBuffer, count: number) {
   return { packMs, uploadMs: performance.now() - uploadStarted, rendered: visibleCount };
 }
 
+function uploadZenoVector(buffer: ArrayBuffer, count: number) {
+  const visibleCount = Math.min(count, MAX_RENDERED);
+  const view = new GpuBuffersView(new DataView(buffer));
+
+  const packStarted = performance.now();
+  const positions = view.positionsView().nativeArray();
+  const colors = view.colorsView().nativeArray();
+  if (!(positions instanceof Float32Array) || !(colors instanceof Float32Array)) {
+    throw new Error("GPU vector payloads must project to Float32Array.");
+  }
+  const packMs = performance.now() - packStarted;
+
+  const uploadStarted = performance.now();
+  createPointCloud(visibleCount, positions, colors);
+  return { packMs, uploadMs: performance.now() - uploadStarted, rendered: visibleCount };
+}
+
 function uploadJson(payload: string) {
   const parseStarted = performance.now();
   const rows = JSON.parse(payload) as JsonInstance[];
   const parseMs = performance.now() - parseStarted;
   const visibleCount = Math.min(rows.length, MAX_RENDERED);
   createMesh(visibleCount);
-  const target = mesh!;
+  const target = instanceMesh!;
   const matrixArray = target.instanceMatrix.array as Float32Array;
 
   const packStarted = performance.now();
@@ -445,7 +536,7 @@ function uploadFlatBuffers(root: FbInstanceBatch) {
   const count = root.instancesLength();
   const visibleCount = Math.min(count, MAX_RENDERED);
   createMesh(visibleCount);
-  const target = mesh!;
+  const target = instanceMesh!;
   const matrixArray = target.instanceMatrix.array as Float32Array;
   const row = new FbInstance();
 
@@ -487,7 +578,13 @@ function setBusy(value: boolean) {
 function renderMetrics(metrics: Metrics) {
   window.__zenoWebglMetrics = metrics;
   modePill.textContent =
-    metrics.mode === "zeno" ? "ZENO" : metrics.mode === "flatbuffers" ? "FLAT" : "JSON";
+    metrics.mode === "zeno"
+      ? "ZENO"
+      : metrics.mode === "zeno-vector"
+        ? "VECTOR"
+        : metrics.mode === "flatbuffers"
+          ? "FLAT"
+          : "JSON";
   metricPayload.textContent = formatBytes(metrics.payloadBytes);
   metricBuild.textContent = formatMs(metrics.buildMs);
   metricParse.textContent = metrics.mode === "json" ? formatMs(metrics.parseMs) : "0 ms";
@@ -517,7 +614,7 @@ function updateVisualState() {
     frame: frameCount,
     canvasWidth: renderer.domElement.width,
     canvasHeight: renderer.domElement.height,
-    meshCount: mesh?.count ?? 0,
+    meshCount: instanceMesh?.count ?? pointCloud?.geometry.getAttribute("position")?.count ?? 0,
     maxPixel,
     nonTransparentPixels,
   };
@@ -542,6 +639,19 @@ async function run(mode: Mode, count: number) {
         mode,
         records: count,
         payloadBytes: buffer.byteLength,
+        buildMs,
+        parseMs: 0,
+        packMs: upload.packMs,
+        uploadMs: upload.uploadMs,
+        rendered: upload.rendered,
+      });
+    } else if (mode === "zeno-vector") {
+      const { buffer, buildMs, payloadBytes } = makeZenoVectorBuffer(count);
+      const upload = uploadZenoVector(buffer, count);
+      renderMetrics({
+        mode,
+        records: count,
+        payloadBytes,
         buildMs,
         parseMs: 0,
         packMs: upload.packMs,
@@ -589,9 +699,11 @@ for (const button of runButtons) {
     const mode =
       button.dataset.mode === "json"
         ? "json"
-        : button.dataset.mode === "flatbuffers"
-          ? "flatbuffers"
-          : "zeno";
+        : button.dataset.mode === "zeno-vector"
+          ? "zeno-vector"
+          : button.dataset.mode === "flatbuffers"
+            ? "flatbuffers"
+            : "zeno";
     void run(mode, Number(recordSelect.value));
   });
 }
@@ -600,7 +712,13 @@ function animate() {
   requestAnimationFrame(animate);
   frameCount += 1;
   group.rotation.y +=
-    activeMode === "zeno" ? 0.0018 : activeMode === "flatbuffers" ? 0.0014 : 0.0012;
+    activeMode === "zeno"
+      ? 0.0018
+      : activeMode === "zeno-vector"
+        ? 0.002
+        : activeMode === "flatbuffers"
+          ? 0.0014
+          : 0.0012;
   group.rotation.x = Math.sin(performance.now() * 0.00018) * 0.08;
   renderer.render(scene, camera);
   updateVisualState();

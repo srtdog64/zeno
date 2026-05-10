@@ -1,4 +1,4 @@
-# Layer 7 — Layout Ops / Release Gate
+﻿# Layer 7 - Layout Ops / Release Gate
 
 ## Purpose
 

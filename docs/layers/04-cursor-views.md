@@ -1,4 +1,4 @@
-# Layer 4 — Cursor Projection Views
+﻿# Layer 4 - Cursor Projection Views
 
 ## Purpose
 

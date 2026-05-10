@@ -238,7 +238,7 @@ export class SharedDynamicLayoutWriter {
   writeScalarVectorPublished<T extends number | bigint | boolean>(
     descriptorOffset: number,
     scalarKind: ScalarKind,
-    values: readonly T[],
+    values: ArrayLike<T>,
     state: SharedDescriptorState,
     readyValue = 1,
   ): Vector32Descriptor {

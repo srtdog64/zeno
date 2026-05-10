@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "structs": [
+    {
+      "name": "AssetRow",
+      "byteLength": 24,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "projectId",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "kind",
+          "kind": "scalar",
+          "offset": 2,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "extension",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "pathHash",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "byteLength",
+          "kind": "scalar",
+          "offset": 12,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "depth",
+          "kind": "scalar",
+          "offset": 16,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 20,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        }
+      ],
+      "layoutHash": "0xe01d7f0b"
+    }
+  ]
+}

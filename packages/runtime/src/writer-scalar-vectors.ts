@@ -6,7 +6,7 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
   writeScalarVector<T extends number | bigint | boolean>(
     descriptorOffset: number,
     scalarKind: ScalarKind,
-    values: readonly T[],
+    values: ArrayLike<T>,
   ): Vector32Descriptor {
     return this.writeScalarVectorAtBase(this.baseOffset, descriptorOffset, scalarKind, values);
   }
@@ -15,7 +15,7 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
     descriptorBaseOffset: number,
     descriptorOffset: number,
     scalarKind: ScalarKind,
-    values: readonly T[],
+    values: ArrayLike<T>,
   ): Vector32Descriptor {
     const stride = scalarByteLength(scalarKind);
     const payloadOffset = this.reserve(values.length * stride, stride);
@@ -35,7 +35,11 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
       this.littleEndian,
     );
 
-    values.forEach((value, index) => {
+    for (let index = 0; index < values.length; index += 1) {
+      const value = values[index];
+      if (value === undefined) {
+        throw new RangeError(`Scalar vector value at index ${index} is undefined.`);
+      }
       writeScalar(
         this.view,
         scalarKind,
@@ -43,7 +47,7 @@ export class ScalarVectorLayoutWriter extends ByteVectorLayoutWriter {
         value,
         this.littleEndian,
       );
-    });
+    }
 
     return descriptor;
   }

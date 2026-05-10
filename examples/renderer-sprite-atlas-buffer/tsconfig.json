@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/buffers" },
+    { "path": "../../packages/types" },
+    { "path": "../../packages/runtime" },
+    { "path": "../../packages/compiler" }
+  ]
+}

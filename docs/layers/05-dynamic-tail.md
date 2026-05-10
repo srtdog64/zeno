@@ -1,4 +1,4 @@
-# Layer 5 — Dynamic Tail Views / Writers
+﻿# Layer 5 - Dynamic Tail Views / Writers
 
 ## Purpose
 

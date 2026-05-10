@@ -1,4 +1,4 @@
-# Layer 0 — Wire ABI / Layout IR
+﻿# Layer 0 - Wire ABI / Layout IR
 
 ## Purpose
 

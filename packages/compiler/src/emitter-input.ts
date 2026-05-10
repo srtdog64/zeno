@@ -32,7 +32,7 @@ function fieldInputType(field: FieldLayout): string {
     case "vector":
       switch (field.element.kind) {
         case "scalar":
-          return `readonly ${scalarTsType(field.element.scalar)}[]`;
+          return `ArrayLike<${scalarTsType(field.element.scalar)}>`;
         case "fixed-bytes":
         case "dynamic-bytes":
           return "readonly (ArrayLike<number> | Uint8Array)[]";

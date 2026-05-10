@@ -140,13 +140,18 @@ contracts, mature schema evolution, optional/union/table modeling, and ecosystem
 tooling. Zeno's narrow performance claim is fixed-layout TypeScript-only scalar
 scans.
 
-## WebGL Instance Streaming Witness
+## Renderer Buffer Witness
 
-The browser demo compares a WebGL-style instance payload across Zeno binary,
-FlatBuffers JS, and JSON objects. The workload is intentionally not a universal
-serialization benchmark. It models the path Zeno is built for: many same-layout
-records, uploaded into GPU instance matrices without per-record object
-materialization.
+The browser demo compares a renderer-facing instance payload across Zeno binary,
+FlatBuffers JS, and JSON objects. The current witness uses WebGL because it is
+available in browsers, but the Zeno target is not WebGL, Three.js, Babylon.js,
+or WebGPU as a framework dependency. The target is renderer-ready memory:
+typed arrays, binary metadata, struct-of-arrays vectors, and explicit pack
+kernels that any 3D renderer can consume.
+
+The workload is intentionally not a universal serialization benchmark. It models
+the path Zeno is built for: many same-layout records, projected or packed into
+renderer upload buffers without per-record object materialization.
 
 Witness:
 
@@ -159,17 +164,35 @@ Witness:
 
 Local browser smoke result at 250,000 records:
 
-| Mode           |   Payload |    Build |    Parse | Pack + GPU |
-| -------------- | --------: | -------: | -------: | ---------: |
-| Zeno binary    |  6.68 MiB |  18.7 ms |     0 ms |    7.20 ms |
-| FlatBuffers JS |  8.58 MiB |  98.0 ms |     0 ms |    34.3 ms |
-| JSON objects   | 34.45 MiB | 173.4 ms | 168.4 ms |    7.00 ms |
+| Mode           |   Payload |    Build |    Parse | Pack + Upload |
+| -------------- | --------: | -------: | -------: | ------------: |
+| Zeno binary    |  6.68 MiB |  18.7 ms |     0 ms |       7.20 ms |
+| FlatBuffers JS |  8.58 MiB |  98.0 ms |     0 ms |       34.3 ms |
+| JSON objects   | 34.45 MiB | 173.4 ms | 168.4 ms |       7.00 ms |
 
 Interpretation: Zeno's win here is not that it is lower-level than `DataView`;
 it is that the schema gives named offsets while keeping the payload as one
 contiguous fixed-stride binary buffer. JSON pays parse and object materialization
 cost. FlatBuffers JS pays table/vector indirection cost. The demo does not claim
 better cross-language tooling or schema evolution than FlatBuffers.
+
+Renderer upload note: the `Zeno binary` witness packs array-of-struct instance
+records into the renderer-facing upload buffer. The demo also exposes a `Zeno
+vectors` mode that writes positions and colors as `vector<f32>` payloads,
+projects them with `ScalarVectorView.nativeArray()`, and passes the resulting
+`Float32Array` views to renderer buffer attributes. That is the cleaner
+zero-copy projection path for renderer-facing typed-array buffers.
+Array-of-struct to typed-array conversion remains a batching/pack-kernel path,
+not zero-copy GPU upload.
+
+Raw renderer note:
+[examples/webgl-raw-double-buffer](../examples/webgl-raw-double-buffer) is a
+separate renderer-layer experiment. It uses WebGL2 only as the browser-side
+upload witness: `SharedArrayBuffer`, a worker, double-buffered frame slots, and
+`gl.bufferSubData` over a renderer-ready interleaved `Float32Array`. It does not
+expand the Zeno core claim or add a renderer dependency; it shows what the next
+renderer layer looks like when object materialization and per-record pack loops
+are removed.
 
 ## Dynamic Layout Timing
 
@@ -312,6 +335,50 @@ faster than JSON parse plus object scanning, but table/vector indirection is
 clearly slower than Zeno's fixed-record `DataView` scan. This is a narrow
 TypeScript/WebGL metadata workload, not a general FlatBuffers replacement
 claim.
+
+### Multi-Project Renderer Surface Metadata
+
+`bench:renderer-surfaces` uses the pinned multi-project renderer-surface fixture
+from [renderer-buffer-case-studies.md](renderer-buffer-case-studies.md). It
+stores metadata only from HexGL, Nemesis, xwing, and NetHack 3D. It measures
+JSON parse plus scan, fixed binary row scan, kind-specific queue packing into
+caller-owned typed arrays, and binary metadata packing.
+
+This is the benchmark counterpart to
+[`examples/renderer-asset-catalog-buffer`](../examples/renderer-asset-catalog-buffer).
+It is an asset/load-queue workload, not a GPU upload benchmark.
+
+Latest local witness:
+
+- Date: 2026-05-10
+- Source rows: 3,015 renderer-surface metadata rows from 4 pinned projects
+- Scaled rows: 200,000
+- JSON payload: 20.36 MiB
+- Binary payload: 4.58 MiB
+- Warmup: 3 runs
+- Measured: 25 runs
+
+| Workload                              |    Median |       p95 |       p99 |      Std | Median ns/record |
+| ------------------------------------- | --------: | --------: | --------: | -------: | ---------------: |
+| JSON pre-parsed renderer-surface scan |   0.33 ms |   1.13 ms |   3.48 ms |  0.65 ms |          1.66 ns |
+| JSON.parse + renderer-surface scan    | 113.47 ms | 146.15 ms | 150.09 ms | 13.16 ms |        567.33 ns |
+| Zeno binary renderer-surface scan     |   0.82 ms |   1.54 ms |   6.06 ms |  1.07 ms |          4.09 ns |
+| Zeno binary renderer queue pack       |   1.42 ms |   2.22 ms |   6.15 ms |  0.97 ms |          7.12 ns |
+| Zeno binary renderer metadata pack    |   2.48 ms |   3.75 ms |   3.77 ms |  0.49 ms |         12.42 ns |
+
+Delta interpretation against `JSON.parse + renderer-surface scan`:
+
+| Comparison                         | Median delta | Pooled std | Status      |
+| ---------------------------------- | -----------: | ---------: | ----------- |
+| JSON pre-parsed scan               | -565.67 ns/r | 65.86 ns/r | above-noise |
+| Zeno binary renderer-surface scan  | -563.24 ns/r | 66.00 ns/r | above-noise |
+| Zeno binary renderer queue pack    | -560.21 ns/r | 65.96 ns/r | above-noise |
+| Zeno binary renderer metadata pack | -554.91 ns/r | 65.82 ns/r | above-noise |
+
+Interpretation: this benchmark supports the renderer-buffer position, not a
+blanket "binary is always faster" claim. Pre-parsed JS objects can scan very
+quickly. The Zeno advantage here is compact binary metadata plus avoiding
+`JSON.parse(...)` and object materialization at the ingestion boundary.
 
 Packaging note: this benchmark, its HexGL metadata fixture, and its tests are
 root-repository validation assets. They are not included in the published npm
@@ -456,7 +523,11 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)
 - FlatBuffers comparison benchmark: [packages/bench/flatbuffers-comparison.mjs](../packages/bench/flatbuffers-comparison.mjs)
 - Real game metadata benchmark: [packages/bench/real-game-metadata.mjs](../packages/bench/real-game-metadata.mjs)
+- Renderer surface metadata benchmark:
+  [packages/bench/renderer-surface-metadata.mjs](../packages/bench/renderer-surface-metadata.mjs)
 - HexGL metadata fixture: [packages/bench/fixtures/hexgl-asset-metadata.json](../packages/bench/fixtures/hexgl-asset-metadata.json)
+- Renderer surface metadata fixture:
+  [packages/bench/fixtures/renderer-surface-metadata.json](../packages/bench/fixtures/renderer-surface-metadata.json)
 - Generated view witness: [examples/basic/src/model.view.ts](../examples/basic/src/model.view.ts)
 - Runtime cursor support: [packages/runtime/src/index.ts](../packages/runtime/src/index.ts)
 - Allocation test plan: [test-plan.md](test-plan.md)

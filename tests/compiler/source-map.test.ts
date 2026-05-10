@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
@@ -5,6 +9,8 @@ import {
   analyzeProjectionSourceFile,
   emitProjectionFileWithSourceMap,
 } from "../../packages/compiler/src/index.js";
+
+const rootDir = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 describe("generated projection source maps", () => {
   it("maps generated field accessors back to schema fields", () => {
@@ -62,5 +68,16 @@ describe("generated projection source maps", () => {
     );
 
     expect(emitted.sourceMap.sources).toEqual(["../../../packages/demo/src/schema.zeno.ts"]);
+  });
+
+  it("does not fall back to substring-based generated line matching", () => {
+    const sourceMapSource = readFileSync(
+      join(rootDir, "packages/compiler/src/source-map.ts"),
+      "utf8",
+    );
+
+    expect(sourceMapSource).not.toContain("findSourceForLine");
+    expect(sourceMapSource).not.toContain("findFieldSourceForLine");
+    expect(sourceMapSource).not.toContain("line.includes");
   });
 });

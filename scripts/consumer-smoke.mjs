@@ -53,6 +53,8 @@ mkdirSync(path.join(consumerDir, "src"), { recursive: true });
 run(npmBin, [
   "pack",
   "--workspace",
+  "@exornea/zeno-buffers",
+  "--workspace",
   "@exornea/zeno-schema",
   "--workspace",
   "@exornea/zeno-types",
@@ -131,7 +133,8 @@ export interface Bag {
 
 writeFileSync(
   path.join(consumerDir, "src", "main.ts"),
-  `import { emitProjectionFile } from "@exornea/zeno-compiler";
+  `import { packUintFieldsWhereU8Eq } from "@exornea/zeno-buffers";
+import { emitProjectionFile } from "@exornea/zeno-compiler";
 import { BagView, MiniView } from "./model.view.js";
 import { POINTER32_NULL } from "@exornea/zeno-runtime";
 
@@ -151,12 +154,24 @@ MiniView.write(view, {
 });
 
 const mini = new MiniView(view);
+const packedAge = new Uint32Array(1);
+const packedCount = packUintFieldsWhereU8Eq(
+  view,
+  1,
+  MiniView.byteLength,
+  MiniView.ageOffset,
+  41,
+  [{ offset: MiniView.ageOffset, kind: "u32" }],
+  packedAge,
+);
 const result = {
   id: mini.id.toString(),
   age: mini.age,
   label: mini.labelText().replaceAll("\\u0000", ""),
   name: mini.nameView().text(),
   tags: mini.tagsView().textArray(),
+  packedAge: packedAge[0],
+  packedCount,
   pointerNull: POINTER32_NULL,
 };
 
@@ -166,6 +181,8 @@ if (JSON.stringify(result) !== JSON.stringify({
   label: "consumer",
   name: "Zeno",
   tags: ["ts", "abi"],
+  packedAge: 41,
+  packedCount: 1,
   pointerNull: 0xffffffff,
 })) {
   throw new Error(\`Unexpected consumer result: \${JSON.stringify(result)}\`);
@@ -206,6 +223,16 @@ try {
   // @ts-expect-error Package exports intentionally block compiler internals.
   await import("@exornea/zeno-compiler/dist/emitter.js");
   throw new Error("Compiler deep import unexpectedly succeeded");
+} catch (error) {
+  if (!(error instanceof Error) || !error.message.includes("Package subpath")) {
+    throw error;
+  }
+}
+
+try {
+  // @ts-expect-error Package exports intentionally block buffers internals.
+  await import("@exornea/zeno-buffers/dist/index.js");
+  throw new Error("Buffers deep import unexpectedly succeeded");
 } catch (error) {
   if (!(error instanceof Error) || !error.message.includes("Package subpath")) {
     throw error;

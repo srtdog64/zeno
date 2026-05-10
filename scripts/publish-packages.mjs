@@ -11,6 +11,7 @@ const packages = [
   "@exornea/zeno-types",
   "@exornea/zeno-schema",
   "@exornea/zeno-runtime",
+  "@exornea/zeno-buffers",
   "@exornea/zeno-compiler",
 ];
 

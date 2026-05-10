@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "structs": [
+    {
+      "name": "SpriteInstance",
+      "byteLength": 44,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "atlasId",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "tileId",
+          "kind": "scalar",
+          "offset": 2,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "x",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "y",
+          "kind": "scalar",
+          "offset": 12,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "z",
+          "kind": "scalar",
+          "offset": 16,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "u0",
+          "kind": "scalar",
+          "offset": 20,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "v0",
+          "kind": "scalar",
+          "offset": 24,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "u1",
+          "kind": "scalar",
+          "offset": 28,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "v1",
+          "kind": "scalar",
+          "offset": 32,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "color",
+          "kind": "scalar",
+          "offset": 36,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "visible",
+          "kind": "scalar",
+          "offset": 40,
+          "byteLength": 1,
+          "alignment": 1,
+          "scalar": "bool"
+        }
+      ],
+      "layoutHash": "0x2df7d22b"
+    }
+  ]
+}

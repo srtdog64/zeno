@@ -1,0 +1,36 @@
+{
+  "name": "@exornea/zeno-buffers",
+  "version": "2.5.0",
+  "description": "Dependency-free typed-array packing helpers for Zeno fixed-row buffers.",
+  "keywords": [
+    "typescript",
+    "binary",
+    "dataview",
+    "typedarray",
+    "buffers"
+  ],
+  "homepage": "https://github.com/srtdog64/zeno#readme",
+  "bugs": {
+    "url": "https://github.com/srtdog64/zeno/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srtdog64/zeno.git",
+    "directory": "packages/buffers"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

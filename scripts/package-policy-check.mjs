@@ -52,6 +52,11 @@ const rootExport = {
 
 const policies = [
   {
+    path: "packages/buffers/package.json",
+    name: "@exornea/zeno-buffers",
+    files: ["dist/"],
+  },
+  {
     path: "packages/compiler/package.json",
     name: "@exornea/zeno-compiler",
     files: ["dist/", "bin/", "!dist/plugin.*"],

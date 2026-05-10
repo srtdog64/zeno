@@ -31,6 +31,8 @@ This runs:
 - packed consumer smoke test
 - fixed-layout, dynamic-layout, and FlatBuffers comparison benchmark workloads
 - real WebGL game metadata benchmark over the pinned HexGL metadata fixture
+- renderer-surface metadata benchmark over the pinned multi-project metadata
+  fixture
 
 For a scoped public publish, use the release publisher:
 
@@ -56,7 +58,8 @@ npm run release:publish:dry-run
 The normal release path is `.github/workflows/release.yml`, triggered by a
 `v*` tag or by manual `workflow_dispatch`.
 
-Configure npm Trusted Publishing for each package:
+Configure npm Trusted Publishing for each package, including
+`@exornea/zeno-buffers`:
 
 - Provider: GitHub Actions
 - Organization or user: `srtdog64`

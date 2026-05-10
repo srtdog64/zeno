@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "structs": [
+    {
+      "name": "DungeonCell",
+      "byteLength": 12,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "tileId",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "glyphId",
+          "kind": "scalar",
+          "offset": 2,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "light",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 1,
+          "alignment": 1,
+          "scalar": "u8"
+        },
+        {
+          "name": "seen",
+          "kind": "scalar",
+          "offset": 9,
+          "byteLength": 1,
+          "alignment": 1,
+          "scalar": "bool"
+        }
+      ],
+      "layoutHash": "0x29f0ef88"
+    },
+    {
+      "name": "VisibleEntity",
+      "byteLength": 28,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "id",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "kind",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "x",
+          "kind": "scalar",
+          "offset": 8,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "y",
+          "kind": "scalar",
+          "offset": 12,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "z",
+          "kind": "scalar",
+          "offset": 16,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "f32"
+        },
+        {
+          "name": "glyphId",
+          "kind": "scalar",
+          "offset": 20,
+          "byteLength": 2,
+          "alignment": 2,
+          "scalar": "u16"
+        },
+        {
+          "name": "flags",
+          "kind": "scalar",
+          "offset": 24,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        }
+      ],
+      "layoutHash": "0x0e568581"
+    },
+    {
+      "name": "DirtyRange",
+      "byteLength": 8,
+      "alignment": 4,
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "start",
+          "kind": "scalar",
+          "offset": 0,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        },
+        {
+          "name": "count",
+          "kind": "scalar",
+          "offset": 4,
+          "byteLength": 4,
+          "alignment": 4,
+          "scalar": "u32"
+        }
+      ],
+      "layoutHash": "0x710f6a84"
+    }
+  ]
+}

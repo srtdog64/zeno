@@ -607,6 +607,20 @@ describe("dynamic layout runtime skeleton", () => {
     expect(vectorView.toArray()).toEqual([10, 20, 30]);
   });
 
+  it("writes scalar vectors from native typed arrays", () => {
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+    const writer = new DynamicLayoutWriter(view, 16);
+
+    writer.writeScalarVector(0, "f32", new Float32Array([1.25, 2.5, 3.75]));
+
+    const vectorView = new ScalarVectorView<number>(view, 0, "f32");
+    const native = vectorView.nativeArray();
+
+    expect(native).toBeInstanceOf(Float32Array);
+    expect(Array.from(native)).toEqual([1.25, 2.5, 3.75]);
+  });
+
   it("writes fixed-size struct vectors through a tail arena writer", () => {
     const buffer = new ArrayBuffer(64);
     const view = new DataView(buffer);

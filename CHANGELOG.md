@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.6.0
+
+Status: split generated output release.
+
+- Added `zeno-codegen --output=single|split`. The default remains the
+  historical one-file view output.
+- Split output writes the requested `.view.ts` as a small barrel and emits one
+  `*.view.ts` file per struct in a sibling `<name>.views/` directory.
+- Added compiler public APIs for split output: `emitProjectionFileParts`,
+  `emitProjectionFileBarrel`, and `EmitProjectionFilePart`.
+- Consumer smoke now verifies packed split codegen output and type-checks the
+  split generated files through a real installed package consumer.
+- Documented split output as the first generated-output scale valve for large
+  TypeScript / renderer schemas.
+- Added the MIT license file and package metadata.
+- Package manifests and workspace lockfile are aligned at `2.6.0`.
+
 ## 2.5.0
 
 Status: renderer-facing buffer helper package release.

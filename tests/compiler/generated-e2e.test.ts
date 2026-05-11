@@ -12,6 +12,8 @@ import * as runtime from "../../packages/runtime/src/index.js";
 import {
   analyzeProjectionSourceFile,
   emitProjectionFile,
+  emitProjectionFileBarrel,
+  emitProjectionFileParts,
 } from "../../packages/compiler/src/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -142,6 +144,32 @@ export interface Row {
     expect(full).toContain("countAgeWhereEq");
     expect(full).toContain("countActiveWhereEq");
   });
+
+  it("type-checks split generated view output", () => {
+    const sourceText = `import type { z } from "@exornea/zeno-types";
+
+export interface Header {
+  code: z.u16;
+}
+
+export interface Packet {
+  header: Header;
+  next: z.pointer<Packet>;
+  scores: z.vector<z.i32>;
+}
+`;
+    const sourceFile = ts.createSourceFile("split.zeno.ts", sourceText, ts.ScriptTarget.ES2022);
+    const result = analyzeProjectionSourceFile(sourceFile);
+    expect(result.diagnostics).toEqual([]);
+
+    const parts = emitProjectionFileParts(result.layouts, { scanKernels: "basic" });
+    expect(parts.map((part) => part.fileName).sort()).toEqual(["Header.view.ts", "Packet.view.ts"]);
+    expect(parts.find((part) => part.fileName === "Packet.view.ts")?.code).toContain(
+      'import { HeaderView, type HeaderViewInput } from "./Header.view.js";',
+    );
+
+    typeCheckSplitGenerated(emitProjectionFileBarrel(result.layouts, "./model.views"), parts);
+  });
 });
 
 interface GeneratedViewConstructor {
@@ -186,6 +214,41 @@ function typeCheckGenerated(sourceText: string): void {
   try {
     const program = ts.createProgram({
       rootNames: [fileName],
+      options: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.NodeNext,
+        moduleResolution: ts.ModuleResolutionKind.NodeNext,
+        strict: true,
+        skipLibCheck: true,
+        baseUrl: rootDir,
+        paths: {
+          "@exornea/zeno-runtime": [runtimeEntry],
+        },
+      },
+    });
+    const diagnostics = ts.getPreEmitDiagnostics(program);
+    expect(formatDiagnostics(diagnostics)).toEqual([]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function typeCheckSplitGenerated(
+  indexSourceText: string,
+  parts: readonly { readonly fileName: string; readonly code: string }[],
+): void {
+  const directory = mkdtempSync(path.join(tmpdir(), "zeno-generated-split-e2e-"));
+  const splitDirectory = path.join(directory, "model.views");
+  writeFileSync(path.join(directory, "model.view.ts"), indexSourceText);
+
+  try {
+    ts.sys.createDirectory(splitDirectory);
+    for (const part of parts) {
+      writeFileSync(path.join(splitDirectory, part.fileName), part.code);
+    }
+
+    const program = ts.createProgram({
+      rootNames: [path.join(directory, "model.view.ts")],
       options: {
         target: ts.ScriptTarget.ES2022,
         module: ts.ModuleKind.NodeNext,

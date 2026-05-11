@@ -121,6 +121,14 @@ Rules:
 - `--scan-kernels=none|sum|basic|full` controls the generated aggregate surface:
   `none` emits no scan kernels, `sum` emits only numeric sums, `basic` emits
   sums plus min/max, and `full` also emits integer/bool equality predicates.
+- `--output=single|split` controls generated file shape. `single` emits the
+  historical one-file `.view.ts` output. `split` keeps the requested output path
+  as a barrel and emits one `*.view.ts` file per struct in a sibling
+  `<name>.views/` directory. Use split output only when generated file size,
+  type-check time, or bundler work becomes a measurable problem.
+- `--source-map` is intentionally single-file only for now. Split output should
+  not pretend to preserve field-level source mappings until statement-level
+  multi-file source map support is designed and tested.
 - Scan kernels validate the record count and overall range once, then run a
   direct stride loop.
 - Generated scan kernels are the schema-aware scalar table-scan surface. They

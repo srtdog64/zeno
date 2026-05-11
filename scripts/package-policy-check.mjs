@@ -41,6 +41,7 @@ function assertAbsent(object, key, label) {
 
 const rootPackage = readJson("package.json");
 assertDeepEqual(rootPackage.private, true, "root private flag");
+assertDeepEqual(rootPackage.license, "MIT", "root license");
 assertDeepEqual(rootPackage.workspaces, ["packages/*", "examples/*"], "root workspaces");
 
 const rootExport = {
@@ -93,6 +94,7 @@ const policies = [
 for (const policy of policies) {
   const manifest = readJson(policy.path);
   assertDeepEqual(manifest.name, policy.name, `${policy.path} name`);
+  assertDeepEqual(manifest.license, "MIT", `${policy.path} license`);
   assertDeepEqual(manifest.type, "module", `${policy.path} module type`);
   assertDeepEqual(manifest.main, "./dist/index.js", `${policy.path} main`);
   assertDeepEqual(manifest.types, "./dist/index.d.ts", `${policy.path} types`);

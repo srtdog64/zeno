@@ -234,9 +234,12 @@ blocks `npm.ps1`.
 
 ## Current release posture
 
-Version family is `2.5.0` in the working tree. v2.5 adds the
-`@exornea/zeno-buffers` package, renderer-buffer case studies, renderer-specific
-examples, and a renderer-surface metadata benchmark witness.
+Version family is `2.6.0` in the working tree. v2.6 adds split generated output
+through `zeno-codegen --output=split`, keeping the requested `.view.ts` path as
+a barrel and emitting one generated file per struct in a sibling
+`<name>.views/` directory. v2.5 added the `@exornea/zeno-buffers` package,
+renderer-buffer case studies, renderer-specific examples, and a
+renderer-surface metadata benchmark witness.
 
 Before publishing, run:
 

@@ -1,7 +1,8 @@
 {
   "name": "@exornea/zeno-buffers",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Dependency-free typed-array packing helpers for Zeno fixed-row buffers.",
+  "license": "MIT",
   "keywords": [
     "typescript",
     "binary",

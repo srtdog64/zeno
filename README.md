@@ -145,6 +145,24 @@ zeno-codegen ./src/model.zeno.ts ./src/model.view.ts
 Use `--source-map` when you want generated accessors to map back to the
 originating `.zeno.ts` field during debugging.
 
+Use `--output=split` when one generated file is becoming expensive for the
+TypeScript checker or bundler. Split output keeps `model.view.ts` as a small
+barrel and writes one generated file per struct next to it:
+
+```sh
+zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --output=split
+```
+
+```txt
+src/model.view.ts
+src/model.view.views/User.view.ts
+src/model.view.views/OtherStruct.view.ts
+```
+
+The single-file output remains the default. Split output currently does not
+support `--source-map`; keep single-file output when field-level generated-code
+debugging is more important than generated-file size.
+
 `SharedArrayBuffer` support is exposed through `SharedDynamicLayoutWriter`. Its
 tail cursor is atomic, and descriptor publication uses explicit `Int32Array`
 ready cells through the `*Published(...)` writer methods. Browser apps still
@@ -495,4 +513,6 @@ thresholds stay diagnostic because CI hardware noise is high.
   hardening.
 - [docs/release-v2.5.md](docs/release-v2.5.md): renderer-facing buffer helper
   package.
+- [docs/release-v2.6.md](docs/release-v2.6.md): split generated output for
+  larger schemas.
 - [CHANGELOG.md](CHANGELOG.md): release history.

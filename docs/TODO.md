@@ -209,8 +209,8 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.5.0` after release review if the renderer-facing buffers package
-  is ready for npm
+- publish `2.6.0` after release review if split generated output remains the
+  right release boundary
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,
@@ -219,6 +219,19 @@ Status: satisfied as a diagnostic release gate.
   tagging or publishing future versions
 
 ## Technical Debt Policy
+
+### Complexity posture
+
+- Zeno is intentionally a small but complex infrastructure project. Do not
+  collapse load-bearing layers only to make the repository look simpler.
+- Reduce accidental complexity: duplicated routing, unclear package boundaries,
+  unsupported claims, dead flags, hidden generated-code behavior, and missing
+  tests.
+- Keep load-bearing complexity: Layout IR, runtime/compiler/package separation,
+  explicit docs, manifest/diff tooling, renderer-buffer examples, and benchmark
+  witnesses.
+- Prefer "make the layer boundary explicit" over "merge layers" when a critique
+  says the project is over-engineered.
 
 ### Must block now
 
@@ -240,6 +253,46 @@ Status: satisfied as a diagnostic release gate.
 
 ### Evidence-gated work
 
+- codegen DX wrapper: CLI-first is acceptable for the current release, but
+  adoption needs a lower-friction workflow. Candidate surfaces are `zeno dev`
+  watch mode, a Vite plugin, an esbuild plugin, or a tsup integration. Promote
+  only when the wrapper preserves explicit generated files, manifest output, and
+  deterministic diagnostics instead of hiding layout changes.
+- browser `SharedArrayBuffer` barrier: keep SAB support advanced, not core.
+  Browser users need COOP/COEP and cross-origin isolation before SAB works.
+  Document fallback paths that use plain `ArrayBuffer`, generated views, and
+  non-shared typed-array packing for apps that cannot adopt isolation headers.
+- performance claim boundary: keep the promoted claim on fixed-layout scalar
+  scans and renderer-facing pack/histogram workloads. Dynamic text, dynamic
+  vectors, pointer-heavy traversal, and shared-memory publication remain
+  diagnostic until each has its own benchmark witness, p95/p99 noise notes, and
+  allocation/GC notes.
+- hostile buffer corpus: inline malformed descriptor tests are not enough for
+  long-term trust. Add a `tests/corpus/malformed` suite covering span offset
+  overflow, vector count overflow, descriptor length overflow, pointer target
+  OOB, frame hash mismatch, and truncated buffers. Every case must fail closed
+  without silent clamp, wrap, or partial materialization.
+- CI version matrix: add Node LTS coverage for at least two active LTS lines
+  once publish confidence matters more than CI duration. Keep one fast default
+  lane and avoid duplicating expensive browser/benchmark jobs across every Node
+  version unless a failure justifies it.
+- consumer bundler smoke: extend packed consumer validation with at least one
+  Vite or Rollup scenario that imports generated code from installed packages.
+  This should catch package export, ESM, and tree-shaking regressions that plain
+  `tsc` consumer smoke can miss.
+- boundary validation API: consider a `validateBuffer(layout, view)` or
+  `tryValidateFrame(...)` entrypoint for file/network/IPC/application-envelope
+  boundaries. This must be a pre-hot-loop safety path, not the return style of
+  generated scalar getters or scan kernels.
+- pointer traversal budget API: keep traversal budget explicit and public for
+  pointer-heavy data. Candidate shape: require a `maxSteps` / traversal budget
+  in helper APIs that can follow user-controlled pointer chains, so cycles and
+  very large counts fail closed instead of becoming DoS-style loops.
+- generated output split mode: `zeno-codegen --output=split` now emits a small
+  barrel plus one generated file per struct. Keep single-file output as the
+  default. Future work should measure large-schema type-check and bundle impact
+  before adding finer layer-based files such as `UserView.scalars.ts`,
+  `UserView.scan.ts`, and `UserView.dynamic.ts`.
 - shared writer adaptive backoff: only add after a benchmark shows real
   high-contention worker collapse on a single cursor and sharded arenas do not
   solve the target workload.
@@ -283,6 +336,37 @@ Status: satisfied as a diagnostic release gate.
   renderer/concurrency witness for
   `SharedArrayBuffer -> worker -> Float32Array -> gl.bufferSubData`. Do not fold
   this into Zeno core unless a real renderer integration needs a generated API.
+- raw WebGL timing policy: `setInterval(writeFrame, 16)` is acceptable for the
+  current smoke-test witness, but not a promoted production simulation loop.
+  Promote to delta-time simulation or worker `requestAnimationFrame` only after
+  a browser workload needs refresh-rate-aware simulation behavior.
+- raw WebGL buffering policy: double buffering proves the tearing boundary.
+  Consider triple buffering only after a benchmark shows `gl.bufferSubData`
+  upload stalls causing material `skippedFrames` growth on target hardware.
+- GPU-ready row layout promotion: the current 20-float interleaved instance row
+  belongs to the renderer experiment. If the same shape becomes reusable product
+  code, promote it into a Zeno schema or generated pack layer so stride and
+  offsets are generated and reviewable rather than handwritten constants.
+- WebGL overkill threshold: do not pitch Zeno for trivial vertex buffers such as
+  position-only `Float32Array` data. Handwritten typed arrays are better when a
+  layout is a single obvious vector stream and has no schema review, scan,
+  manifest, or pack-routing value. Zeno's WebGL target starts when multiple
+  fields, record kinds, visibility/filtering, worker handoff, or layout review
+  become real.
+- WebGL math-layout ABI: do not add `mat3`, `mat4`, `quat`, `vec3`, or similar
+  aliases without an explicit memory-layout policy. WebGL/GPU-facing layouts may
+  pad or align differently from a naive "N floats" TypeScript model. Any future
+  math alias must specify column/row order, byte stride, padding, and whether it
+  is renderer-local or wire ABI.
+- generated output scale: large renderer projects can have dozens of buffer
+  schemas. Track generated file count, generated LOC, TypeScript build time, and
+  bundled bytes before promoting more generated surfaces. Prefer opt-in split
+  output or per-layer generated files when the single `.view.ts` output becomes
+  the bottleneck.
+- runtime bundle surface: keep `@exornea/zeno-buffers` dependency-free and keep
+  renderer examples honest about which packages enter the browser bundle. For
+  simple WebGL demos, handwritten typed arrays may beat `zeno-runtime` plus
+  generated views on bundle size and setup cost.
 - generated renderer pack kernels: consider `packPositions2f/3f`,
   `packFieldToTypedArray`, and interleaved attribute packers for array-of-struct
   schemas after the SoA native-array path has a browser benchmark witness. These
@@ -514,7 +598,8 @@ Status: satisfied as a diagnostic release gate.
   witnesses.
 - Extended package policy, version checks, package dry-runs, packed consumer
   smoke, and public API snapshots to cover `@exornea/zeno-buffers`.
-- Package manifests and workspace lockfile are aligned at `2.5.0`.
+- Package manifests and workspace lockfile are aligned at the current release
+  family.
 - `release:check` keeps `bench:check` in the publish gate.
 - `bench:check` includes a real WebGL game metadata fixture derived from the
   pinned HexGL repository tree. The fixture stores metadata only, not asset

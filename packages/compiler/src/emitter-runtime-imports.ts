@@ -3,9 +3,12 @@ import type { FieldLayout, StructLayout, VectorElementLayout } from "@exornea/ze
 import { hasTailWriterFields } from "./emitter-capabilities.js";
 import { collectFixedArrayRuntimeImports } from "./emitter-fixed-array.js";
 
-export function collectRuntimeImports(layouts: readonly StructLayout[]): string[] {
+export function collectRuntimeImports(
+  layouts: readonly StructLayout[],
+  allLayouts: readonly StructLayout[] = layouts,
+): string[] {
   const imports = new Set<string>(["ProjectionView"]);
-  const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
+  const layoutMap = new Map(allLayouts.map((layout) => [layout.name, layout]));
 
   for (const layout of layouts) {
     if (hasTailWriterFields(layout, layoutMap)) {

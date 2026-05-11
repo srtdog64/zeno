@@ -29,9 +29,12 @@ export {
 export { andThen, err, isErr, isOk, mapResult, ok, type Result } from "./result.js";
 export {
   emitProjectionFile,
+  emitProjectionFileBarrel,
+  emitProjectionFileParts,
   emitProjectionFileWithSourceMap,
   emitStructView,
   type EmitProjectionFileResult,
+  type EmitProjectionFilePart,
   type EmitOptions,
 } from "./emitter.js";
 export {

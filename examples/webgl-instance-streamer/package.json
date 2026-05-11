@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-example-webgl-instance-streamer",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,13 +10,13 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@exornea/zeno-runtime": "2.5.0",
-    "@exornea/zeno-types": "2.5.0",
+    "@exornea/zeno-runtime": "2.6.0",
+    "@exornea/zeno-types": "2.6.0",
     "flatbuffers": "^25.9.23",
     "three": "^0.184.0"
   },
   "devDependencies": {
-    "@exornea/zeno-compiler": "2.5.0",
+    "@exornea/zeno-compiler": "2.6.0",
     "vite": "^8.0.11"
   }
 }

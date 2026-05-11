@@ -1,7 +1,8 @@
 {
   "name": "@exornea/zeno-types",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Type-only ABI marker aliases for Zeno TypeScript binary schemas.",
+  "license": "MIT",
   "keywords": [
     "typescript",
     "binary",

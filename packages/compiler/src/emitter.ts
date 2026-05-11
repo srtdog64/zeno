@@ -1,4 +1,4 @@
-import { type StructLayout } from "@exornea/zeno-schema";
+import { type FieldLayout, type StructLayout } from "@exornea/zeno-schema";
 
 import { emitAstCheckedSource } from "./emitter-ast.js";
 import { emitField } from "./emitter-fields.js";
@@ -25,6 +25,11 @@ export interface EmitProjectionFileResult {
   readonly sourceMap: ProjectionSourceMap;
 }
 
+export interface EmitProjectionFilePart {
+  readonly fileName: string;
+  readonly code: string;
+}
+
 export function emitStructView(layout: StructLayout, options: EmitOptions = {}): string {
   return emitProjectionFile([layout], options);
 }
@@ -39,11 +44,14 @@ export function emitProjectionFile(
 function emitProjectionFileText(
   layouts: readonly StructLayout[],
   options: EmitOptions = {},
+  externalImports: readonly string[] = [],
+  allLayouts: readonly StructLayout[] = layouts,
 ): string {
   const lines: string[] = [];
-  const runtimeImports = collectRuntimeImports(layouts);
-  const layoutMap = new Map(layouts.map((layout) => [layout.name, layout]));
+  const runtimeImports = collectRuntimeImports(layouts, allLayouts);
+  const layoutMap = new Map(allLayouts.map((layout) => [layout.name, layout]));
   lines.push(`import { ${runtimeImports.join(", ")} } from "@exornea/zeno-runtime";`);
+  lines.push(...externalImports);
   lines.push("");
 
   for (const layout of layouts) {
@@ -58,6 +66,37 @@ function emitProjectionFileText(
   return lines.join("\n");
 }
 
+export function emitProjectionFileParts(
+  layouts: readonly StructLayout[],
+  options: EmitOptions = {},
+): EmitProjectionFilePart[] {
+  const knownLayoutNames = new Set(layouts.map((layout) => layout.name));
+  return layouts.map((layout) => {
+    const externalImports = collectStructDependencies(layout, knownLayoutNames).map(
+      (dependencyName) =>
+        `import { ${dependencyName}View, type ${dependencyName}ViewInput } from "./${dependencyName}.view.js";`,
+    );
+    return {
+      fileName: `${layout.name}.view.ts`,
+      code: emitAstCheckedSource(
+        emitProjectionFileText([layout], options, externalImports, layouts),
+        `${layout.name}.view.ts`,
+      ).code,
+    };
+  });
+}
+
+export function emitProjectionFileBarrel(
+  layouts: readonly StructLayout[],
+  importPathPrefix = ".",
+): string {
+  const normalizedPrefix = importPathPrefix.replace(/\\/g, "/").replace(/\/$/, "");
+  const lines = layouts.map(
+    (layout) => `export * from "${normalizedPrefix}/${layout.name}.view.js";`,
+  );
+  return emitAstCheckedSource(`${lines.join("\n")}\n`, "zeno.view.ts").code;
+}
+
 export function emitProjectionFileWithSourceMap(
   layouts: readonly StructLayout[],
   generatedFile: string,
@@ -69,6 +108,62 @@ export function emitProjectionFileWithSourceMap(
     code,
     sourceMap: createProjectionSourceMap(code, layouts, generatedFile),
   };
+}
+
+function collectStructDependencies(
+  layout: StructLayout,
+  knownLayoutNames: ReadonlySet<string>,
+): string[] {
+  const dependencies = new Set<string>();
+  for (const field of layout.fields) {
+    collectFieldDependencies(field, dependencies, knownLayoutNames);
+  }
+  dependencies.delete(layout.name);
+  return [...dependencies].sort((left, right) => left.localeCompare(right));
+}
+
+function collectFieldDependencies(
+  field: FieldLayout,
+  dependencies: Set<string>,
+  knownLayoutNames: ReadonlySet<string>,
+): void {
+  switch (field.kind) {
+    case "struct":
+      addKnownDependency(field.typeName, dependencies, knownLayoutNames);
+      return;
+    case "pointer":
+      addKnownDependency(field.targetTypeName, dependencies, knownLayoutNames);
+      return;
+    case "fixed-array":
+      if (field.element.kind === "struct") {
+        addKnownDependency(field.element.typeName, dependencies, knownLayoutNames);
+      }
+      return;
+    case "vector":
+      switch (field.element.kind) {
+        case "struct":
+        case "dynamic-struct":
+          addKnownDependency(field.element.typeName, dependencies, knownLayoutNames);
+          return;
+        case "pointer":
+          addKnownDependency(field.element.targetTypeName, dependencies, knownLayoutNames);
+          return;
+        default:
+          return;
+      }
+    default:
+      return;
+  }
+}
+
+function addKnownDependency(
+  name: string,
+  dependencies: Set<string>,
+  knownLayoutNames: ReadonlySet<string>,
+): void {
+  if (knownLayoutNames.has(name)) {
+    dependencies.add(name);
+  }
 }
 
 function emitLayoutConstants(layout: StructLayout): string[] {

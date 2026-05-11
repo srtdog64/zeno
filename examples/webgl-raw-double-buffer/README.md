@@ -44,6 +44,25 @@ The purpose is to keep the layer boundary honest:
 - `gl.bufferSubData` still copies CPU memory into a GPU buffer. The win is
   zero JS object materialization and no per-record renderer packing loop.
 
+## Production Risks
+
+This example is a concurrency and renderer-memory witness, not a complete game
+engine loop.
+
+- The worker currently uses `setInterval(writeFrame, 16)`. That is simple and
+  deterministic enough for smoke tests, but it is not a production timing
+  policy. A real renderer pipeline should drive simulation with
+  `performance.now()` deltas, and can use worker `requestAnimationFrame` where
+  browser support and lifecycle semantics fit the workload.
+- The example uses double buffering. That proves the tearing boundary, but a
+  production engine may need triple buffering when `gl.bufferSubData` stalls or
+  when upload latency spikes would otherwise force the worker to skip many
+  frames.
+- The interleaved 20-float row is intentionally local to this renderer
+  experiment. If this shape becomes product code, promote the row layout into a
+  Zeno schema or generated pack layer so stride, field offsets, and output shape
+  remain reviewable instead of living as handwritten constants.
+
 Run it:
 
 ```powershell

@@ -103,6 +103,8 @@ describe("public package runtime exports", () => {
         "diffLayoutManifests",
         "duplicateDefinition",
         "emitProjectionFile",
+        "emitProjectionFileBarrel",
+        "emitProjectionFileParts",
         "emitProjectionFileWithSourceMap",
         "emitStructView",
         "err",

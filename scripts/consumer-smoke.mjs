@@ -80,6 +80,8 @@ writeFileSync(
       scripts: {
         codegen:
           "zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --manifest ./src/model.layout.json",
+        "codegen:split":
+          "zeno-codegen ./src/model.zeno.ts ./src/model.split.view.ts --output=split --scan-kernels=basic",
         build: "tsc -p tsconfig.json",
         start: "node ./dist/main.js",
       },
@@ -293,6 +295,7 @@ if (
   throw new Error(`Unexpected JSON operational failure: ${operationalFailureOutput}`);
 }
 run(npmBin, ["run", "codegen", "--silent"], consumerDir);
+run(npmBin, ["run", "codegen:split", "--silent"], consumerDir);
 const inspectOutput = runCapture(npxBin, ["zeno-inspect", "./src/model.zeno.ts"], consumerDir);
 if (!inspectOutput.includes("Struct Mini") || !inspectOutput.includes("Struct Bag")) {
   throw new Error(`Unexpected zeno-inspect output: ${inspectOutput}`);
@@ -311,6 +314,20 @@ if (!generatedView.includes('from "@exornea/zeno-runtime"')) {
 }
 if (generatedView.includes("@exornea/zeno-runtime/dist/")) {
   throw new Error("Generated view used a runtime deep import.");
+}
+const splitBarrel = readFileSync(path.join(consumerDir, "src", "model.split.view.ts"), "utf8");
+if (
+  !splitBarrel.includes('export * from "./model.split.view.views/Mini.view.js";') ||
+  !splitBarrel.includes('export * from "./model.split.view.views/Bag.view.js";')
+) {
+  throw new Error(`Unexpected split generated barrel: ${splitBarrel}`);
+}
+const splitMiniView = readFileSync(
+  path.join(consumerDir, "src", "model.split.view.views", "Mini.view.ts"),
+  "utf8",
+);
+if (!splitMiniView.includes('from "@exornea/zeno-runtime"')) {
+  throw new Error("Split generated view did not import the runtime package root.");
 }
 run(npmBin, ["run", "build", "--silent"], consumerDir);
 run(npmBin, ["run", "start", "--silent"], consumerDir);

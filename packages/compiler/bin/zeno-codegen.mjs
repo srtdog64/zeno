@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
 
@@ -7,6 +7,8 @@ import {
   analyzeProjectionSourceFile,
   createLayoutManifest,
   emitProjectionFile,
+  emitProjectionFileBarrel,
+  emitProjectionFileParts,
   emitProjectionFileWithSourceMap,
   formatDiagnosticLocation,
   parseScanKernelMode,
@@ -17,12 +19,13 @@ let sourceMap = false;
 let endianness = "little";
 let manifestPath;
 let scanKernels = "full";
+let outputMode = "single";
 const diagnosticsArg = args.find((arg) => arg.startsWith("--diagnostics="));
 let diagnosticsFormat =
   diagnosticsArg === undefined ? "text" : diagnosticsArg.slice("--diagnostics=".length);
 const positionalArgs = [];
 const usage =
-  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--manifest <layout.json>] [--scan-kernels=none|sum|basic|full] [--endian=little|big] [--diagnostics=text|json]";
+  "Usage: zeno-codegen <input.ts> <output.view.ts> [--source-map] [--manifest <layout.json>] [--scan-kernels=none|sum|basic|full] [--output=single|split] [--endian=little|big] [--diagnostics=text|json]";
 
 function fail(code, message, details = {}) {
   if (diagnosticsFormat === "json") {
@@ -81,6 +84,11 @@ for (let index = 0; index < args.length; index += 1) {
     continue;
   }
 
+  if (arg.startsWith("--output=")) {
+    outputMode = arg.slice("--output=".length);
+    continue;
+  }
+
   if (arg.startsWith("--diagnostics=")) {
     continue;
   }
@@ -107,6 +115,19 @@ if (endianness !== "little" && endianness !== "big") {
 if (diagnosticsFormat !== "text" && diagnosticsFormat !== "json") {
   console.error(`Invalid diagnostics format: ${diagnosticsFormat}. Expected "text" or "json".`);
   process.exit(1);
+}
+
+if (outputMode !== "single" && outputMode !== "split") {
+  fail("INVALID_OUTPUT_MODE", `Invalid output mode: ${outputMode}. Expected "single" or "split".`, {
+    outputMode,
+  });
+}
+
+if (outputMode === "split" && sourceMap) {
+  fail("UNSUPPORTED_OPTION_COMBINATION", "--source-map is not supported with --output=split yet.", {
+    outputMode,
+    sourceMap,
+  });
 }
 
 const scanKernelMode = parseScanKernelMode(scanKernels);
@@ -148,7 +169,18 @@ if (result.diagnostics.length > 0) {
 
 const resolvedOutputPath = path.resolve(outputPath);
 const emitOptions = { scanKernels: scanKernelMode };
-if (sourceMap) {
+if (outputMode === "split") {
+  const splitDirectory = splitDirectoryForOutput(resolvedOutputPath);
+  await mkdir(splitDirectory, { recursive: true });
+  for (const part of emitProjectionFileParts(result.layouts, emitOptions)) {
+    await writeFile(path.join(splitDirectory, part.fileName), part.code, "utf8");
+  }
+  await writeFile(
+    resolvedOutputPath,
+    emitProjectionFileBarrel(result.layouts, `./${path.basename(splitDirectory)}`),
+    "utf8",
+  );
+} else if (sourceMap) {
   const emitted = emitProjectionFileWithSourceMap(result.layouts, resolvedOutputPath, emitOptions);
   await writeFile(resolvedOutputPath, emitted.code, "utf8");
   await writeFile(`${resolvedOutputPath}.map`, JSON.stringify(emitted.sourceMap, null, 2), "utf8");
@@ -162,4 +194,10 @@ if (manifestPath !== undefined) {
     `${JSON.stringify(createLayoutManifest(result.layouts), null, 2)}\n`,
     "utf8",
   );
+}
+
+function splitDirectoryForOutput(outputFilePath) {
+  const extension = path.extname(outputFilePath);
+  const baseName = path.basename(outputFilePath, extension);
+  return path.join(path.dirname(outputFilePath), `${baseName}.views`);
 }

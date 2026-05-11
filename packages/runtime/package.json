@@ -1,7 +1,8 @@
 {
   "name": "@exornea/zeno-runtime",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Runtime views, descriptors, writers, and frame helpers for Zeno binary projections.",
+  "license": "MIT",
   "keywords": [
     "typescript",
     "binary",
@@ -34,6 +35,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@exornea/zeno-types": "2.5.0"
+    "@exornea/zeno-types": "2.6.0"
   }
 }

@@ -1,4 +1,9 @@
-import { packF32FieldsWhereU8Eq, packUintFieldsWhereU8Eq } from "@exornea/zeno-buffers";
+import {
+  createF32PackPlan,
+  createUintPackPlan,
+  packF32PlanWhereU8Eq,
+  packUintPlanWhereU8Eq,
+} from "@exornea/zeno-buffers";
 
 import { SpriteInstanceView } from "./model.view.js";
 
@@ -6,6 +11,20 @@ const spriteCount = 8192;
 const atlasCount = 8;
 const buffer = new ArrayBuffer(SpriteInstanceView.byteLength * spriteCount);
 const view = new DataView(buffer);
+const positionPackPlan = createF32PackPlan(SpriteInstanceView.byteLength, [
+  SpriteInstanceView.xOffset,
+  SpriteInstanceView.yOffset,
+  SpriteInstanceView.zOffset,
+]);
+const uvPackPlan = createF32PackPlan(SpriteInstanceView.byteLength, [
+  SpriteInstanceView.u0Offset,
+  SpriteInstanceView.v0Offset,
+  SpriteInstanceView.u1Offset,
+  SpriteInstanceView.v1Offset,
+]);
+const colorPackPlan = createUintPackPlan(SpriteInstanceView.byteLength, [
+  { offset: SpriteInstanceView.colorOffset, kind: "u32" },
+]);
 
 writeSprites(view);
 
@@ -72,36 +91,28 @@ function packVisibleSprites(
   uvOutput: Float32Array,
   colorOutput: Uint32Array,
 ): number {
-  const positionCount = packF32FieldsWhereU8Eq(
+  const positionCount = packF32PlanWhereU8Eq(
     source,
     spriteCount,
-    SpriteInstanceView.byteLength,
     SpriteInstanceView.visibleOffset,
     1,
-    [SpriteInstanceView.xOffset, SpriteInstanceView.yOffset, SpriteInstanceView.zOffset],
+    positionPackPlan,
     positionOutput,
   );
-  const uvCount = packF32FieldsWhereU8Eq(
+  const uvCount = packF32PlanWhereU8Eq(
     source,
     spriteCount,
-    SpriteInstanceView.byteLength,
     SpriteInstanceView.visibleOffset,
     1,
-    [
-      SpriteInstanceView.u0Offset,
-      SpriteInstanceView.v0Offset,
-      SpriteInstanceView.u1Offset,
-      SpriteInstanceView.v1Offset,
-    ],
+    uvPackPlan,
     uvOutput,
   );
-  const colorCount = packUintFieldsWhereU8Eq(
+  const colorCount = packUintPlanWhereU8Eq(
     source,
     spriteCount,
-    SpriteInstanceView.byteLength,
     SpriteInstanceView.visibleOffset,
     1,
-    [{ offset: SpriteInstanceView.colorOffset, kind: "u32" }],
+    colorPackPlan,
     colorOutput,
   );
 

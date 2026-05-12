@@ -1,4 +1,4 @@
-import { histogramU16Field, packUintFields } from "@exornea/zeno-buffers";
+import { createUintPackPlan, histogramU16Field, packUintPlan } from "@exornea/zeno-buffers";
 
 import { DrawBatchView } from "./model.view.js";
 
@@ -12,6 +12,14 @@ const PassCode = {
 const batchCount = 2048;
 const buffer = new ArrayBuffer(DrawBatchView.byteLength * batchCount);
 const view = new DataView(buffer);
+const drawCommandPackPlan = createUintPackPlan(DrawBatchView.byteLength, [
+  { offset: DrawBatchView.meshIdOffset, kind: "u32" },
+  { offset: DrawBatchView.materialIdOffset, kind: "u32" },
+  { offset: DrawBatchView.firstIndexOffset, kind: "u32" },
+  { offset: DrawBatchView.indexCountOffset, kind: "u32" },
+  { offset: DrawBatchView.firstInstanceOffset, kind: "u32" },
+  { offset: DrawBatchView.instanceCountOffset, kind: "u32" },
+]);
 
 writeBatches(view);
 
@@ -62,18 +70,5 @@ function writeBatches(target: DataView): void {
 
 function packDrawCommands(source: DataView, commands: Uint32Array, counts: Uint32Array): number {
   histogramU16Field(source, batchCount, DrawBatchView.byteLength, DrawBatchView.passOffset, counts);
-  return packUintFields(
-    source,
-    batchCount,
-    DrawBatchView.byteLength,
-    [
-      { offset: DrawBatchView.meshIdOffset, kind: "u32" },
-      { offset: DrawBatchView.materialIdOffset, kind: "u32" },
-      { offset: DrawBatchView.firstIndexOffset, kind: "u32" },
-      { offset: DrawBatchView.indexCountOffset, kind: "u32" },
-      { offset: DrawBatchView.firstInstanceOffset, kind: "u32" },
-      { offset: DrawBatchView.instanceCountOffset, kind: "u32" },
-    ],
-    commands,
-  );
+  return packUintPlan(source, batchCount, drawCommandPackPlan, commands);
 }

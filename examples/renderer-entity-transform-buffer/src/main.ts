@@ -1,4 +1,9 @@
-import { packF32FieldsWhereU8Eq, packUintFieldsWhereU8Eq } from "@exornea/zeno-buffers";
+import {
+  createF32PackPlan,
+  createUintPackPlan,
+  packF32PlanWhereU8Eq,
+  packUintPlanWhereU8Eq,
+} from "@exornea/zeno-buffers";
 
 import { EntityTransformView } from "./model.view.js";
 
@@ -13,6 +18,21 @@ const KindCode = {
 const entityCount = 4096;
 const buffer = new ArrayBuffer(EntityTransformView.byteLength * entityCount);
 const view = new DataView(buffer);
+const transformPackPlan = createF32PackPlan(EntityTransformView.byteLength, [
+  EntityTransformView.xOffset,
+  EntityTransformView.yOffset,
+  EntityTransformView.zOffset,
+  EntityTransformView.qxOffset,
+  EntityTransformView.qyOffset,
+  EntityTransformView.qzOffset,
+  EntityTransformView.qwOffset,
+  EntityTransformView.scaleOffset,
+]);
+const identityPackPlan = createUintPackPlan(EntityTransformView.byteLength, [
+  { offset: EntityTransformView.idOffset, kind: "u32" },
+  { offset: EntityTransformView.kindOffset, kind: "u16" },
+  { offset: EntityTransformView.flagsOffset, kind: "u32" },
+]);
 
 writeEntities(view);
 
@@ -74,35 +94,20 @@ function packVisibleEntities(
     }
   }
 
-  const transformCount = packF32FieldsWhereU8Eq(
+  const transformCount = packF32PlanWhereU8Eq(
     source,
     entityCount,
-    EntityTransformView.byteLength,
     EntityTransformView.visibleOffset,
     1,
-    [
-      EntityTransformView.xOffset,
-      EntityTransformView.yOffset,
-      EntityTransformView.zOffset,
-      EntityTransformView.qxOffset,
-      EntityTransformView.qyOffset,
-      EntityTransformView.qzOffset,
-      EntityTransformView.qwOffset,
-      EntityTransformView.scaleOffset,
-    ],
+    transformPackPlan,
     transformOutput,
   );
-  const identityCount = packUintFieldsWhereU8Eq(
+  const identityCount = packUintPlanWhereU8Eq(
     source,
     entityCount,
-    EntityTransformView.byteLength,
     EntityTransformView.visibleOffset,
     1,
-    [
-      { offset: EntityTransformView.idOffset, kind: "u32" },
-      { offset: EntityTransformView.kindOffset, kind: "u16" },
-      { offset: EntityTransformView.flagsOffset, kind: "u32" },
-    ],
+    identityPackPlan,
     identityOutput,
   );
 

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createF32PackPlan,
+  createUintPackPlan,
   histogramU16Field,
   histogramU8Field,
   packF32FieldsWhereU8Eq,
+  packF32PlanWhereU8Eq,
   packUintFields,
   packUintFieldsWhereU16Eq,
   packUintFieldsWhereU8Eq,
+  packUintPlan,
+  packUintPlanWhereU8Eq,
 } from "../packages/buffers/src/index.js";
 
 const STRIDE = 24;
@@ -44,6 +49,18 @@ describe("zeno-buffers", () => {
       out,
     );
 
+    expect(packed).toBe(3);
+    expect(Array.from(out)).toEqual([1, 2, 3, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it("reuses f32 pack plans across frame loops", () => {
+    const view = sampleRows();
+    const out = new Float32Array(9);
+    const plan = createF32PackPlan(STRIDE, [OFFSET_X, OFFSET_Y, OFFSET_Z]);
+    const packed = packF32PlanWhereU8Eq(view, 4, OFFSET_VISIBLE, 1, plan, out);
+
+    expect(plan.fieldCount).toBe(3);
+    expect(plan.maxFieldEnd).toBe(24);
     expect(packed).toBe(3);
     expect(Array.from(out)).toEqual([1, 2, 3, 7, 8, 9, 10, 11, 12]);
   });
@@ -103,6 +120,21 @@ describe("zeno-buffers", () => {
     expect(Array.from(out)).toEqual([101, 1, 102, 2, 103, 4, 104, 8]);
   });
 
+  it("reuses uint pack plans for filtered and unfiltered command words", () => {
+    const view = sampleRows();
+    const allOut = new Uint32Array(8);
+    const visibleOut = new Uint32Array(6);
+    const plan = createUintPackPlan(STRIDE, [
+      { offset: OFFSET_ID, kind: "u32" },
+      { offset: OFFSET_FLAGS, kind: "u32" },
+    ]);
+
+    expect(packUintPlan(view, 4, plan, allOut)).toBe(4);
+    expect(packUintPlanWhereU8Eq(view, 4, OFFSET_VISIBLE, 1, plan, visibleOut)).toBe(3);
+    expect(Array.from(allOut)).toEqual([101, 1, 102, 2, 103, 4, 104, 8]);
+    expect(Array.from(visibleOut)).toEqual([101, 1, 103, 4, 104, 8]);
+  });
+
   it("fails closed on short outputs, missing ranges, and invalid buckets", () => {
     const view = sampleRows();
 
@@ -123,6 +155,10 @@ describe("zeno-buffers", () => {
     expect(() =>
       packUintFields(view, 5, STRIDE, [{ offset: OFFSET_ID, kind: "u32" }], new Uint32Array(5)),
     ).toThrow(RangeError);
+    expect(() => createF32PackPlan(STRIDE, [Number.MAX_SAFE_INTEGER])).toThrow(RangeError);
+    expect(() => createUintPackPlan(STRIDE, [{ offset: OFFSET_Z + 1, kind: "u32" }])).toThrow(
+      RangeError,
+    );
   });
 });
 

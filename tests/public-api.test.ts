@@ -9,13 +9,20 @@ describe("public package runtime exports", () => {
   it("keeps the @exornea/zeno-buffers root export surface stable", () => {
     expect(Object.keys(buffers).sort()).toMatchInlineSnapshot(`
       [
+        "createF32PackPlan",
+        "createUintPackPlan",
         "histogramU16Field",
         "histogramU8Field",
         "packF32FieldsWhereU16Eq",
         "packF32FieldsWhereU8Eq",
+        "packF32PlanWhereU16Eq",
+        "packF32PlanWhereU8Eq",
         "packUintFields",
         "packUintFieldsWhereU16Eq",
         "packUintFieldsWhereU8Eq",
+        "packUintPlan",
+        "packUintPlanWhereU16Eq",
+        "packUintPlanWhereU8Eq",
       ]
     `);
   });

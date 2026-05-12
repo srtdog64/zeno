@@ -138,18 +138,20 @@ abstraction.
 Start here:
 
 - `README.md`: user-facing overview, install, quick example, use cases.
-- `docs/getting-started.md`: walkthrough.
-- `docs/api-design.md`: public API layers and failure policy.
-- `docs/layers/*.md`: Layered Projection Model.
-- `docs/performance-comparison.md`: current benchmark witnesses and caveats.
-- `docs/renderer-buffer-case-studies.md`: real public renderer/game metadata
+- `docs/human/getting-started.md`: walkthrough.
+- `docs/reference/api-design.md`: public API layers and failure policy.
+- `docs/reference/layers/*.md`: Layered Projection Model.
+- `docs/human/performance-comparison.md`: current benchmark witnesses and caveats.
+- `docs/human/renderer-buffer-case-studies.md`: real public renderer/game metadata
   surfaces and the `@exornea/zeno-buffers` package boundary.
-- `docs/schema-compatibility.md`: layout compatibility and version routing.
-- `docs/schema-grammar.md` / `docs/schema-grammar.ko.md`: accepted/rejected
+- `docs/human/schema-compatibility.md`: layout compatibility and version routing.
+- `docs/human/schema-grammar.md` / `docs/human/schema-grammar.ko.md`: accepted/rejected
   `.zeno.ts` grammar.
-- `docs/runtime-boundary.md`: why hot runtime paths reject `Result<T, E>`.
-- `docs/frontend-model.md`: AST-first restricted frontend model.
-- `docs/TODO.md`: current candidate work and deferred design.
+- `docs/reference/runtime-boundary.md`: why hot runtime paths reject `Result<T, E>`.
+- `docs/reference/frontend-model.md`: AST-first restricted frontend model.
+- `docs/llm/TODO.md`: current candidate work and deferred design.
+- `docs/llm/expanded-readme.md`: longer pre-shortening README narrative kept
+  for AI-assisted context.
 
 Compiler:
 
@@ -234,12 +236,12 @@ blocks `npm.ps1`.
 
 ## Current release posture
 
-Version family is `2.6.0` in the working tree. v2.6 adds split generated output
-through `zeno-codegen --output=split`, keeping the requested `.view.ts` path as
-a barrel and emitting one generated file per struct in a sibling
-`<name>.views/` directory. v2.5 added the `@exornea/zeno-buffers` package,
-renderer-buffer case studies, renderer-specific examples, and a
-renderer-surface metadata benchmark witness.
+Version family is `2.7.0` in the working tree. v2.7 splits documentation by
+reader type and keeps the longer README narrative in
+`docs/llm/expanded-readme.md` while the root README stays concise. v2.6 added
+split generated output through `zeno-codegen --output=split`, keeping the
+requested `.view.ts` path as a barrel and emitting one generated file per struct
+in a sibling `<name>.views/` directory.
 
 Before publishing, run:
 

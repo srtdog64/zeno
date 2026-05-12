@@ -102,5 +102,5 @@ Do not claim FlatBuffers-style evolution before those witnesses exist.
 
 - Layout IR shape: [schema package](../packages/schema/src/index.ts)
 - Validator invariants: [validator.ts](../packages/compiler/src/validator.ts)
-- Compatibility positioning: [ts-only-positioning.md](ts-only-positioning.md)
+- Compatibility positioning: [ts-only-positioning.md](../reference/ts-only-positioning.md)
 - Dynamic/vtable boundary: [dynamic-layout.md](dynamic-layout.md)

@@ -1,6 +1,13 @@
 import type { FieldLayout, SourceLocation, StructLayout } from "@exornea/zeno-schema";
 import ts from "typescript";
 
+import {
+  generatedFieldClassMemberNames,
+  generatedFieldOffsetConstantName,
+  generatedLayoutClassMemberNames,
+  generatedViewByteLengthConstantName,
+} from "./emitter-generated-names.js";
+
 export interface ProjectionSourceMap {
   version: 3;
   file: string;
@@ -186,13 +193,18 @@ function sourceForVariableName(
   layouts: readonly StructLayout[],
 ): SourceLocation | undefined {
   for (const layout of layouts) {
-    if (layout.source !== undefined && variableName === `${layout.name}ViewByteLength`) {
+    if (
+      layout.source !== undefined &&
+      variableName === generatedViewByteLengthConstantName(layout)
+    ) {
       return layout.source;
     }
 
     for (const field of layout.fields) {
-      const pascalName = toPascalCase(field.name);
-      if (field.source !== undefined && variableName === `${layout.name}View${pascalName}Offset`) {
+      if (
+        field.source !== undefined &&
+        variableName === generatedFieldOffsetConstantName(layout, field)
+      ) {
         return field.source;
       }
     }
@@ -202,44 +214,11 @@ function sourceForVariableName(
 }
 
 function classMemberMatchesField(memberName: string, field: FieldLayout): boolean {
-  const pascalName = toPascalCase(field.name);
-  const names = new Set([
-    field.name,
-    `${field.name}Offset`,
-    `${field.name}View`,
-    `${field.name}Bytes`,
-    `${field.name}Text`,
-    `get${pascalName}`,
-    `set${pascalName}`,
-    `get${pascalName}At`,
-    `set${pascalName}At`,
-    `sum${pascalName}`,
-    `min${pascalName}`,
-    `max${pascalName}`,
-    `count${pascalName}WhereEq`,
-    `findFirst${pascalName}WhereEq`,
-    `write${pascalName}`,
-  ]);
-
-  if (field.kind === "pointer") {
-    names.add(`raw${pascalName}RelativeOffset`);
-    names.add(`${field.name}RelativeOffset`);
-    names.add(`${field.name}TargetOffset`);
-    names.add(`${field.name}Into`);
-    names.add(`getRaw${pascalName}RelativeOffset`);
-    names.add(`get${pascalName}RelativeOffset`);
-    names.add(`set${pascalName}RelativeOffset`);
-    names.add(`getUnchecked${pascalName}TargetOffset`);
-    names.add(`setUnchecked${pascalName}TargetOffset`);
-    names.add(`get${pascalName}TargetOffset`);
-    names.add(`set${pascalName}TargetOffset`);
-  }
-
-  return names.has(memberName);
+  return generatedFieldClassMemberNames(field).has(memberName);
 }
 
 function layoutMemberMatchesLayout(memberName: string): boolean {
-  return memberName === "at" || memberName === "write" || memberName === "writeInto";
+  return generatedLayoutClassMemberNames().has(memberName);
 }
 
 function fieldForMemberName(
@@ -376,10 +355,6 @@ function encodeVlq(value: number): string {
   } while (vlq > 0);
 
   return encoded;
-}
-
-function toPascalCase(name: string): string {
-  return name.slice(0, 1).toUpperCase() + name.slice(1);
 }
 
 function normalizePath(fileName: string): string {

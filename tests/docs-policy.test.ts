@@ -19,8 +19,8 @@ function expectPhrase(documentText: string, phrase: string): void {
 
 describe("documentation policy", () => {
   it("documents the AST-first frontend boundary without promising full TypeChecker semantics", () => {
-    const frontend = readRepoFile("docs/frontend-model.md");
-    const architecture = readRepoFile("docs/architecture.md");
+    const frontend = readRepoFile("docs/reference/frontend-model.md");
+    const architecture = readRepoFile("docs/reference/architecture.md");
 
     expect(frontend).toContain("AST-first over a restricted schema grammar");
     expectPhrase(frontend, "not a full TypeScript semantic type parser");
@@ -31,9 +31,9 @@ describe("documentation policy", () => {
   });
 
   it("rejects Result on runtime hot projection paths", () => {
-    const runtimeBoundary = readRepoFile("docs/runtime-boundary.md");
-    const architecture = readRepoFile("docs/architecture.md");
-    const apiDesign = readRepoFile("docs/api-design.md");
+    const runtimeBoundary = readRepoFile("docs/reference/runtime-boundary.md");
+    const architecture = readRepoFile("docs/reference/architecture.md");
+    const apiDesign = readRepoFile("docs/reference/api-design.md");
 
     for (const documentText of [runtimeBoundary, architecture, apiDesign]) {
       expectPhrase(documentText, "must not return `Result<T, E>`");
@@ -43,8 +43,8 @@ describe("documentation policy", () => {
   });
 
   it("keeps emitter growth forbidden by documentation policy", () => {
-    const documentationRules = readRepoFile("docs/documentation-rules.md");
-    const todo = readRepoFile("docs/TODO.md");
+    const documentationRules = readRepoFile("docs/llm/documentation-rules.md");
+    const todo = readRepoFile("docs/llm/TODO.md");
 
     expect(documentationRules).toContain("`packages/compiler/src/emitter.ts` is an assembly layer");
     expect(todo).toContain("do not grow `packages/compiler/src/emitter.ts`");
@@ -52,10 +52,10 @@ describe("documentation policy", () => {
 
   it("keeps renderer buffer claims dependency-free and separate from WebGL wrappers", () => {
     const readme = readRepoFile("README.md");
-    const todo = readRepoFile("docs/TODO.md");
-    const layers = readRepoFile("docs/layers/README.md");
-    const performance = readRepoFile("docs/performance-comparison.md");
-    const caseStudies = readRepoFile("docs/renderer-buffer-case-studies.md");
+    const todo = readRepoFile("docs/llm/TODO.md");
+    const layers = readRepoFile("docs/reference/layers/README.md");
+    const performance = readRepoFile("docs/human/performance-comparison.md");
+    const caseStudies = readRepoFile("docs/human/renderer-buffer-case-studies.md");
 
     for (const documentText of [readme, todo, layers, performance]) {
       expectPhrase(documentText, "renderer-facing");
@@ -89,12 +89,12 @@ describe("documentation policy", () => {
     expectPhrase(caseStudies, "examples/renderer-grid-buffer");
   });
 
-  it("keeps release and roadmap documents aligned with the current v2.5 surface", () => {
-    const architecture = readRepoFile("docs/architecture.md");
-    const releaseChecklist = readRepoFile("docs/release-checklist.md");
-    const todo = readRepoFile("docs/TODO.md");
+  it("keeps release and roadmap documents aligned with the current v2.7 surface", () => {
+    const architecture = readRepoFile("docs/reference/architecture.md");
+    const releaseChecklist = readRepoFile("docs/reference/release-checklist.md");
+    const todo = readRepoFile("docs/llm/TODO.md");
 
-    expect(architecture).toContain("Current v2.5 status");
+    expect(architecture).toContain("Current v2.7 status");
     expect(architecture).not.toContain("Current v1 status");
     expect(todo).toContain("## Candidate Work");
     expect(todo).not.toContain("## v2.2 Candidate Work");

@@ -302,6 +302,6 @@ Rejected because `.zeno.ts` files are schema-only. Use type-only imports from
 
 - Construct-to-IR mapping: [layout-ir-coarsening.md](layout-ir-coarsening.md)
 - Detailed walkthrough: [getting-started.md](getting-started.md)
-- Schema evolution boundary: [schema-evolution.md](schema-evolution.md)
-- ABI contract: [abi.md](abi.md)
-- Test plan: [TODO.md](TODO.md)
+- Schema evolution boundary: [schema-evolution.md](../reference/schema-evolution.md)
+- ABI contract: [abi.md](../reference/abi.md)
+- Test plan: [TODO.md](../llm/TODO.md)

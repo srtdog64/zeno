@@ -182,5 +182,5 @@ be better for TS-only teams that do not need cross-language schema tooling.
 - Grammar reference: [schema-grammar.md](schema-grammar.md) /
   [schema-grammar.ko.md](schema-grammar.ko.md)
 - Dynamic runtime tests: [tests/runtime/dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)
-- Positioning: [ts-only-positioning.md](ts-only-positioning.md)
+- Positioning: [ts-only-positioning.md](../reference/ts-only-positioning.md)
 - Dynamic layout model: [dynamic-layout.md](dynamic-layout.md)

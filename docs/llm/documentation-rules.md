@@ -56,7 +56,7 @@ When adding generated-code behavior:
   delegation
 - add or update a test that proves the public layer still appears in generated
   output
-- update [layers](layers/00-wire-abi.md) when the behavior changes the public
+- update [layers](../reference/layers/00-wire-abi.md) when the behavior changes the public
   projection model
 
 Witness: the 2.3 emitter split moved static accessors, cursor/projection fields,
@@ -66,7 +66,7 @@ keeps the documented layers connected to generated output.
 ## Witness Case
 
 - Witness: 1,000,000 fixed-stride `UserView` records in
-  [performance-comparison.md](performance-comparison.md).
+  [performance-comparison.md](../human/performance-comparison.md).
 - Asymptotic form: `N` fixed-layout records with stride `S`, backed by one
   contiguous `ArrayBuffer` and projected through generated accessors.
 

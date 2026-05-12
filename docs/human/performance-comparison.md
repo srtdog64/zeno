@@ -532,4 +532,4 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 - Runtime cursor support: [packages/runtime/src/index.ts](../packages/runtime/src/index.ts)
 - Allocation test plan: [test-plan.md](test-plan.md)
 - Measurement hierarchy: [layout-ir-coarsening.md](layout-ir-coarsening.md)
-- Hot-path optimization notes: [hot-path-optimization-notes.md](hot-path-optimization-notes.md)
+- Hot-path optimization notes: [hot-path-optimization-notes.md](../reference/hot-path-optimization-notes.md)

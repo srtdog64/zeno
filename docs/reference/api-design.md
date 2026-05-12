@@ -22,7 +22,7 @@ Runtime code imports generated `.view.ts` classes.
 ## Witness Case
 
 - Witness: 1,000,000 fixed-stride `UserView` records in
-  [performance-comparison.md](performance-comparison.md).
+  [performance-comparison.md](../human/performance-comparison.md).
 - Asymptotic form: `N` records with generated scalar accessors and optional cursor
   reuse over a shared `DataView`.
 
@@ -35,7 +35,7 @@ Current witness result:
 - per-record view creation is about `5x` direct `DataView` for the single-field scan
 
 Methodological note: these numbers are local benchmark witnesses, not universal
-runtime guarantees. See [performance-comparison.md](performance-comparison.md)
+runtime guarantees. See [performance-comparison.md](../human/performance-comparison.md)
 for command, memory, and promotion criterion.
 
 ## API Layers
@@ -298,7 +298,7 @@ Do not promote dynamic field static APIs until:
 
 ## Cross-References
 
-- Current benchmark witness: [performance-comparison.md](performance-comparison.md)
+- Current benchmark witness: [performance-comparison.md](../human/performance-comparison.md)
 - Hot-path optimization candidates: [hot-path-optimization-notes.md](hot-path-optimization-notes.md)
 - TS-only schema convention: [ts-only-positioning.md](ts-only-positioning.md)
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)

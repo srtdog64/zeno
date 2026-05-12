@@ -6,12 +6,12 @@ ABI.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Fixed field order is the v1 ABI | load-bearing | Current generated views rely on compile-time offsets. |
-| Optional fields require metadata | load-bearing | Absence cannot be represented by a fixed inline field without a presence model. |
-| Discriminated unions require a tag ABI | load-bearing | Variant interpretation must be explicit and stable. |
-| TypeScript optional syntax is documentation only | diagnostic | It is familiar syntax, but accepting it without ABI meaning would be unsafe. |
+| Property                                                                          | Status       | Reason                                                                                         |
+| --------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| Fixed field order is the v1 ABI                                                   | load-bearing | Current generated views rely on compile-time offsets.                                          |
+| Optional fields require metadata                                                  | load-bearing | Absence cannot be represented by a fixed inline field without a presence model.                |
+| Discriminated unions require a tag ABI                                            | load-bearing | Variant interpretation must be explicit and stable.                                            |
+| TypeScript optional syntax is documentation only                                  | diagnostic   | It is familiar syntax, but accepting it without ABI meaning would be unsafe.                   |
 | Schema evolution is deferred because Zeno's positioning does not face its drivers | load-bearing | Adding evolution would dilute the v1 thesis to solve problems Zeno's target users do not have. |
 
 ## Why Zeno Defers Schema Evolution
@@ -39,19 +39,19 @@ Avro, and Cap'n Proto because real systems hit three concrete pain points:
 
 For Zeno's target audience these three drivers do not apply:
 
-| Driver | Applies to Zeno? | Reason |
-| --- | --- | --- |
-| Time (long-term persistence) | no | Generated views project transient buffers inside a single process lifetime. Persistent stores like SQLite, IndexedDB schema migrations, or Protobuf are the right tools. |
-| Space (independent deploys) | no | Schemas and views ship in the same TypeScript bundle. Producer and consumer compile from the same `.zeno.ts` source. |
-| Control (uncontrolled consumers) | no | Zeno authors own both the writer and reader. There is no third party reading the binary on a schedule the author cannot break. |
+| Driver                           | Applies to Zeno? | Reason                                                                                                                                                                   |
+| -------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Time (long-term persistence)     | no               | Generated views project transient buffers inside a single process lifetime. Persistent stores like SQLite, IndexedDB schema migrations, or Protobuf are the right tools. |
+| Space (independent deploys)      | no               | Schemas and views ship in the same TypeScript bundle. Producer and consumer compile from the same `.zeno.ts` source.                                                     |
+| Control (uncontrolled consumers) | no               | Zeno authors own both the writer and reader. There is no third party reading the binary on a schedule the author cannot break.                                           |
 
 The practical test:
 
-| Question | Zeno answer |
-| --- | --- |
-| Do producer and consumer deploy atomically? | yes |
-| Can changing the schema regenerate both writer and reader together? | yes |
-| Does the binary outlive the deploy that wrote it? | no |
+| Question                                                            | Zeno answer |
+| ------------------------------------------------------------------- | ----------- |
+| Do producer and consumer deploy atomically?                         | yes         |
+| Can changing the schema regenerate both writer and reader together? | yes         |
+| Does the binary outlive the deploy that wrote it?                   | no          |
 
 When the answers are `yes / yes / no`, schema evolution solves no current Zeno
 problem. The schema will still change, but compatibility windows have length
@@ -84,15 +84,15 @@ both sides because there is only one side.
 
 ### Fits Zeno (event-style, ephemeral, in-flight)
 
-| Workload | Why Zeno fits |
-| --- | --- |
-| WebGL / canvas instance streaming | Each frame is rebuilt; the buffer dies at end of frame. |
-| Worker ↔ main thread IPC over `SharedArrayBuffer` | Both sides ship in the same bundle. |
-| Real-time analytics or telemetry pipelines | Records flow through and are aggregated, not stored. |
-| Network packets where each request is self-contained | Wire format dies with the request. |
-| In-memory caches and indexes | Rebuilt on restart from the source of truth. |
-| Inter-process channels in the same product | Producer and consumer deploy together. |
-| Game session state during a single match | Discarded when the match ends. |
+| Workload                                             | Why Zeno fits                                           |
+| ---------------------------------------------------- | ------------------------------------------------------- |
+| WebGL / canvas instance streaming                    | Each frame is rebuilt; the buffer dies at end of frame. |
+| Worker ↔ main thread IPC over `SharedArrayBuffer`    | Both sides ship in the same bundle.                     |
+| Real-time analytics or telemetry pipelines           | Records flow through and are aggregated, not stored.    |
+| Network packets where each request is self-contained | Wire format dies with the request.                      |
+| In-memory caches and indexes                         | Rebuilt on restart from the source of truth.            |
+| Inter-process channels in the same product           | Producer and consumer deploy together.                  |
+| Game session state during a single match             | Discarded when the match ends.                          |
 
 These are the workloads Zeno is built for. They share a property: **the
 producer and consumer are the same code, running at the same moment, on data
@@ -102,16 +102,16 @@ ships in one deploy because nothing else has to be aware of it.
 
 ### Does Not Fit Zeno (persistent, long-lived, out-of-band)
 
-| Workload | Why Zeno is the wrong tool |
-| --- | --- |
-| Database row formats | Rows persist across schema changes for years. |
-| User-saved files (`.docx`, `.psd`, save games) | Files written by v1 are reopened by v10. |
-| Long-term audit logs (banking, compliance) | Old records must remain readable indefinitely. |
-| Public APIs for external consumers | The author cannot force consumer upgrade. |
-| Cross-deploy server↔client wire formats | Rolling deploys mean version skew is normal. |
-| Plugin / extension binary formats | Plugins ship on a different schedule than the host. |
-| IoT firmware with non-atomic update | Old firmware in the field reads new central data. |
-| Long-running game **persisted state** (player saves, progression DB) | Save files outlive the deploy that wrote them. |
+| Workload                                                             | Why Zeno is the wrong tool                          |
+| -------------------------------------------------------------------- | --------------------------------------------------- |
+| Database row formats                                                 | Rows persist across schema changes for years.       |
+| User-saved files (`.docx`, `.psd`, save games)                       | Files written by v1 are reopened by v10.            |
+| Long-term audit logs (banking, compliance)                           | Old records must remain readable indefinitely.      |
+| Public APIs for external consumers                                   | The author cannot force consumer upgrade.           |
+| Cross-deploy server↔client wire formats                              | Rolling deploys mean version skew is normal.        |
+| Plugin / extension binary formats                                    | Plugins ship on a different schedule than the host. |
+| IoT firmware with non-atomic update                                  | Old firmware in the field reads new central data.   |
+| Long-running game **persisted state** (player saves, progression DB) | Save files outlive the deploy that wrote them.      |
 
 For these, reach for FlatBuffers, Cap'n Proto, Protobuf, or a real database
 with migration tooling. Zeno is not trying to compete here.

@@ -7,13 +7,13 @@ IDL file.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| TypeScript-only scope | load-bearing | Cross-language support would change the product and compiler design. |
-| `.zeno.ts` schema-only convention | load-bearing | It keeps schema diffs and documentation cleaner than arbitrary interfaces spread through app code. |
-| `@exornea/zeno-types` marker imports | load-bearing | ABI facts must be explicit in TypeScript without runtime schema objects. |
-| FlatBuffers comparison | diagnostic | It helps explain tradeoffs, but Zeno should not be judged as a universal FlatBuffers replacement. |
-| Runtime has no external dependencies | load-bearing | Hot-path projection should stay small; internal type-only package references are acceptable. |
+| Property                             | Status       | Reason                                                                                             |
+| ------------------------------------ | ------------ | -------------------------------------------------------------------------------------------------- |
+| TypeScript-only scope                | load-bearing | Cross-language support would change the product and compiler design.                               |
+| `.zeno.ts` schema-only convention    | load-bearing | It keeps schema diffs and documentation cleaner than arbitrary interfaces spread through app code. |
+| `@exornea/zeno-types` marker imports | load-bearing | ABI facts must be explicit in TypeScript without runtime schema objects.                           |
+| FlatBuffers comparison               | diagnostic   | It helps explain tradeoffs, but Zeno should not be judged as a universal FlatBuffers replacement.  |
+| Runtime has no external dependencies | load-bearing | Hot-path projection should stay small; internal type-only package references are acceptable.       |
 
 ## Positioning
 
@@ -87,11 +87,11 @@ syntax, editor support, and generated hot-path accessors.
 
 `.zeno.ts` is promoted from project convention to compiler rule when:
 
-| Condition | Status | Witness |
-| --- | --- | --- |
-| Codegen rejects value exports from schema files | load-bearing | `tests/compiler/fixtures/schema-hygiene.ts` |
-| Codegen rejects runtime imports from schema files | load-bearing | `tests/compiler/fixtures/schema-hygiene.ts` |
-| Generated docs or IR snapshots make schema review as direct as reading `.fbs` | candidate | `tests/compiler/snapshot.test.ts` |
+| Condition                                                                     | Status       | Witness                                     |
+| ----------------------------------------------------------------------------- | ------------ | ------------------------------------------- |
+| Codegen rejects value exports from schema files                               | load-bearing | `tests/compiler/fixtures/schema-hygiene.ts` |
+| Codegen rejects runtime imports from schema files                             | load-bearing | `tests/compiler/fixtures/schema-hygiene.ts` |
+| Generated docs or IR snapshots make schema review as direct as reading `.fbs` | candidate    | `tests/compiler/snapshot.test.ts`           |
 
 Do not claim stronger schema versioning than FlatBuffers until Zeno has layout
 hashes and schema diff tooling.
@@ -99,6 +99,6 @@ hashes and schema diff tooling.
 ## Cross-References
 
 - API split: [api-design.md](api-design.md)
-- Benchmark witness: [performance-comparison.md](performance-comparison.md)
+- Benchmark witness: [performance-comparison.md](../human/performance-comparison.md)
 - Measurement hierarchy: [layout-ir-coarsening.md](layout-ir-coarsening.md)
 - Codegen CLI: [packages/compiler/bin/zeno-codegen.mjs](../packages/compiler/bin/zeno-codegen.mjs)

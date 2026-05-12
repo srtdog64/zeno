@@ -24,8 +24,8 @@
 
 ## Schema authoring
 
-Grammar references: [schema-grammar.md](schema-grammar.md) and
-[schema-grammar.ko.md](schema-grammar.ko.md). Any new accepted or rejected
+Grammar references: [schema-grammar.md](../human/schema-grammar.md) and
+[schema-grammar.ko.md](../human/schema-grammar.ko.md). Any new accepted or rejected
 schema construct must update both grammar documents before implementation is
 considered complete.
 
@@ -209,14 +209,17 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.6.0` after release review if split generated output remains the
-  right release boundary
+- publish `2.7.0` after release review if the docs split and LLM README archive
+  remain the right release boundary
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,
   `@exornea/zeno-buffers`, then `@exornea/zeno-compiler`
-- use [release-checklist.md](release-checklist.md) as the release gate before
+- use [release-checklist.md](../reference/release-checklist.md) as the release gate before
   tagging or publishing future versions
+- keep human-facing docs short and route long maintainer context through
+  [expanded-readme.md](expanded-readme.md), [documentation-rules.md](documentation-rules.md),
+  and reference docs instead of growing the root README again
 
 ## Technical Debt Policy
 
@@ -323,7 +326,7 @@ Status: satisfied as a diagnostic release gate.
   `count*WhereEq`, and `findFirst*WhereEq` are schema-aware scalar table scans;
   `@exornea/zeno-buffers` is the generic pack/histogram layer for caller-owned
   typed-array outputs. Do not let both surfaces grow duplicate scan APIs.
-- keep [renderer-buffer-case-studies.md](renderer-buffer-case-studies.md) as
+- keep [renderer-buffer-case-studies.md](../human/renderer-buffer-case-studies.md) as
   the evidence file for `@exornea/zeno-buffers`. Add real public renderer
   surfaces there first, then only promote repeated patterns into code.
 - renderer vector upload path: keep the
@@ -377,7 +380,7 @@ Status: satisfied as a diagnostic release gate.
 
 - keep `--scan-kernels=none|sum|basic|full` documented when scan kernel output
   changes
-- keep [layers](layers/00-wire-abi.md) and `tests/layer-model.test.ts` in sync
+- keep [layers](../reference/layers/00-wire-abi.md) and `tests/layer-model.test.ts` in sync
   when moving public API between layers
 - do not grow `packages/compiler/src/emitter.ts` with new feature emission;
   add or extend a layer-specific emitter file and keep `emitter.ts` as assembly
@@ -385,12 +388,12 @@ Status: satisfied as a diagnostic release gate.
 - keep `bench:check` in `release:check`; benchmark workloads are part of the
   publish gate, while exact timing thresholds stay diagnostic because CI
   hardware noise is high
-- keep [performance-comparison.md](performance-comparison.md) synced when
+- keep [performance-comparison.md](../human/performance-comparison.md) synced when
   benchmark code or generated hot-path code changes
-- keep [schema-grammar.md](schema-grammar.md) and
-  [schema-grammar.ko.md](schema-grammar.ko.md) in sync with every new accepted
+- keep [schema-grammar.md](../human/schema-grammar.md) and
+  [schema-grammar.ko.md](../human/schema-grammar.ko.md) in sync with every new accepted
   or rejected schema construct
-- keep [frontend-model.md](frontend-model.md) synchronized with analyzer and
+- keep [frontend-model.md](../reference/frontend-model.md) synchronized with analyzer and
   schema grammar changes. Zeno is AST-first over a restricted schema grammar,
   not a full TypeScript semantic type parser; this is partly a portability
   choice because future frontends can lower another language or IDL into the
@@ -408,7 +411,7 @@ Status: satisfied as a diagnostic release gate.
   upload APIs when alignment and endian conditions hold; array-of-struct schemas
   need explicit pack kernels and should be described as batching, not zero-copy
   upload.
-- keep [runtime-boundary.md](runtime-boundary.md) synchronized with runtime API
+- keep [runtime-boundary.md](../reference/runtime-boundary.md) synchronized with runtime API
   changes. Hot projection APIs may throw `RangeError`, while untrusted input
   boundaries should use checked/try validation APIs before entering hot loops.
 - explicitly reject `Result<T, E>` on runtime hot projection paths. `Result`
@@ -433,9 +436,9 @@ Status: satisfied as a diagnostic release gate.
   grammar documents.
 - optional fields are rejected by the compiler until a schema-evolution ABI
   exists.
-- [schema-evolution.md](schema-evolution.md) records the optional/union design
+- [schema-evolution.md](../reference/schema-evolution.md) records the optional/union design
   boundary.
-- [release-checklist.md](release-checklist.md) records scoped public publish
+- [release-checklist.md](../reference/release-checklist.md) records scoped public publish
   order and dry-run gates.
 
 ## Completed in 1.4
@@ -572,12 +575,12 @@ Status: satisfied as a diagnostic release gate.
 
 ## Completed in 2.4
 
-- [frontend-model.md](frontend-model.md) records the TypeScript frontend as
+- [frontend-model.md](../reference/frontend-model.md) records the TypeScript frontend as
   AST-first over a restricted schema grammar, not a full TypeScript semantic
   parser.
-- [runtime-boundary.md](runtime-boundary.md) records that runtime hot projection
+- [runtime-boundary.md](../reference/runtime-boundary.md) records that runtime hot projection
   APIs may throw `RangeError` and must not return `Result<T, E>`.
-- [architecture.md](architecture.md) now describes the compiler frontend as a
+- [architecture.md](../reference/architecture.md) now describes the compiler frontend as a
   restricted schema grammar lowered to Layout IR.
 - `tests/docs-policy.test.ts` locks the frontend, runtime boundary, and emitter
   assembly-layer documentation policies.
@@ -648,7 +651,7 @@ Status: satisfied as a diagnostic release gate.
   explicit whenever shared-memory publication or live descriptor mutation is
   discussed
 - keep the WebGL instance demo benchmark in
-  [performance-comparison.md](performance-comparison.md), not only as a TODO;
+  [performance-comparison.md](../human/performance-comparison.md), not only as a TODO;
   rerun it when the demo schema or render cap changes
 - keep the HexGL metadata fixture pinned and metadata-only; rerun
   `scripts/update-real-game-metadata-fixture.mjs` only when intentionally

@@ -131,7 +131,7 @@ This is an engineering witness, not a universal performance guarantee. The
 strong path is fixed-layout scalar scanning and renderer-facing buffer packing,
 not arbitrary object serialization.
 
-See [docs/performance-comparison.md](docs/performance-comparison.md) for the
+See [docs/human/performance-comparison.md](docs/human/performance-comparison.md) for the
 full benchmark methodology, p95/p99/std reporting, retained-memory notes, and
 FlatBuffers/JSON comparison witnesses.
 
@@ -140,16 +140,16 @@ FlatBuffers/JSON comparison witnesses.
 Zeno is a layered projection system. Lower layers stay exposed instead of being
 hidden behind one high-level serializer.
 
-| Layer | Responsibility                                                      |
-| ----- | ------------------------------------------------------------------- |
-| 0     | [Wire ABI / Layout IR](docs/layers/00-wire-abi.md)                  |
-| 1     | [Raw offsets and constants](docs/layers/01-raw-offsets.md)          |
-| 2     | [Static scalar accessors](docs/layers/02-static-accessors.md)       |
-| 3     | [Generated scan kernels](docs/layers/03-scan-kernels.md)            |
-| 4     | [Cursor projection views](docs/layers/04-cursor-views.md)           |
-| 5     | [Dynamic text/bytes/vector tail](docs/layers/05-dynamic-tail.md)    |
-| 6     | [Shared-memory writer/publication](docs/layers/06-shared-memory.md) |
-| 7     | [Manifest / inspect / diff tooling](docs/layers/07-layout-ops.md)   |
+| Layer | Responsibility                                                                |
+| ----- | ----------------------------------------------------------------------------- |
+| 0     | [Wire ABI / Layout IR](docs/reference/layers/00-wire-abi.md)                  |
+| 1     | [Raw offsets and constants](docs/reference/layers/01-raw-offsets.md)          |
+| 2     | [Static scalar accessors](docs/reference/layers/02-static-accessors.md)       |
+| 3     | [Generated scan kernels](docs/reference/layers/03-scan-kernels.md)            |
+| 4     | [Cursor projection views](docs/reference/layers/04-cursor-views.md)           |
+| 5     | [Dynamic text/bytes/vector tail](docs/reference/layers/05-dynamic-tail.md)    |
+| 6     | [Shared-memory writer/publication](docs/reference/layers/06-shared-memory.md) |
+| 7     | [Manifest / inspect / diff tooling](docs/reference/layers/07-layout-ops.md)   |
 
 Use the lowest layer that fits the job:
 
@@ -209,20 +209,24 @@ schema may be better choices there.
 Start here:
 
 - [llms.txt](llms.txt): compact repository map for LLM-assisted reading
-- [docs/getting-started.md](docs/getting-started.md): longer walkthrough
-- [docs/schema-grammar.md](docs/schema-grammar.md) /
-  [docs/schema-grammar.ko.md](docs/schema-grammar.ko.md): supported schema
+- [docs/human/README.md](docs/human/README.md): short human-facing product and
+  fit guide
+- [docs/llm/README.md](docs/llm/README.md): compact guardrails for AI-assisted
+  repository work
+- [docs/human/getting-started.md](docs/human/getting-started.md): longer walkthrough
+- [docs/human/schema-grammar.md](docs/human/schema-grammar.md) /
+  [docs/human/schema-grammar.ko.md](docs/human/schema-grammar.ko.md): supported schema
   syntax
-- [docs/layers/README.md](docs/layers/README.md): full layered projection model
-- [docs/abi.md](docs/abi.md): scalar, `Span32`, `Vector32`, `pointer32`, and
+- [docs/reference/layers/README.md](docs/reference/layers/README.md): full layered projection model
+- [docs/reference/abi.md](docs/reference/abi.md): scalar, `Span32`, `Vector32`, `pointer32`, and
   optional frame ABI
-- [docs/api-design.md](docs/api-design.md): generated API and scan kernels
-- [docs/runtime-boundary.md](docs/runtime-boundary.md): hot-path error policy
-- [docs/schema-compatibility.md](docs/schema-compatibility.md): explicit
+- [docs/reference/api-design.md](docs/reference/api-design.md): generated API and scan kernels
+- [docs/reference/runtime-boundary.md](docs/reference/runtime-boundary.md): hot-path error policy
+- [docs/human/schema-compatibility.md](docs/human/schema-compatibility.md): explicit
   versioning instead of automatic schema evolution
-- [docs/renderer-buffer-case-studies.md](docs/renderer-buffer-case-studies.md):
+- [docs/human/renderer-buffer-case-studies.md](docs/human/renderer-buffer-case-studies.md):
   public WebGL/renderer repository evidence
-- [docs/release-checklist.md](docs/release-checklist.md): release gate
+- [docs/reference/release-checklist.md](docs/reference/release-checklist.md): release gate
 
 Examples:
 

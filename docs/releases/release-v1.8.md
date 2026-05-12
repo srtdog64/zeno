@@ -46,7 +46,7 @@
 - Shared writer tests: [dynamic-layout.test.ts](../tests/runtime/dynamic-layout.test.ts)
 - Source map tests: [source-map.test.ts](../tests/compiler/source-map.test.ts)
 - Public API snapshot: [public-api.test.ts](../tests/public-api.test.ts)
-- WebGL benchmark notes: [performance-comparison.md](performance-comparison.md)
+- WebGL benchmark notes: [performance-comparison.md](../human/performance-comparison.md)
 - Dynamic benchmark: `npm run bench:dynamic`
 - Release gate: `npm run release:check`
 

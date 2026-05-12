@@ -2,14 +2,14 @@
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Fixed-layout projection compiler | load-bearing | This is the core Zeno identity and is covered by analyzer, snapshot, runtime, and example witnesses. |
-| Static scalar hot path | load-bearing | Benchmarks keep it near direct `DataView` for the supported fixed-layout workloads. |
-| Dynamic descriptors | candidate | `Span32` and `Vector32` are implemented and tested, but performance promotion still needs separate dynamic workloads. |
-| Pointer descriptors | candidate | `pointer32` supports explicit recursive references with checked dereference APIs, but graph serialization is not implemented. |
-| Runtime ABI layer | load-bearing | Runtime internals are split into range, scalar, descriptor32, fixed, pointer32, view, vector, and writer layers. |
-| Package surface | load-bearing | Root `exports` are closed and the packed consumer smoke test verifies codegen/import/runtime behavior. |
+| Property                         | Status       | Reason                                                                                                                        |
+| -------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Fixed-layout projection compiler | load-bearing | This is the core Zeno identity and is covered by analyzer, snapshot, runtime, and example witnesses.                          |
+| Static scalar hot path           | load-bearing | Benchmarks keep it near direct `DataView` for the supported fixed-layout workloads.                                           |
+| Dynamic descriptors              | candidate    | `Span32` and `Vector32` are implemented and tested, but performance promotion still needs separate dynamic workloads.         |
+| Pointer descriptors              | candidate    | `pointer32` supports explicit recursive references with checked dereference APIs, but graph serialization is not implemented. |
+| Runtime ABI layer                | load-bearing | Runtime internals are split into range, scalar, descriptor32, fixed, pointer32, view, vector, and writer layers.              |
+| Package surface                  | load-bearing | Root `exports` are closed and the packed consumer smoke test verifies codegen/import/runtime behavior.                        |
 
 ## Witness Case
 
@@ -51,9 +51,9 @@ universal runtime guarantee for all V8 versions, schemas, or machines.
 
 - [README.md](../README.md)
 - [CHANGELOG.md](../CHANGELOG.md)
-- [api-design.md](api-design.md)
+- [api-design.md](../reference/api-design.md)
 - [api-stability.md](api-stability.md)
-- [abi.md](abi.md)
-- [performance-comparison.md](performance-comparison.md)
+- [abi.md](../reference/abi.md)
+- [performance-comparison.md](../human/performance-comparison.md)
 - [test-plan.md](test-plan.md)
-- [TODO.md](TODO.md)
+- [TODO.md](../llm/TODO.md)

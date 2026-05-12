@@ -83,9 +83,9 @@ recovering a failed release, or testing npm account permissions.
   package.
 - Confirm `CHANGELOG.md` has an entry for the package version.
 - Confirm README install examples match the package names being published.
-- Confirm `docs/performance-comparison.md` records the latest benchmark witness
+- Confirm `docs/human/performance-comparison.md` records the latest benchmark witness
   if the release announcement mentions speed.
-- Confirm `docs/frontend-model.md` and `docs/runtime-boundary.md` still match
+- Confirm `docs/reference/frontend-model.md` and `docs/reference/runtime-boundary.md` still match
   analyzer/runtime policy when frontend or hot-path APIs changed.
 
 ## Do Not Publish When

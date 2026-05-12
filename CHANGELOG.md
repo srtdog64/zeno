@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.7.0
+
+Status: documentation split and maintainer-context release.
+
+- Split documentation into reader-specific directories:
+  `docs/human`, `docs/llm`, `docs/reference`, and `docs/releases`.
+- Kept the root README concise while preserving the longer pre-shortening README
+  narrative in `docs/llm/expanded-readme.md` for AI-assisted repository work.
+- Updated documentation policy and layer-model tests to use the new docs paths.
+- Simplified formatting scripts so docs are checked by directory group instead
+  of a long list of individual root files.
+- Package manifests and workspace lockfile are aligned at `2.7.0`.
+
 ## 2.6.0
 
 Status: split generated output release.

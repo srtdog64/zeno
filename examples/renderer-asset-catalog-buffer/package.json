@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-example-renderer-asset-catalog-buffer",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,8 +9,8 @@
     "start": "node ./dist/main.js"
   },
   "dependencies": {
-    "@exornea/zeno-compiler": "2.6.0",
-    "@exornea/zeno-runtime": "2.6.0",
-    "@exornea/zeno-types": "2.6.0"
+    "@exornea/zeno-compiler": "2.7.0",
+    "@exornea/zeno-runtime": "2.7.0",
+    "@exornea/zeno-types": "2.7.0"
   }
 }

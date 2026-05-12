@@ -200,7 +200,7 @@ Use:
 
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)
 - API design: [api-design.md](api-design.md)
-- Performance comparison: [performance-comparison.md](performance-comparison.md)
+- Performance comparison: [performance-comparison.md](../human/performance-comparison.md)
 - Runtime helpers: [packages/runtime/src/index.ts](../packages/runtime/src/index.ts)
 - Emitter option: [packages/compiler/src/emitter.ts](../packages/compiler/src/emitter.ts)
 - Codegen CLI: [packages/compiler/bin/zeno-codegen.mjs](../packages/compiler/bin/zeno-codegen.mjs)

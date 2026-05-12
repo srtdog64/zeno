@@ -6,12 +6,12 @@ views, and writers.
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Scalar width table | load-bearing | Generated offsets and runtime reads must agree on byte length. |
-| Descriptor codecs | load-bearing | `Span32`, `Vector32`, and `pointer32` define how dynamic data is addressed. |
-| Relative offsets | load-bearing | Buffers must remain relocatable inside a `DataView` without process-local pointers. |
-| Runtime bounds checks | load-bearing | Malformed buffers must fail at the memory boundary instead of silently reading unrelated bytes. |
+| Property                  | Status       | Reason                                                                                                     |
+| ------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| Scalar width table        | load-bearing | Generated offsets and runtime reads must agree on byte length.                                             |
+| Descriptor codecs         | load-bearing | `Span32`, `Vector32`, and `pointer32` define how dynamic data is addressed.                                |
+| Relative offsets          | load-bearing | Buffers must remain relocatable inside a `DataView` without process-local pointers.                        |
+| Runtime bounds checks     | load-bearing | Malformed buffers must fail at the memory boundary instead of silently reading unrelated bytes.            |
 | Text encode/decode codecs | load-bearing | `z.utf8` and `z.ascii` are distinct ABI promises even though string allocation is not the scalar hot path. |
 
 ## Runtime Source Layers
@@ -82,13 +82,13 @@ should import from those narrow layers directly; `abi.ts`, `views.ts`, and
 
 ## Scalar ABI
 
-| Kind | Byte Length | JS Value |
-| --- | ---: | --- |
-| `i8`, `u8`, `bool` | 1 | `number`, `boolean` |
-| `i16`, `u16` | 2 | `number` |
-| `i32`, `u32`, `f32` | 4 | `number` |
-| `i64`, `u64` | 8 | `bigint` |
-| `f64` | 8 | `number` |
+| Kind                | Byte Length | JS Value            |
+| ------------------- | ----------: | ------------------- |
+| `i8`, `u8`, `bool`  |           1 | `number`, `boolean` |
+| `i16`, `u16`        |           2 | `number`            |
+| `i32`, `u32`, `f32` |           4 | `number`            |
+| `i64`, `u64`        |           8 | `bigint`            |
+| `f64`               |           8 | `number`            |
 
 Multi-byte reads and writes use the struct's emitted `littleEndian` default.
 Generated code can emit big-endian defaults, but the ABI shape is otherwise the
@@ -227,5 +227,5 @@ Do not change ABI constants or descriptor shapes unless:
 - Layout IR changes in [schema](../packages/schema/src/index.ts),
 - compiler lowering and emitter snapshots are updated,
 - runtime malformed-buffer tests cover the new shape,
-- [performance-comparison.md](performance-comparison.md) is updated when hot
+- [performance-comparison.md](../human/performance-comparison.md) is updated when hot
   path behavior changes.

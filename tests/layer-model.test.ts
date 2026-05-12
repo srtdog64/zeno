@@ -15,6 +15,7 @@ import {
 import * as runtime from "../packages/runtime/src/index.js";
 
 const rootDir = path.resolve(fileURLToPath(import.meta.url), "..", "..");
+const layerDocsDir = path.join(rootDir, "docs/reference/layers");
 const layerDocs = [
   "00-wire-abi.md",
   "01-raw-offsets.md",
@@ -40,11 +41,11 @@ describe("layered projection model", () => {
   it("keeps every documented layer present and linked from README", () => {
     const readme = readFileSync(path.join(rootDir, "README.md"), "utf8");
 
-    expect(existsSync(path.join(rootDir, "docs/layers/README.md"))).toBe(true);
-    expect(readme).toContain("docs/layers/README.md");
+    expect(existsSync(path.join(rootDir, "docs/reference/layers/README.md"))).toBe(true);
+    expect(readme).toContain("docs/reference/layers/README.md");
 
     for (const fileName of layerDocs) {
-      const relativePath = `docs/layers/${fileName}`;
+      const relativePath = `docs/reference/layers/${fileName}`;
       expect(existsSync(path.join(rootDir, relativePath))).toBe(true);
       expect(readme).toContain(relativePath);
     }
@@ -52,7 +53,7 @@ describe("layered projection model", () => {
 
   it("keeps layer docs in the same reviewable shape", () => {
     for (const fileName of layerDocs) {
-      const document = readFileSync(path.join(rootDir, "docs/layers", fileName), "utf8");
+      const document = readFileSync(path.join(layerDocsDir, fileName), "utf8");
 
       for (const section of requiredLayerSections) {
         expect(document).toContain(section);
@@ -61,8 +62,11 @@ describe("layered projection model", () => {
   });
 
   it("keeps renderer experiments outside the Zeno core layer stack", () => {
-    const overview = readFileSync(path.join(rootDir, "docs/layers/README.md"), "utf8");
-    const scanLayer = readFileSync(path.join(rootDir, "docs/layers/03-scan-kernels.md"), "utf8");
+    const overview = readFileSync(path.join(rootDir, "docs/reference/layers/README.md"), "utf8");
+    const scanLayer = readFileSync(
+      path.join(rootDir, "docs/reference/layers/03-scan-kernels.md"),
+      "utf8",
+    );
 
     expect(overview).toContain("Renderer examples are witnesses");
     expect(overview).toContain("not a renderer framework");

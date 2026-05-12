@@ -2,12 +2,12 @@
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| Raw record ABI compatibility | load-bearing | v1.1 must not add mandatory bytes to generated records. |
-| Optional frame header | load-bearing | File and network boundaries can now identify Zeno payloads without changing raw record projection. |
-| Source-file analyzer API | load-bearing | CLI codegen no longer needs a fake `ts.Program` argument. |
-| Legacy analyzer API | diagnostic | `analyzeProjectionFile(program, sourceFile)` remains as a compatibility wrapper. |
+| Property                     | Status       | Reason                                                                                             |
+| ---------------------------- | ------------ | -------------------------------------------------------------------------------------------------- |
+| Raw record ABI compatibility | load-bearing | v1.1 must not add mandatory bytes to generated records.                                            |
+| Optional frame header        | load-bearing | File and network boundaries can now identify Zeno payloads without changing raw record projection. |
+| Source-file analyzer API     | load-bearing | CLI codegen no longer needs a fake `ts.Program` argument.                                          |
+| Legacy analyzer API          | diagnostic   | `analyzeProjectionFile(program, sourceFile)` remains as a compatibility wrapper.                   |
 
 ## Stable V1.1 Additions
 
@@ -28,7 +28,7 @@
 
 - Frame helper tests: [frame.test.ts](../tests/runtime/frame.test.ts)
 - Public API snapshot: [public-api.test.ts](../tests/public-api.test.ts)
-- ABI contract: [abi.md](abi.md)
+- ABI contract: [abi.md](../reference/abi.md)
 - Release gate: `npm run release:check`
 
 ## Methodological Note

@@ -2,13 +2,13 @@
 
 ## Claim Status
 
-| Property | Status | Reason |
-| --- | --- | --- |
-| TS-only schema authoring | load-bearing | This is Zeno's product boundary and differentiator. |
-| Generated view API | load-bearing | Consumers use generated `.view.ts` classes as the runtime API. |
-| Runtime ABI descriptors | load-bearing | Scalar, `Span32`, `Vector32`, and `pointer32` layouts are the wire contract. |
-| Package root imports | load-bearing | Root imports are verified by consumer smoke; subpath imports stay closed. |
-| Schema evolution | diagnostic | v1 documents breaking-change rules but does not implement vtable compatibility. |
+| Property                 | Status       | Reason                                                                          |
+| ------------------------ | ------------ | ------------------------------------------------------------------------------- |
+| TS-only schema authoring | load-bearing | This is Zeno's product boundary and differentiator.                             |
+| Generated view API       | load-bearing | Consumers use generated `.view.ts` classes as the runtime API.                  |
+| Runtime ABI descriptors  | load-bearing | Scalar, `Span32`, `Vector32`, and `pointer32` layouts are the wire contract.    |
+| Package root imports     | load-bearing | Root imports are verified by consumer smoke; subpath imports stay closed.       |
+| Schema evolution         | diagnostic   | v1 documents breaking-change rules but does not implement vtable compatibility. |
 
 ## Stable V1 Surface
 
@@ -46,12 +46,12 @@
 - Packed consumer project: [consumer-smoke.mjs](../scripts/consumer-smoke.mjs)
 - Packed CLI JSON diagnostics: [consumer-smoke.mjs](../scripts/consumer-smoke.mjs)
 - API stability: [api-stability.md](api-stability.md)
-- Schema compatibility: [schema-compatibility.md](schema-compatibility.md)
-- ABI contract: [abi.md](abi.md)
-- Performance witness: [performance-comparison.md](performance-comparison.md)
+- Schema compatibility: [schema-compatibility.md](../human/schema-compatibility.md)
+- ABI contract: [abi.md](../reference/abi.md)
+- Performance witness: [performance-comparison.md](../human/performance-comparison.md)
 
 ## Methodological Note
 
 This is a v1 stability claim for the TypeScript package and ABI contract, not a
 claim that every future binary schema change is compatible. Schema compatibility
-is governed by [schema-compatibility.md](schema-compatibility.md).
+is governed by [schema-compatibility.md](../human/schema-compatibility.md).

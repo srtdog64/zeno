@@ -1,0 +1,529 @@
+# Zeno Expanded README
+
+This file preserves the longer README narrative from before the root
+`README.md` was shortened into the current eight-section human entry point. It
+is kept for LLM-assisted work and maintainer context, not as the primary public
+README.
+
+---
+
+# Zeno
+
+TypeScript-only zero-copy binary projection compiler without IDL overhead.
+
+Zeno turns schema-only TypeScript interfaces into generated `DataView` view
+classes. It is for TS-only systems that want FlatBuffers-like binary projection
+without maintaining a separate `.fbs`/IDL file or cross-language codegen flow.
+
+```txt
+.zeno.ts interfaces -> Layout IR -> generated DataView views
+```
+
+The practical reason to use Zeno is layout ownership. Buffer-heavy TypeScript
+apps already pass around `ArrayBuffer`, `DataView`, `Float32Array`, and
+`Uint32Array` values, especially in renderer, worker, and Electron pipelines.
+Without a layout layer, byte offsets, strides, command words, and typed-array
+packing rules drift across files. JSON keeps the code easy but pays parse,
+allocation, and object materialization costs. Handwritten typed-array code keeps
+the hot path fast but loses names, reviewable layout, manifests, and diffs.
+
+Zeno sits between those extremes: it keeps the underlying bytes visible while
+making the layout named, generated, inspectable, and testable.
+
+## Best Fit
+
+Zeno is strongest when one TypeScript codebase owns both the writer and reader
+and needs to scan many fixed-layout records without materializing objects.
+
+Use it when:
+
+- producer and consumer ship together
+- records are scanned in large batches
+- JSON object materialization is the bottleneck
+- named `DataView` offsets are needed
+- cross-language schema evolution is not required
+
+Good fits:
+
+- renderer-facing 3D/GPU buffer data and browser-side binary assets
+- game/editor asset tables such as item stats, tiles, skills, nodes, and edges
+- telemetry or analytics rows with a stable fixed schema
+- worker/shared-memory pipelines where JSON serialization is the bottleneck
+
+Poor fits:
+
+- cross-language protocols
+- public network contracts
+- long-lived storage formats that require schema evolution
+- arbitrary nested object serialization
+- security-critical untrusted binary parsing
+
+## Why
+
+Use Zeno when:
+
+- TypeScript is already your schema language.
+- You want compact binary records in `ArrayBuffer`.
+- You want named generated accessors instead of handwritten byte offsets.
+- You need fast read-mostly indexes, graph metadata, telemetry rows, or browser
+  side binary assets.
+- You want browser workers to read `SharedArrayBuffer`-backed arena data without
+  JSON serialization or object materialization.
+- Cross-language codegen is not required.
+- You need one place to own binary layout decisions before data is scanned,
+  packed into renderer-facing typed arrays, or shared between workers.
+
+Do not use Zeno when the schema is a cross-language contract. FlatBuffers,
+Cap'n Proto, protobuf, or MessagePack are better fits there.
+
+## Zeno vs Other Formats
+
+| Need                                  | Zeno | Better fit                                                |
+| ------------------------------------- | ---- | --------------------------------------------------------- |
+| TS-only fixed-layout hot scans        | yes  | handwritten `DataView` when schema codegen is unnecessary |
+| 3D/GPU/game/worker binary projection  | yes  | custom typed arrays for very small schemas                |
+| Cross-language protocol               | no   | FlatBuffers, Cap'n Proto, protobuf                        |
+| Public API contract                   | no   | OpenAPI, protobuf, JSON Schema                            |
+| Schema evolution-heavy storage        | no   | protobuf, FlatBuffers tables, custom versioned format     |
+| Arbitrary nested object serialization | no   | MessagePack, CBOR, JSON                                   |
+
+## Why Zeno Does Not Hide Schema Evolution
+
+Zeno schemas are expected to change. Zeno does not pretend those changes are
+automatically compatible.
+
+In this project, "schema evolution" means more than editing a schema. It means
+old readers and new writers, or new readers and old stored bytes, must coexist
+without coordinated deployment. That requirement is real for public protocols,
+customer-controlled clients, long-lived files, and cross-team storage contracts.
+It is not free: it usually needs field ids, vtables, defaults, compatibility
+matrices, and an extra indirection on reads.
+
+Zeno chooses the opposite tradeoff for controlled TypeScript systems:
+
+- producer and consumer usually ship together,
+- binary data is often transient, cached, or regenerated,
+- layout changes are explicit breaking wire-format changes,
+- version routing belongs in the application envelope when old and new layouts
+  must coexist.
+
+That keeps the hot path simple: generated accessors project fixed offsets out of
+a known layout. If your system cannot coordinate reader and writer upgrades, or
+if old binary data must remain readable for years, use a format with native
+schema evolution such as FlatBuffers tables or protobuf.
+
+See [docs/schema-compatibility.md](../human/schema-compatibility.md) for the exact
+v2 compatibility rule and the explicit `UserV1` / `UserV2` versioning pattern.
+
+## Install
+
+```sh
+npm install @exornea/zeno-runtime @exornea/zeno-types
+npm install @exornea/zeno-buffers
+npm install -D @exornea/zeno-compiler
+```
+
+The compiler package provides the `zeno-codegen` CLI.
+
+## Quick Example
+
+Write a schema-only TypeScript file:
+
+```ts
+// src/model.zeno.ts
+import type { z } from "@exornea/zeno-types";
+
+export interface User {
+  id: z.u64;
+  age: z.i32;
+  score: z.f64;
+  ratio: z.f32;
+  handle: z.fixedUtf8<32>;
+  name: z.utf8;
+  tags: z.vector<z.utf8>;
+  avatar: z.bytes;
+}
+```
+
+Generate a view:
+
+```sh
+zeno-codegen ./src/model.zeno.ts ./src/model.view.ts
+```
+
+Use `--source-map` when you want generated accessors to map back to the
+originating `.zeno.ts` field during debugging.
+
+Use `--output=split` when one generated file is becoming expensive for the
+TypeScript checker or bundler. Split output keeps `model.view.ts` as a small
+barrel and writes one generated file per struct next to it:
+
+```sh
+zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --output=split
+```
+
+```txt
+src/model.view.ts
+src/model.view.views/User.view.ts
+src/model.view.views/OtherStruct.view.ts
+```
+
+The single-file output remains the default. Split output currently does not
+support `--source-map`; keep single-file output when field-level generated-code
+debugging is more important than generated-file size.
+
+`SharedArrayBuffer` support is exposed through `SharedDynamicLayoutWriter`. Its
+tail cursor is atomic, and descriptor publication uses explicit `Int32Array`
+ready cells through the `*Published(...)` writer methods. Browser apps still
+need cross-origin isolation headers before `SharedArrayBuffer` is available.
+For higher-contention worker pipelines, use `fromSharedShard(...)` so each
+worker owns a payload range and cursor cell instead of spinning on one shared
+cursor.
+
+Use the generated API:
+
+```ts
+import { UserView } from "./model.view.js";
+
+const buffer = new ArrayBuffer(1024);
+const view = new DataView(buffer);
+
+UserView.write(view, {
+  id: 7n,
+  age: 41,
+  score: 98.5,
+  ratio: 0.75,
+  handle: "makonea",
+  name: "Zeno",
+  tags: ["ts", "binary"],
+  avatar: new Uint8Array([1, 2, 3]),
+});
+
+const user = new UserView(view);
+
+console.log(user.id);
+console.log(user.age);
+console.log(user.nameView().text());
+console.log(user.tagsView().textArray());
+```
+
+For hot loops, use generated static accessors or scan kernels:
+
+```ts
+let sum = 0;
+for (let index = 0; index < count; index += 1) {
+  sum += UserView.getAgeAt(view, index);
+}
+
+const totalAge = UserView.sumAge(view, count);
+```
+
+`sum<Field>()`, `min<Field>()`, and `max<Field>()` kernels are emitted for
+`number` scalar fields. `count<Field>WhereEq(...)` and
+`findFirst<Field>WhereEq(...)` are emitted for integer and boolean scalar
+fields. These kernels validate the record count and buffer range once, then run
+a generated stride loop without per-record view allocation or callbacks.
+
+Use `--scan-kernels=none|sum|basic|full` when generated file size matters:
+
+- `none`: scalar accessors only
+- `sum`: add `sum<Field>()`
+- `basic`: add `sum<Field>()`, `min<Field>()`, and `max<Field>()`
+- `full`: add all scan kernels, including equality predicates
+
+Generated scan kernels and `@exornea/zeno-buffers` are intentionally different
+surfaces. Use generated kernels for schema-aware scalar table scans such as
+`sumAge`, `countKindWhereEq`, and `findFirstKindWhereEq`. Use
+`@exornea/zeno-buffers` only when the next layer needs caller-owned typed-array
+outputs, for example renderer queues, command words, attribute arrays, or
+histograms. The buffers package is a pack/histogram layer, not a replacement for
+generated scalar scan kernels.
+
+## Fast Path Mental Model
+
+Use Zeno like a generated `DataView` table scanner.
+
+Prefer static accessors or scan kernels in hot loops:
+
+```ts
+let sum = 0;
+
+for (let offset = 0; offset < byteLength; offset += UserView.byteLength) {
+  sum += UserView.getAge(view, offset);
+}
+```
+
+Avoid per-record allocation in hot loops:
+
+```ts
+const users = Array.from({ length: count }, (_, index) => {
+  return new UserView(view, index * UserView.byteLength);
+});
+```
+
+Cursor views are ergonomic and reusable when one record needs several fields:
+
+```ts
+const user = UserView.at(view);
+
+for (let index = 0; index < count; index += 1) {
+  user.moveToUnchecked(index);
+  sum += user.age;
+}
+```
+
+Dynamic text is an explicit decode boundary:
+
+```ts
+const bytes = user.nameView().bytes();
+const text = user.nameView().text();
+```
+
+## Layered Projection Model
+
+Zeno exposes lower layers instead of hiding them. Use the lowest layer that fits
+the job. The full maintainer-facing model is in
+[docs/layers/README.md](../reference/layers/README.md):
+
+| Need                                                 | Layer                                                 |
+| ---------------------------------------------------- | ----------------------------------------------------- |
+| ABI and descriptor facts                             | [Layer 0](../reference/layers/00-wire-abi.md)         |
+| handwritten `DataView` loop with generated constants | [Layer 1](../reference/layers/01-raw-offsets.md)      |
+| named scalar reads/writes                            | [Layer 2](../reference/layers/02-static-accessors.md) |
+| aggregate hot scans                                  | [Layer 3](../reference/layers/03-scan-kernels.md)     |
+| ergonomic record/nested/dynamic access               | [Layer 4](../reference/layers/04-cursor-views.md)     |
+| text, bytes, vectors, and writers                    | [Layer 5](../reference/layers/05-dynamic-tail.md)     |
+| worker/shared-memory publication                     | [Layer 6](../reference/layers/06-shared-memory.md)    |
+| manifest, inspect, diff, release gates               | [Layer 7](../reference/layers/07-layout-ops.md)       |
+
+## Layout Inspection
+
+Generate a machine-readable layout manifest next to generated views:
+
+```sh
+zeno-codegen ./src/model.zeno.ts ./src/model.view.ts --manifest ./src/model.layout.json
+```
+
+Inspect a schema from the CLI:
+
+```sh
+zeno-inspect ./src/model.zeno.ts
+```
+
+Compare two manifests in CI or migration review:
+
+```sh
+zeno-diff-layout ./old.layout.json ./new.layout.json
+```
+
+Layout diffs do not make incompatible layouts magically compatible. They make
+the breaking wire-format change explicit so the application can route by
+version when old and new layouts must coexist.
+
+`layoutHash` is a deterministic compatibility fingerprint, not a cryptographic
+hash. Do not use it as an integrity check for untrusted payloads; use an
+application-level digest or signature when integrity matters.
+
+## 3D / GPU Buffer Witnesses
+
+The repository includes browser demos that compare Zeno binary buffers, Zeno
+struct-of-arrays vectors, FlatBuffers JS, and JSON objects for instance-data
+upload:
+
+```sh
+npm run example:webgl:build
+npm run browser:smoke
+```
+
+The demo is intentionally narrow: it represents the kind of fixed-stride,
+read-mostly browser workload where Zeno's projection-first model is meant to
+earn its keep.
+
+The target is not a WebGL wrapper. Zeno's target is renderer-facing memory:
+typed arrays and binary metadata that Three.js, raw WebGL, WebGPU, or a custom
+engine can consume.
+
+For the public WebGL / Three.js surfaces motivating this direction, see
+[docs/renderer-buffer-case-studies.md](../human/renderer-buffer-case-studies.md).
+
+For a dependency-free NetHack-style buffer example, see
+[examples/renderer-grid-buffer](../../examples/renderer-grid-buffer). It models dungeon
+cells, visible entities, and dirty upload ranges as Zeno fixed records, then
+packs caller-owned typed arrays without importing any renderer.
+
+For a dependency-free asset-catalog example over public game repository
+metadata, see
+[examples/renderer-asset-catalog-buffer](../../examples/renderer-asset-catalog-buffer).
+It lowers texture/script/audio/metadata rows into fixed records and packs
+kind-specific typed-array queues.
+
+Additional dependency-free renderer-buffer witnesses:
+
+- [examples/renderer-entity-transform-buffer](../../examples/renderer-entity-transform-buffer)
+  packs visible transforms, identity rows, and visible queues.
+- [examples/renderer-sprite-atlas-buffer](../../examples/renderer-sprite-atlas-buffer)
+  groups visible sprites by atlas and packs position, UV, and color arrays.
+- [examples/renderer-draw-batch-buffer](../../examples/renderer-draw-batch-buffer)
+  packs mesh/material/pass draw command rows.
+
+The repeated helper surface from these examples now lives in
+[`@exornea/zeno-buffers`](../../packages/buffers). It is dependency-free and only
+packs fixed Zeno rows into caller-owned typed arrays; it does not import or wrap
+WebGL, WebGPU, Three.js, Babylon.js, or a renderer.
+
+Routing rule:
+
+- use generated `*View.sum*`, `count*WhereEq`, and `findFirst*WhereEq` for
+  schema-aware scalar queries that return numbers or indexes
+- use `@exornea/zeno-buffers` for generic renderer-facing pack and histogram
+  helpers that write into caller-owned typed arrays
+
+The `Zeno vectors` mode is the current GPU-buffer witness. It writes
+`z.vector<z.f32>` position/color payloads, projects them with
+`ScalarVectorView.nativeArray()`, and feeds the resulting `Float32Array` views to
+Three.js buffer attributes without a per-record CPU packing loop.
+
+For the lower-level renderer experiment, see
+[examples/webgl-raw-double-buffer](../../examples/webgl-raw-double-buffer). It keeps
+Zeno out of the renderer layer and demonstrates the future
+`SharedArrayBuffer -> worker -> double-buffered Float32Array -> gl.bufferSubData`
+path directly in raw WebGL2. This is a separate witness: WebGL still copies CPU
+memory into a GPU buffer, but the source view avoids per-object JS allocation and
+per-record renderer packing.
+
+For the smallest hot-path example, see
+[examples/scalar-only](../../examples/scalar-only). It contains only fixed scalar
+fields and generated scan kernels.
+
+## Supported Schema Surface
+
+| Type                                                                    | ABI shape                   | Status                                                                |
+| ----------------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `z.i8`, `z.u8`, `z.i16`, `z.u16`, `z.i32`, `z.u32`                      | scalar                      | stable                                                                |
+| `z.i64`, `z.u64`                                                        | bigint scalar               | stable                                                                |
+| `z.f32`, `z.f64`, `z.bool`                                              | scalar                      | stable                                                                |
+| `z.enumU8<T>`, `z.enumU16<T>`, `z.flags8`, `z.flags32`, `z.timestampMs` | semantic scalar aliases     | stable                                                                |
+| `z.fixedUtf8<N>`, `z.fixedAscii<N>`, `z.fixedBytes<N>`                  | inline fixed region         | stable                                                                |
+| `z.fixedArray<T, N>`                                                    | inline fixed array          | stable for scalar, fixed bytes/string, and fixed-size struct elements |
+| `z.utf8`, `z.ascii`, `z.bytes`                                          | `Span32` descriptor         | stable                                                                |
+| `z.vector<T>`                                                           | `Vector32` descriptor       | stable for supported elements                                         |
+| `z.dynamicVector<T>`                                                    | `Vector32` offset table     | stable read/write codegen for dynamic struct elements                 |
+| `z.pointer<T>`                                                          | signed relative `pointer32` | stable                                                                |
+| bare `string`                                                           | UTF-8 `Span32` shorthand    | supported, but `z.utf8` is clearer                                    |
+
+Unsupported by design in v2:
+
+- bare `number`
+- bare `T[]` / `any[]`
+- direct recursive structs without `z.pointer<T>`
+- unions without a discriminator policy
+- optional/vtable-style schema evolution
+- varint / LEB128 compressed integers
+
+## Binary Frame
+
+Raw Zeno records do not include a mandatory header. Generated views project over
+a caller-owned `DataView` plus `baseOffset`.
+
+Zeno 1.1 adds optional file/network boundary helpers:
+
+- `writeZenoFrameHeader(...)`
+- `readZenoFrameHeader(...)`
+- `assertZenoFrameHeader(...)`
+- `assertZenoFramePayload(...)`
+- `zenoFramePayloadView(...)`
+- `checkedZenoFramePayloadView(...)`
+
+The optional frame carries magic bytes, version, payload endianness, layout hash,
+payload offset, and payload byte length. It does not change the raw record ABI.
+
+## Performance Witness
+
+Current local Node benchmark:
+
+```text
+direct DataView age loop   5.63 ns/record
+UserView.sumAge            6.06 ns/record
+pooled noise floor         2.48 ns/record
+```
+
+This is an engineering witness, not a universal performance guarantee. See
+[docs/performance-comparison.md](../human/performance-comparison.md) for the full
+methodology, p95/p99/std reporting, retained-memory notes, and promotion
+criteria.
+
+## Packages
+
+- `@exornea/zeno-types`: type-only ABI marker namespace for schema authors.
+- `@exornea/zeno-schema`: Layout IR and ABI constants.
+- `@exornea/zeno-runtime`: runtime views, descriptors, frame helpers, and writers.
+- `@exornea/zeno-buffers`: dependency-free typed-array packing helpers for fixed rows.
+- `@exornea/zeno-compiler`: analyzer, validator, emitter, and `zeno-codegen`.
+
+## Repository Commands
+
+```sh
+npm run build
+npm test
+npm run bench
+npm run release:check
+```
+
+`npm run release:check` is the release gate. It runs version/package policy
+checks, cleans and builds the workspaces, runs tests, regenerates examples,
+dry-runs package packing, and installs the packed tarballs into a fresh consumer
+project. It also executes fixed-layout, dynamic-layout, and FlatBuffers
+comparison benchmark workloads.
+
+The release gate also includes generated-code compile/run fuzzing, hostile
+malformed-descriptor property tests, a frozen layout compatibility fixture,
+SharedArrayBuffer worker stress, and packed consumer import-resolution checks.
+CI adds a Playwright browser smoke matrix for the WebGL demo. The benchmark gate
+also includes a real WebGL game metadata fixture derived from a pinned HexGL
+repository tree; it stores metadata only, not game asset payload bytes. That
+witness compares JSON metadata ingestion and FlatBuffers JS table projection
+against fixed-record binary scans. The fixture and benchmark are repository
+validation assets, not files published inside the npm packages.
+
+Benchmark execution is load-bearing for release confidence, but exact timing
+thresholds stay diagnostic because CI hardware noise is high.
+
+## Documentation
+
+- [llms.txt](../../llms.txt): compact LLM orientation and repository map.
+- [docs/getting-started.md](../human/getting-started.md): detailed walkthrough.
+- [docs/schema-grammar.md](../human/schema-grammar.md) /
+  [docs/schema-grammar.ko.md](../human/schema-grammar.ko.md): supported `.zeno.ts`
+  grammar, examples, and rejected forms.
+- [docs/abi.md](../reference/abi.md): scalar, `Span32`, `Vector32`, `pointer32`, and
+  optional frame ABI.
+- [docs/api-design.md](../reference/api-design.md): generated accessors, cursors,
+  pointers, and scan kernels.
+- [docs/frontend-model.md](../reference/frontend-model.md): AST-first restricted schema
+  frontend and Layout IR portability boundary.
+- [docs/runtime-boundary.md](../reference/runtime-boundary.md): runtime failure policy,
+  hot-path `Result` rejection, and shared writer boundary.
+- [docs/schema-compatibility.md](../human/schema-compatibility.md): breaking-change
+  policy for layout edits.
+- [docs/release-checklist.md](../reference/release-checklist.md): local and GitHub
+  release gates.
+- [docs/release-v1.md](../releases/release-v1.md): stable v1 surface.
+- [docs/release-v1.1.md](../releases/release-v1.1.md): optional frame and source-file
+  analyzer additions.
+- [docs/release-v1.8.md](../releases/release-v1.8.md): shared-memory arena, source
+  map, and WebGL demo additions.
+- [docs/release-v2.0.md](../releases/release-v2.0.md): projection-first string vector
+  cleanup and retired optimizer removal.
+- [docs/release-v2.2.md](../releases/release-v2.2.md): scan kernel modes and layout
+  tooling.
+- [docs/release-v2.3.md](../releases/release-v2.3.md): layered projection model and
+  emitter layer split.
+- [docs/release-v2.4.md](../releases/release-v2.4.md): frontend and runtime boundary
+  hardening.
+- [docs/release-v2.5.md](../releases/release-v2.5.md): renderer-facing buffer helper
+  package.
+- [docs/release-v2.6.md](../releases/release-v2.6.md): split generated output for
+  larger schemas.
+- [docs/release-v2.7.md](../releases/release-v2.7.md): reader-split
+  documentation and expanded README archive.
+- [CHANGELOG.md](../../CHANGELOG.md): release history.

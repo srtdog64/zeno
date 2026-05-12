@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.8.0
+
+Status: hot-loop guard and decode-free predicate release.
+
+- Generated views now expose `assertRecordRange(view, count, baseOffset?)` so
+  callers can validate a table once before using unchecked cursor or raw-offset
+  loops.
+- Added runtime byte helpers: `endsWithAscii`, `includesAscii`, and `hashBytes`.
+  These keep common text predicates decode-free and allocation-free.
+- Added descriptor-level span helpers: `spanEqualsAscii`, `spanStartsWithAscii`,
+  `spanEndsWithAscii`, `spanIncludesAscii`, and `spanHashBytes`.
+- Updated dynamic-layout benchmarks to use the public `hashBytes` helper instead
+  of a local benchmark-only hash and to measure the descriptor-level ASCII path.
+- Updated renderer-surface benchmarks to include the planned
+  `@exornea/zeno-buffers` pack path.
+- Expanded generated-code E2E tests so `assertRecordRange` is type-checked and
+  executed across fuzzed scalar schemas.
+- Package manifests and workspace lockfile are aligned at `2.8.0`.
+
 ## 2.7.0
 
 Status: documentation split and maintainer-context release.

@@ -24,6 +24,7 @@ Zeno is:
 
 - Keep hot-path reads close to raw `DataView`.
 - Do not add `Result` branches inside scalar hot loops.
+- Prefer `assertRecordRange(view, count)` once before unchecked cursor loops.
 - Runtime boundary failures use `RangeError`.
 - Do not collapse architecture layers into generic helpers.
 - `@exornea/zeno-buffers` is a pack/histogram layer, not a replacement for
@@ -75,6 +76,9 @@ packF32PlanWhereU8Eq(view, count, visibleOffset, 1, plan, out);
 ```
 
 Plans validate stride and field shape once, then let the frame loop reuse them.
+Use `pack*Fields...` helpers only as convenience wrappers. For dynamic text
+predicates, prefer descriptor-level `span*Ascii` helpers when generated offsets
+are already available in the loop.
 
 ## Before Suggesting A Change
 
@@ -86,6 +90,7 @@ Check whether the suggestion:
 - makes `@exornea/zeno-buffers` compete with generated scan kernels
 - promotes dynamic string/vector/pointer-heavy workloads as the main performance
   claim
+- caches `text()` on a live view instead of explicit materialization
 
 If yes, frame it as a tradeoff or future experiment, not as an obvious fix.
 

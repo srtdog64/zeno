@@ -1,5 +1,13 @@
 export { ProjectionView } from "./view-base.js";
-export { BytesSpanView, Utf8SpanView } from "./spans.js";
+export {
+  BytesSpanView,
+  Utf8SpanView,
+  spanEndsWithAscii,
+  spanEqualsAscii,
+  spanHashBytes,
+  spanIncludesAscii,
+  spanStartsWithAscii,
+} from "./spans.js";
 export {
   FixedArrayView,
   FixedBytesArrayView,

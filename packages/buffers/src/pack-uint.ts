@@ -118,6 +118,7 @@ export function packUintPlanWhereU8Eq(
 ): number {
   assertUint8(expected, "expected");
   assertPlanRange(view, count, matchOffset, 1, plan);
+  const hasFullOutputCapacity = hasOutputCapacityForAll(out, count, plan.fieldCount);
 
   let outputIndex = 0;
   for (let index = 0; index < count; index += 1) {
@@ -126,7 +127,9 @@ export function packUintPlanWhereU8Eq(
       continue;
     }
 
-    assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    if (!hasFullOutputCapacity) {
+      assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    }
     writeUintFields(view, rowOffset, plan.fieldSpecs, out, outputIndex, littleEndian);
     outputIndex += 1;
   }
@@ -145,6 +148,7 @@ export function packUintPlanWhereU16Eq(
 ): number {
   assertUint16(expected, "expected");
   assertPlanRange(view, count, matchOffset, 2, plan);
+  const hasFullOutputCapacity = hasOutputCapacityForAll(out, count, plan.fieldCount);
 
   let outputIndex = 0;
   for (let index = 0; index < count; index += 1) {
@@ -153,7 +157,9 @@ export function packUintPlanWhereU16Eq(
       continue;
     }
 
-    assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    if (!hasFullOutputCapacity) {
+      assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    }
     writeUintFields(view, rowOffset, plan.fieldSpecs, out, outputIndex, littleEndian);
     outputIndex += 1;
   }
@@ -172,6 +178,15 @@ function assertPlanRange(
   assertRowRange(view, count, plan.byteLength, 0, plan.maxFieldEnd);
 }
 
+function hasOutputCapacityForAll(
+  out: { readonly length: number },
+  count: number,
+  fieldCount: number,
+): boolean {
+  const required = count * fieldCount;
+  return Number.isSafeInteger(required) && out.length >= required;
+}
+
 function writeUintFields(
   view: DataView,
   rowOffset: number,
@@ -180,23 +195,20 @@ function writeUintFields(
   outputIndex: number,
   littleEndian: boolean,
 ): void {
-  const base = outputIndex * fieldSpecs.length;
+  let targetIndex = outputIndex * fieldSpecs.length;
 
-  for (let fieldIndex = 0; fieldIndex < fieldSpecs.length; fieldIndex += 1) {
-    out[base + fieldIndex] = readUintField(view, rowOffset, fieldSpecs[fieldIndex], littleEndian);
+  for (const fieldSpec of fieldSpecs) {
+    out[targetIndex] = readUintField(view, rowOffset, fieldSpec, littleEndian);
+    targetIndex += 1;
   }
 }
 
 function readUintField(
   view: DataView,
   rowOffset: number,
-  fieldSpec: UintFieldSpec | undefined,
+  fieldSpec: UintFieldSpec,
   littleEndian: boolean,
 ): number {
-  if (fieldSpec === undefined) {
-    throw new RangeError("Missing uint field spec");
-  }
-
   switch (fieldSpec.kind) {
     case "u8":
       return view.getUint8(rowOffset + fieldSpec.offset);

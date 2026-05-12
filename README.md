@@ -103,6 +103,18 @@ const x = InstanceView.getXAt(view, 0);
 const visibleCount = InstanceView.countVisibleWhereEq(view, count, true);
 ```
 
+For manual hot loops, validate the table once and then use the unchecked path:
+
+```ts
+InstanceView.assertRecordRange(view, count);
+
+const cursor = InstanceView.at(view);
+for (let index = 0; index < count; index += 1) {
+  cursor.moveToUnchecked(index);
+  // read cursor fields without per-record range checks
+}
+```
+
 For larger schemas, split generated output by struct:
 
 ```sh
@@ -159,8 +171,25 @@ Use the lowest layer that fits the job:
 - `@exornea/zeno-buffers` when the next layer needs caller-owned typed-array
   outputs
 
+For dynamic text, prefer explicit byte predicates before decoding:
+
+```ts
+import { includesAscii, spanStartsWithAscii, startsWithAscii } from "@exornea/zeno-runtime";
+
+const bytes = asset.nameView().bytes();
+const isDebug = startsWithAscii(bytes, "debug_") || includesAscii(bytes, "_test");
+
+// Lower-level descriptor path: avoids constructing a span view and Uint8Array.
+const isDebugSpan = spanStartsWithAscii(view, AssetView.nameOffset, "debug_");
+```
+
 The buffers package is a pack/histogram layer, not a second generated scan API.
-For repeated frame loops, create a validated pack plan once and reuse it:
+For repeated frame loops, the plan API is the primary generic buffer hot path:
+create a validated plan once, allocate enough output capacity up front, then
+reuse it. The `pack*Fields...` helpers are convenience wrappers that recreate
+plans. A renderer-specific fused loop can still beat the generic plan when it
+combines several predicates in one pass; use the plan API when you want a
+reusable, checked buffer boundary instead of handwritten offset code.
 
 ```ts
 import { createF32PackPlan, packF32PlanWhereU8Eq } from "@exornea/zeno-buffers";

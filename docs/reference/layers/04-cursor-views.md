@@ -7,10 +7,14 @@ Provide ergonomic record-level access through one reusable object.
 ## Public API
 
 ```ts
+UserView.assertRecordRange(view, count);
+
 const user = UserView.at(view);
-user.moveToUnchecked(index);
-user.age;
-user.nameView();
+for (let index = 0; index < count; index += 1) {
+  user.moveToUnchecked(index);
+  user.age;
+  user.nameView();
+}
 ```
 
 ## Guarantees
@@ -18,6 +22,8 @@ user.nameView();
 - named properties for record code
 - nested and dynamic field access
 - cursor reuse without retaining one object per record
+- generated `assertRecordRange` for checked-once table validation before an
+  unchecked cursor loop
 
 ## Non-Guarantees
 

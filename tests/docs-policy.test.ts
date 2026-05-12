@@ -89,12 +89,12 @@ describe("documentation policy", () => {
     expectPhrase(caseStudies, "examples/renderer-grid-buffer");
   });
 
-  it("keeps release and roadmap documents aligned with the current v2.7 surface", () => {
+  it("keeps release and roadmap documents aligned with the current v2.8 surface", () => {
     const architecture = readRepoFile("docs/reference/architecture.md");
     const releaseChecklist = readRepoFile("docs/reference/release-checklist.md");
     const todo = readRepoFile("docs/llm/TODO.md");
 
-    expect(architecture).toContain("Current v2.7 status");
+    expect(architecture).toContain("Current v2.8 status");
     expect(architecture).not.toContain("Current v1 status");
     expect(todo).toContain("## Candidate Work");
     expect(todo).not.toContain("## v2.2 Candidate Work");

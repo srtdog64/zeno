@@ -4,6 +4,8 @@ import { performance } from "node:perf_hooks";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createUintPackPlan, packUintPlanWhereU16Eq } from "../../packages/buffers/dist/index.js";
+
 const fixturePath = join(
   dirname(fileURLToPath(import.meta.url)),
   "fixtures",
@@ -39,6 +41,12 @@ const records = expandRecords(sourceRows, RECORD_COUNT);
 const jsonPayload = JSON.stringify(records);
 const binaryPayload = packBinaryMetadata(records);
 const binaryView = new DataView(binaryPayload);
+const binaryRowView = new DataView(binaryPayload, HEADER_BYTES);
+const rendererQueuePlan = createUintPackPlan(STRIDE, [
+  { offset: FIELD_PATH_HASH, kind: "u32" },
+  { offset: FIELD_BYTE_LENGTH, kind: "u32" },
+  { offset: FIELD_EXTENSION, kind: "u16" },
+]);
 
 console.log("Zeno renderer-surface metadata benchmark");
 console.log(
@@ -64,18 +72,31 @@ const binaryScan = measure("Zeno binary renderer-surface scan", () =>
 const binaryQueuePack = measure("Zeno binary renderer queue pack", () =>
   packBinaryQueues(binaryView),
 );
+const plannedBinaryQueuePack = measure("Zeno buffers planned renderer queue pack", () =>
+  packBinaryQueuesWithPlans(binaryRowView, binaryView.getUint32(0, true), rendererQueuePlan),
+);
 const binaryPack = measure(
   "Zeno binary renderer metadata pack",
   () => packBinaryMetadata(records).byteLength,
 );
 
 assertSameChecksum("json/binary scan", parsedJsonScan.checksum, binaryScan.checksum);
+assertSameChecksum(
+  "manual/planned renderer queue pack",
+  binaryQueuePack.checksum,
+  plannedBinaryQueuePack.checksum,
+);
 
 console.log("");
 console.log("Deltas vs JSON.parse + scan");
 compareToBaseline("JSON pre-parsed scan", jsonParseScan.stats, parsedJsonScan.stats);
 compareToBaseline("Zeno binary renderer-surface scan", jsonParseScan.stats, binaryScan.stats);
 compareToBaseline("Zeno binary renderer queue pack", jsonParseScan.stats, binaryQueuePack.stats);
+compareToBaseline(
+  "Zeno buffers planned renderer queue pack",
+  jsonParseScan.stats,
+  plannedBinaryQueuePack.stats,
+);
 compareToBaseline("Zeno binary renderer metadata pack", jsonParseScan.stats, binaryPack.stats);
 
 console.log("");
@@ -256,6 +277,35 @@ function packBinaryQueues(view) {
   let checksum = 0;
   checksum = mix32(checksum, textureIndex);
   checksum = mix32(checksum, scriptIndex);
+  checksum = mix32(checksum, textureQueue[1] ?? 0);
+  checksum = mix32(checksum, scriptQueue[1] ?? 0);
+  return checksum;
+}
+
+function packBinaryQueuesWithPlans(rows, count, queuePlan) {
+  const textureQueue = new Uint32Array(count * queuePlan.fieldCount);
+  const scriptQueue = new Uint32Array(count * queuePlan.fieldCount);
+
+  const textureCount = packUintPlanWhereU16Eq(
+    rows,
+    count,
+    FIELD_KIND,
+    KIND_TEXTURE,
+    queuePlan,
+    textureQueue,
+  );
+  const scriptCount = packUintPlanWhereU16Eq(
+    rows,
+    count,
+    FIELD_KIND,
+    KIND_SCRIPT,
+    queuePlan,
+    scriptQueue,
+  );
+
+  let checksum = 0;
+  checksum = mix32(checksum, textureCount);
+  checksum = mix32(checksum, scriptCount);
   checksum = mix32(checksum, textureQueue[1] ?? 0);
   checksum = mix32(checksum, scriptQueue[1] ?? 0);
   return checksum;

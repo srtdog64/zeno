@@ -41,6 +41,13 @@ InstanceView.getXAt(view, index);
 InstanceView.countVisibleWhereEq(view, count, true);
 ```
 
+For manual hot loops, validate once and then use the unchecked cursor or raw
+offset path:
+
+```ts
+InstanceView.assertRecordRange(view, count);
+```
+
 ## Best Fit
 
 Good fits:
@@ -76,6 +83,18 @@ Use the lowest layer that fits:
 - scan kernels for aggregate hot loops
 - cursor views for ergonomic per-record access
 - `@exornea/zeno-buffers` for typed-array packing
+
+Dynamic text is explicit. Use byte predicates such as `startsWithAscii`,
+`includesAscii`, and `hashBytes` before calling `.text()` in a loop.
+When a loop already has the descriptor offset, use the lower-level
+`span*Ascii` helpers to avoid creating a span view and `Uint8Array`.
+
+For renderer-style packing, prefer `@exornea/zeno-buffers` plan APIs when you
+want a reusable generic buffer boundary: `createF32PackPlan`,
+`createUintPackPlan`, and `pack*Plan...`. The `pack*Fields...` helpers are
+convenience wrappers. If a renderer needs to pack several queues in one fused
+pass, a handwritten loop can still be faster; keep that as a deliberate lower
+layer rather than mixing it into the generic plan surface.
 
 ## Start Here
 

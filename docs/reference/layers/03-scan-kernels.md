@@ -56,6 +56,25 @@ Do not grow these as two independent scan-kernel APIs. Generated scan kernels
 stay schema-aware and return scalar results; buffers helpers stay generic and
 write typed arrays.
 
+For repeated frame loops, prefer the plan API as the generic buffer boundary:
+
+```ts
+const plan = createF32PackPlan(RowView.byteLength, [
+  RowView.xOffset,
+  RowView.yOffset,
+  RowView.zOffset,
+]);
+
+packF32PlanWhereU8Eq(view, count, RowView.visibleOffset, 1, plan, out);
+```
+
+The plan validates row stride and field ranges once. The `pack*Fields...`
+helpers are convenience wrappers that build a plan for each call. A
+renderer-specific fused loop can still be faster when it packs multiple queues
+or predicates in one pass. That is an allowed lower-level escape hatch; the
+plan API is the reusable hot path for code that would otherwise duplicate
+offset validation and field packing logic.
+
 ## Renderer-Facing Buffer Boundary
 
 Generated scan kernels read array-of-struct records. Renderer-facing 3D/GPU

@@ -140,6 +140,26 @@ describe("compiler snapshots", () => {
         static readonly handleOffset = 12;
         static readonly chunksOffset = 20;
 
+        static assertRecordRange(view: DataView, count: number, baseOffset = 0): void {
+          if (!Number.isSafeInteger(count) || count < 0) {
+            throw new RangeError(\`Invalid record count: \${count}\`);
+          }
+          if (!Number.isSafeInteger(baseOffset) || baseOffset < 0) {
+            throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
+          }
+          if (baseOffset > view.byteLength) {
+            throw new RangeError(\`baseOffset \${baseOffset} exceeds DataView length \${view.byteLength}\`);
+          }
+
+          const requiredByteLength = count * 32;
+          if (!Number.isSafeInteger(requiredByteLength)) {
+            throw new RangeError(\`record range byte length exceeds safe integer: count=\${count}, byteLength=32\`);
+          }
+          if (requiredByteLength > view.byteLength - baseOffset) {
+            throw new RangeError(\`record range exceeds DataView length \${view.byteLength}: baseOffset=\${baseOffset}, count=\${count}, byteLength=32\`);
+          }
+        }
+
         private static assertScanRange(
           view: DataView,
           count: number,
@@ -356,6 +376,26 @@ describe("compiler snapshots", () => {
         static readonly valueOffset = 0;
         static readonly nextOffset = 4;
         static readonly childrenOffset = 8;
+
+        static assertRecordRange(view: DataView, count: number, baseOffset = 0): void {
+          if (!Number.isSafeInteger(count) || count < 0) {
+            throw new RangeError(\`Invalid record count: \${count}\`);
+          }
+          if (!Number.isSafeInteger(baseOffset) || baseOffset < 0) {
+            throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
+          }
+          if (baseOffset > view.byteLength) {
+            throw new RangeError(\`baseOffset \${baseOffset} exceeds DataView length \${view.byteLength}\`);
+          }
+
+          const requiredByteLength = count * 16;
+          if (!Number.isSafeInteger(requiredByteLength)) {
+            throw new RangeError(\`record range byte length exceeds safe integer: count=\${count}, byteLength=16\`);
+          }
+          if (requiredByteLength > view.byteLength - baseOffset) {
+            throw new RangeError(\`record range exceeds DataView length \${view.byteLength}: baseOffset=\${baseOffset}, count=\${count}, byteLength=16\`);
+          }
+        }
 
         private static assertPointer32Payload(value: number): void {
           if (!Number.isInteger(value) || value < -0x80000000 || value > 0x7fffffff || value === -1) {

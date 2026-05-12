@@ -236,12 +236,12 @@ blocks `npm.ps1`.
 
 ## Current release posture
 
-Version family is `2.7.0` in the working tree. v2.7 splits documentation by
-reader type and keeps the longer README narrative in
-`docs/llm/expanded-readme.md` while the root README stays concise. v2.6 added
-split generated output through `zeno-codegen --output=split`, keeping the
-requested `.view.ts` path as a barrel and emitting one generated file per struct
-in a sibling `<name>.views/` directory.
+Version family is `2.8.0` in the working tree. v2.8 adds generated
+`assertRecordRange(view, count, baseOffset?)` for assert-once hot loops, runtime
+byte predicates, descriptor-level `span*Ascii` helpers, and benchmark witnesses
+for planned `@exornea/zeno-buffers` packing. v2.7 split documentation by reader
+type and keeps the longer README narrative in `docs/llm/expanded-readme.md`
+while the root README stays concise.
 
 Before publishing, run:
 

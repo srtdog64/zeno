@@ -99,6 +99,66 @@ export function startsWithAscii(bytes: ArrayLike<number>, prefix: string): boole
   return true;
 }
 
+export function endsWithAscii(bytes: ArrayLike<number>, suffix: string): boolean {
+  if (suffix.length > bytes.length) {
+    return false;
+  }
+
+  const offset = bytes.length - suffix.length;
+  for (let index = 0; index < suffix.length; index += 1) {
+    const codePoint = suffix.charCodeAt(index);
+    if (codePoint > 0x7f || bytes[offset + index] !== codePoint) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function includesAscii(bytes: ArrayLike<number>, needle: string): boolean {
+  if (needle.length === 0) {
+    return true;
+  }
+  if (needle.length > bytes.length) {
+    return false;
+  }
+
+  const first = needle.charCodeAt(0);
+  if (first > 0x7f) {
+    return false;
+  }
+
+  const limit = bytes.length - needle.length;
+  for (let offset = 0; offset <= limit; offset += 1) {
+    if (bytes[offset] !== first) {
+      continue;
+    }
+
+    let matched = true;
+    for (let index = 1; index < needle.length; index += 1) {
+      const codePoint = needle.charCodeAt(index);
+      if (codePoint > 0x7f || bytes[offset + index] !== codePoint) {
+        matched = false;
+        break;
+      }
+    }
+
+    if (matched) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function hashBytes(bytes: ArrayLike<number>, seed = 0): number {
+  let hash = seed | 0;
+  for (let index = 0; index < bytes.length; index += 1) {
+    hash = ((hash << 5) - hash + (bytes[index] ?? 0)) | 0;
+  }
+  return hash;
+}
+
 export function encodeText(value: string, encoding: TextEncoding = "utf8"): Uint8Array {
   if (encoding === "utf8") {
     return UTF8_ENCODER.encode(value);

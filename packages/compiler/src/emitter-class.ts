@@ -46,6 +46,9 @@ static readonly alignment = ${layout.alignment};
 ${layout.fields.map((field) => `static readonly ${field.name}Offset = ${field.offset};`)}`,
   );
 
+  lines.push("");
+  lines.push(...emitRecordRangeHelper(layout));
+
   if (layout.fields.some((field) => field.kind === "pointer")) {
     lines.push("");
     lines.push(...emitPointerHelpers());
@@ -158,6 +161,29 @@ function addKnownDependency(
 
 function emitLayerBlock(lines: readonly string[]): string[] {
   return lines.length === 0 ? [] : [...lines, ""];
+}
+
+function emitRecordRangeHelper(layout: StructLayout): string[] {
+  return method`
+static assertRecordRange(view: DataView, count: number, baseOffset = 0): void {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError(\`Invalid record count: \${count}\`);
+  }
+  if (!Number.isSafeInteger(baseOffset) || baseOffset < 0) {
+    throw new RangeError(\`Invalid base offset: \${baseOffset}\`);
+  }
+  if (baseOffset > view.byteLength) {
+    throw new RangeError(\`baseOffset \${baseOffset} exceeds DataView length \${view.byteLength}\`);
+  }
+
+  const requiredByteLength = count * ${layout.byteLength};
+  if (!Number.isSafeInteger(requiredByteLength)) {
+    throw new RangeError(\`record range byte length exceeds safe integer: count=\${count}, byteLength=${layout.byteLength}\`);
+  }
+  if (requiredByteLength > view.byteLength - baseOffset) {
+    throw new RangeError(\`record range exceeds DataView length \${view.byteLength}: baseOffset=\${baseOffset}, count=\${count}, byteLength=${layout.byteLength}\`);
+  }
+}`;
 }
 
 function emitPointerHelpers(): string[] {

@@ -209,8 +209,8 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.7.0` after release review if the docs split and LLM README archive
-  remain the right release boundary
+- publish `2.8.0` after release review if the assert-once hot-loop guard and
+  decode-free byte predicate surface remain the right release boundary
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,
@@ -220,6 +220,27 @@ Status: satisfied as a diagnostic release gate.
 - keep human-facing docs short and route long maintainer context through
   [expanded-readme.md](expanded-readme.md), [documentation-rules.md](documentation-rules.md),
   and reference docs instead of growing the root README again
+
+## v2.8 Hot-Path Follow-Up
+
+- Treat `assertRecordRange(view, count, baseOffset?)` plus
+  `moveToUnchecked(index)` as the official checked-once cursor-loop pattern.
+- Treat `createF32PackPlan` / `createUintPackPlan` plus `pack*Plan...` as the
+  primary `@exornea/zeno-buffers` hot path. `pack*Fields...` helpers are
+  convenience wrappers.
+- Treat `ScalarVectorView.nativeArray()` as the scalar-vector hot path when
+  endian and alignment are native-safe.
+- Keep descriptor-level `span*Ascii` helpers as the dynamic text predicate
+  experiment before promoting any dynamic text claim.
+- Keep per-record `new View(...)` creation documented as a hot-loop
+  anti-pattern.
+- Keep dynamic text out of the strongest hot-path claim; prefer byte predicates
+  such as `equalsAscii`, `startsWithAscii`, `endsWithAscii`, `includesAscii`,
+  and `hashBytes` before explicit `text()` decode.
+- Do not cache `text()` on live views. If a snapshot string API is needed later,
+  design it as an explicit materialization layer.
+- Revisit fixed-string generated predicates only if real workloads show repeated
+  fixed ASCII comparisons that cannot be served by existing byte accessors.
 
 ## Technical Debt Policy
 

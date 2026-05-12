@@ -34,6 +34,26 @@ export class InstanceView extends ProjectionView {
   static readonly flagsOffset = 24;
   static readonly activeOffset = 28;
 
+  static assertRecordRange(view: DataView, count: number, baseOffset = 0): void {
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new RangeError(`Invalid record count: ${count}`);
+    }
+    if (!Number.isSafeInteger(baseOffset) || baseOffset < 0) {
+      throw new RangeError(`Invalid base offset: ${baseOffset}`);
+    }
+    if (baseOffset > view.byteLength) {
+      throw new RangeError(`baseOffset ${baseOffset} exceeds DataView length ${view.byteLength}`);
+    }
+
+    const requiredByteLength = count * 32;
+    if (!Number.isSafeInteger(requiredByteLength)) {
+      throw new RangeError(`record range byte length exceeds safe integer: count=${count}, byteLength=32`);
+    }
+    if (requiredByteLength > view.byteLength - baseOffset) {
+      throw new RangeError(`record range exceeds DataView length ${view.byteLength}: baseOffset=${baseOffset}, count=${count}, byteLength=32`);
+    }
+  }
+
   private static assertScanRange(
     view: DataView,
     count: number,

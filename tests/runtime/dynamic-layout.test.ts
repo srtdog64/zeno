@@ -15,12 +15,20 @@ import {
   Utf8VectorView,
   bytesEqual,
   decodeFixedText,
+  endsWithAscii,
   encodeText,
   equalsAscii,
+  hashBytes,
+  includesAscii,
   isSharedDescriptorPublished,
   readScalar,
   resetSharedDescriptor,
   sharedDescriptorStateCell,
+  spanEndsWithAscii,
+  spanEqualsAscii,
+  spanHashBytes,
+  spanIncludesAscii,
+  spanStartsWithAscii,
   startsWithAscii,
   traversePointerChain,
   writeFixedText,
@@ -130,6 +138,33 @@ describe("dynamic layout runtime skeleton", () => {
     expect(equalsAscii(bytes, "제노")).toBe(false);
     expect(startsWithAscii(bytes, "ze")).toBe(true);
     expect(startsWithAscii(bytes, "zeno!")).toBe(false);
+    expect(endsWithAscii(bytes, "no")).toBe(true);
+    expect(endsWithAscii(bytes, "zeno!")).toBe(false);
+    expect(includesAscii(bytes, "en")).toBe(true);
+    expect(includesAscii(bytes, "")).toBe(true);
+    expect(includesAscii(bytes, "제")).toBe(false);
+    expect(hashBytes(bytes)).toBe(hashBytes(Uint8Array.of(0x7a, 0x65, 0x6e, 0x6f)));
+    expect(hashBytes(bytes, 17)).not.toBe(hashBytes(bytes));
+  });
+
+  it("runs ASCII predicates directly over span descriptors without materializing byte views", () => {
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+    const payload = encodeText("zeno-dynamic", "ascii");
+
+    writeSpan32Descriptor(view, 0, {
+      relOffset: 16,
+      byteLength: payload.length,
+    });
+    new Uint8Array(buffer, 16, payload.length).set(payload);
+
+    expect(spanEqualsAscii(view, 0, "zeno-dynamic")).toBe(true);
+    expect(spanEqualsAscii(view, 0, "제노")).toBe(false);
+    expect(spanStartsWithAscii(view, 0, "zeno")).toBe(true);
+    expect(spanEndsWithAscii(view, 0, "dynamic")).toBe(true);
+    expect(spanIncludesAscii(view, 0, "-dyn")).toBe(true);
+    expect(spanIncludesAscii(view, 0, "missing")).toBe(false);
+    expect(spanHashBytes(view, 0)).toBe(hashBytes(payload));
   });
 
   it("caches vector descriptors until refresh or rebase", () => {

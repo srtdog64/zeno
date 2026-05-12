@@ -100,6 +100,7 @@ describe("layered projection model", () => {
 
     expect(inspection).toContain("Struct User");
     expect(emitted).toContain("export const UserViewByteLength");
+    expect(emitted).toContain("static assertRecordRange(");
     expect(emitted).toContain("static getAge(");
     expect(emitted).toContain("static sumAge(");
     expect(emitted).toContain("static countAgeWhereEq(");

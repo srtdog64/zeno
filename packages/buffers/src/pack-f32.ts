@@ -5,7 +5,6 @@ import {
   assertRowRange,
   assertUint16,
   assertUint8,
-  checkedOffset,
 } from "./range.js";
 import type { F32PackPlan } from "./types.js";
 
@@ -90,6 +89,7 @@ export function packF32PlanWhereU8Eq(
 ): number {
   assertUint8(expected, "expected");
   assertPlanRange(view, count, matchOffset, 1, plan);
+  const hasFullOutputCapacity = hasOutputCapacityForAll(out, count, plan.fieldCount);
 
   let outputIndex = 0;
   for (let index = 0; index < count; index += 1) {
@@ -98,7 +98,9 @@ export function packF32PlanWhereU8Eq(
       continue;
     }
 
-    assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    if (!hasFullOutputCapacity) {
+      assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    }
     writeF32Fields(view, rowOffset, plan.fieldOffsets, out, outputIndex, littleEndian);
     outputIndex += 1;
   }
@@ -117,6 +119,7 @@ export function packF32PlanWhereU16Eq(
 ): number {
   assertUint16(expected, "expected");
   assertPlanRange(view, count, matchOffset, 2, plan);
+  const hasFullOutputCapacity = hasOutputCapacityForAll(out, count, plan.fieldCount);
 
   let outputIndex = 0;
   for (let index = 0; index < count; index += 1) {
@@ -125,7 +128,9 @@ export function packF32PlanWhereU16Eq(
       continue;
     }
 
-    assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    if (!hasFullOutputCapacity) {
+      assertOutputWriteCapacity(out, outputIndex, plan.fieldCount);
+    }
     writeF32Fields(view, rowOffset, plan.fieldOffsets, out, outputIndex, littleEndian);
     outputIndex += 1;
   }
@@ -144,6 +149,15 @@ function assertPlanRange(
   assertRowRange(view, count, plan.byteLength, 0, plan.maxFieldEnd);
 }
 
+function hasOutputCapacityForAll(
+  out: { readonly length: number },
+  count: number,
+  fieldCount: number,
+): boolean {
+  const required = count * fieldCount;
+  return Number.isSafeInteger(required) && out.length >= required;
+}
+
 function writeF32Fields(
   view: DataView,
   rowOffset: number,
@@ -152,12 +166,10 @@ function writeF32Fields(
   outputIndex: number,
   littleEndian: boolean,
 ): void {
-  const base = outputIndex * fieldOffsets.length;
+  let targetIndex = outputIndex * fieldOffsets.length;
 
-  for (let fieldIndex = 0; fieldIndex < fieldOffsets.length; fieldIndex += 1) {
-    out[base + fieldIndex] = view.getFloat32(
-      rowOffset + checkedOffset(fieldOffsets[fieldIndex]),
-      littleEndian,
-    );
+  for (const fieldOffset of fieldOffsets) {
+    out[targetIndex] = view.getFloat32(rowOffset + fieldOffset, littleEndian);
+    targetIndex += 1;
   }
 }

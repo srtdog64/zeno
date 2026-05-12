@@ -306,7 +306,7 @@ still override the generated default per call when needed.
 - vector/string table accessors
 - explicit schema compatibility policy and layout diff tooling
 
-Current v2.7 status: dynamic descriptors exist for the supported `Span32`,
+Current v2.8 status: dynamic descriptors exist for the supported `Span32`,
 `Vector32`, `dynamicVector`, and `pointer32` ABI families. Native schema
 evolution remains an explicit non-goal for the current projection ABI; Zeno
 instead exposes layout manifests and `zeno-diff-layout` so applications can use

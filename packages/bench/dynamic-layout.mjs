@@ -8,8 +8,10 @@ import {
   Utf8SpanView,
   Utf8VectorView,
   equalsAscii,
+  hashBytes,
   readSpan32Descriptor,
   readVector32Descriptor,
+  spanEqualsAscii,
   writeSpan32Descriptor,
   writeVector32Descriptor,
 } from "../../packages/runtime/dist/index.js";
@@ -64,13 +66,6 @@ function nsPerRecord(milliseconds) {
 
 function mixByte(checksum, value) {
   return ((checksum << 5) - checksum + value) | 0;
-}
-
-function hashBytes(bytes, checksum = 0) {
-  for (let index = 0; index < bytes.length; index += 1) {
-    checksum = mixByte(checksum, bytes[index]);
-  }
-  return checksum;
 }
 
 function hashDataViewBytes(view, offset, byteLength, checksum = 0) {
@@ -204,6 +199,14 @@ function zenoUtf8EqualsAsciiPass(view, count) {
   let checksum = 0;
   for (let index = 0; index < count; index += 1) {
     checksum += equalsAscii(new Utf8SpanView(view, index * SPAN32).bytes(), TEXT) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function spanDescriptorEqualsAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum += spanEqualsAscii(view, index * SPAN32, TEXT) ? 1 : 0;
   }
   return checksum;
 }
@@ -436,9 +439,17 @@ const zenoUtf8 = measure("Zeno Utf8SpanView.text()", () =>
 const zenoUtf8EqualsAscii = measure("Zeno Utf8SpanView.bytes() + equalsAscii", () =>
   zenoUtf8EqualsAsciiPass(textSpan.view, RECORD_COUNT),
 );
+const spanDescriptorEqualsAscii = measure("Span32 descriptor + spanEqualsAscii", () =>
+  spanDescriptorEqualsAsciiPass(textSpan.view, RECORD_COUNT),
+);
 const jsonParse = measure("JSON.parse string array", () => jsonStringParsePass(jsonTextPayload));
 compareToBaseline("Utf8SpanView.text()", directUtf8.stats, zenoUtf8.stats);
 compareToBaseline("Utf8SpanView.bytes() + equalsAscii", zenoUtf8.stats, zenoUtf8EqualsAscii.stats);
+compareToBaseline(
+  "Span32 descriptor + spanEqualsAscii",
+  zenoUtf8EqualsAscii.stats,
+  spanDescriptorEqualsAscii.stats,
+);
 compareToBaseline("JSON.parse string array", directUtf8.stats, jsonParse.stats);
 
 const directScalarVector = measure("direct scalar vector i32", () =>
@@ -500,6 +511,9 @@ measureRetainedMemory("BytesSpanView.bytes()", () =>
 measureRetainedMemory("Utf8SpanView.text()", () => zenoUtf8DecodePass(textSpan.view, RECORD_COUNT));
 measureRetainedMemory("Utf8SpanView.bytes() + equalsAscii", () =>
   zenoUtf8EqualsAsciiPass(textSpan.view, RECORD_COUNT),
+);
+measureRetainedMemory("Span32 descriptor + spanEqualsAscii", () =>
+  spanDescriptorEqualsAsciiPass(textSpan.view, RECORD_COUNT),
 );
 measureRetainedMemory("ScalarVectorView.at(i)", () =>
   zenoScalarVectorPass(scalarVector.view, RECORD_COUNT),

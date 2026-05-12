@@ -57,6 +57,10 @@ describe("generated code compile and run checks", () => {
           const buffer = new ArrayBuffer(RowView.byteLength);
           const view = new DataView(buffer);
 
+          expect(() => RowView.assertRecordRange(view, 1)).not.toThrow();
+          expect(() => RowView.assertRecordRange(view, 2)).toThrow(/record range exceeds/);
+          expect(() => RowView.assertRecordRange(view, 0, view.byteLength)).not.toThrow();
+
           fields.forEach((kind, index) => {
             RowView[`setF${index}`](view, sampleValue(kind, index));
           });
@@ -174,6 +178,7 @@ export interface Packet {
 
 interface GeneratedViewConstructor {
   readonly byteLength: number;
+  assertRecordRange(view: DataView, count: number, baseOffset?: number): void;
   new (view: DataView, baseOffset?: number, littleEndian?: boolean): Record<string, unknown>;
   [name: string]: any;
 }

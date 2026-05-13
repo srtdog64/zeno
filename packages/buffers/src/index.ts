@@ -15,4 +15,6 @@ export {
   packUintPlanWhereU16Eq,
   packUintPlanWhereU8Eq,
 } from "./pack-uint.js";
+export { createFixedRecordTable } from "./table.js";
 export type { F32PackPlan, UintFieldKind, UintFieldSpec, UintPackPlan } from "./types.js";
+export type { FixedRecordTable } from "./table.js";

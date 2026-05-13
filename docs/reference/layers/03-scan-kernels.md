@@ -56,6 +56,21 @@ Do not grow these as two independent scan-kernel APIs. Generated scan kernels
 stay schema-aware and return scalar results; buffers helpers stay generic and
 write typed arrays.
 
+Use `createFixedRecordTable(byteLength, initialCapacity?)` when a compile or
+frame-prep adapter repeatedly allocates same-shaped fixed-row `ArrayBuffer`
+tables. This keeps table reuse in the generic buffer layer:
+
+```ts
+const visibleEntities = createFixedRecordTable(VisibleEntityView.byteLength, 1024);
+
+const view = visibleEntities.reset(count);
+VisibleEntityView.assertRecordRange(view, count);
+```
+
+This API intentionally knows only byte length, count, capacity, `ArrayBuffer`,
+and `DataView`. It must not learn about scenes, entities, renderers, or GPU
+upload.
+
 For repeated frame loops, prefer the plan API as the generic buffer boundary:
 
 ```ts

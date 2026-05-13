@@ -204,6 +204,21 @@ const plan = createF32PackPlan(InstanceView.byteLength, [
 const packed = packF32PlanWhereU8Eq(view, count, InstanceView.visibleOffset, 1, plan, out);
 ```
 
+For adapters that rebuild same-shaped fixed-row tables every frame or document
+revision, keep reuse at the generic buffer layer:
+
+```ts
+import { createFixedRecordTable } from "@exornea/zeno-buffers";
+
+const visibleEntities = createFixedRecordTable(VisibleEntityView.byteLength, 1024);
+const view = visibleEntities.reset(count);
+
+VisibleEntityView.assertRecordRange(view, count);
+```
+
+This is still not a scene graph, ECS, renderer, or GPU upload API. It is only a
+reusable `ArrayBuffer`/`DataView` table boundary.
+
 ## Decision Guide
 
 Use Zeno when:

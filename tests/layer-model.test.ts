@@ -12,6 +12,7 @@ import {
   formatLayoutInspection,
   parseScanKernelMode,
 } from "../packages/compiler/src/index.js";
+import * as buffers from "../packages/buffers/src/index.js";
 import * as runtime from "../packages/runtime/src/index.js";
 
 const rootDir = path.resolve(fileURLToPath(import.meta.url), "..", "..");
@@ -73,6 +74,27 @@ describe("layered projection model", () => {
     expect(overview).toContain("a hidden renderer layer inside Zeno core");
     expect(scanLayer).toContain("renderer/concurrency witness");
     expect(scanLayer).toContain("not a binary projection API");
+  });
+
+  it("keeps Geukbit-style domain concepts out of core package names", () => {
+    const publicApi = Object.keys(runtime).concat(Object.keys(buffers));
+    const forbiddenDomainTerms = [
+      "scene",
+      "entity",
+      "component",
+      "renderer",
+      "three",
+      "webgpu",
+      "geukbit",
+    ];
+
+    for (const apiName of publicApi) {
+      const normalized = apiName.toLowerCase();
+
+      for (const term of forbiddenDomainTerms) {
+        expect(normalized.includes(term)).toBe(false);
+      }
+    }
   });
 
   it("keeps documented layer APIs aligned with runtime and compiler surfaces", () => {

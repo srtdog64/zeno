@@ -80,6 +80,12 @@ Use `pack*Fields...` helpers only as convenience wrappers. For dynamic text
 predicates, prefer descriptor-level `span*Ascii` helpers when generated offsets
 are already available in the loop.
 
+For repeated compile-frame allocation of same-shaped fixed rows, use
+`createFixedRecordTable(byteLength, initialCapacity?)`. It belongs in
+`@exornea/zeno-buffers` because it only knows byte length, count, capacity,
+`ArrayBuffer`, and `DataView`. Do not turn it into a scene/entity/component or
+renderer upload abstraction.
+
 ## Before Suggesting A Change
 
 Check whether the suggestion:

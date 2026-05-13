@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added `createFixedRecordTable(byteLength, initialCapacity?)` to
+  `@exornea/zeno-buffers` as a generic fixed-row `ArrayBuffer`/`DataView`
+  reuse helper for compile-frame adapters.
+- Added `bench:buffers` with a fixed-record table reuse workload.
+- Locked the Geukbit dogfood boundary in docs and tests: Zeno may absorb
+  dependency-free buffer patterns, but not scene/entity/component/renderer
+  domain APIs.
+
 ## 2.8.0
 
 Status: hot-loop guard and decode-free predicate release.

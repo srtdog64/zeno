@@ -221,6 +221,25 @@ Status: satisfied as a diagnostic release gate.
   [expanded-readme.md](expanded-readme.md), [documentation-rules.md](documentation-rules.md),
   and reference docs instead of growing the root README again
 
+## v2.9 Geukbit Dogfood Boundary
+
+- Absorb only generic lower-layer patterns from Geukbit-style engine/editor
+  dogfooding. Do not absorb Geukbit domain concepts.
+- Keep accepted names in Zeno's vocabulary: fixed record table, row, stride,
+  byte length, offset, typed-array output, pack plan, dirty range.
+- Keep rejected names out of core APIs: scene, entity, component, renderer,
+  Three.js, WebGPU, Geukbit, ECS, asset loader, hierarchy, inspector.
+- `@exornea/zeno-buffers` may own reusable fixed-row buffer utilities such as
+  `createFixedRecordTable(byteLength, initialCapacity?)`.
+- `@exornea/zeno-buffers` must still not own renderer upload, scene graphs,
+  UI/editor state, ECS behavior, or asset loading.
+- Bench fixed-record table reuse separately from scan speed. The benchmark
+  should model repeated compile-frame buffer allocation and show whether
+  reusable buffers reduce allocation pressure.
+- If a future Geukbit adapter needs domain-specific behavior, implement it in
+  Geukbit behind a port. Promote only repeated dependency-free buffer patterns
+  back into Zeno.
+
 ## v2.8 Hot-Path Follow-Up
 
 - Treat `assertRecordRange(view, count, baseOffset?)` plus

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createFixedRecordTable,
   createF32PackPlan,
   createUintPackPlan,
   histogramU16Field,
@@ -135,6 +136,32 @@ describe("zeno-buffers", () => {
     expect(Array.from(visibleOut)).toEqual([101, 1, 103, 4, 104, 8]);
   });
 
+  it("reuses fixed-record table buffers across resets", () => {
+    const table = createFixedRecordTable(STRIDE, 2);
+    const first = table.reset(2);
+
+    expect(table.byteLength).toBe(STRIDE);
+    expect(table.count).toBe(2);
+    expect(table.capacity).toBe(2);
+    expect(table.activeByteLength).toBe(STRIDE * 2);
+
+    first.setUint32(OFFSET_ID, 101, true);
+    expect(table.view.getUint32(OFFSET_ID, true)).toBe(101);
+
+    const same = table.reset(1);
+    expect(same).toBe(first);
+    expect(table.count).toBe(1);
+    expect(table.capacity).toBe(2);
+    expect(table.activeByteLength).toBe(STRIDE);
+
+    const grown = table.reset(5);
+    expect(grown).not.toBe(first);
+    expect(table.count).toBe(5);
+    expect(table.capacity).toBeGreaterThanOrEqual(5);
+    expect(table.view.byteLength).toBe(table.capacity * STRIDE);
+    expect(table.view.getUint32(OFFSET_ID, true)).toBe(101);
+  });
+
   it("fails closed on short outputs, missing ranges, and invalid buckets", () => {
     const view = sampleRows();
 
@@ -159,6 +186,8 @@ describe("zeno-buffers", () => {
     expect(() => createUintPackPlan(STRIDE, [{ offset: OFFSET_Z + 1, kind: "u32" }])).toThrow(
       RangeError,
     );
+    expect(() => createFixedRecordTable(0)).toThrow(RangeError);
+    expect(() => createFixedRecordTable(STRIDE).reset(-1)).toThrow(RangeError);
   });
 });
 

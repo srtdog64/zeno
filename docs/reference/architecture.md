@@ -163,7 +163,16 @@ caller-owned `TypedArray` outputs. It must not import renderer libraries or own
 GPU upload behavior. It is not a second schema-aware scan-kernel surface:
 generated `*View.sum*`, `count*WhereEq`, and `findFirst*WhereEq` methods answer
 scalar table-scan questions, while `@exornea/zeno-buffers` owns generic
-pack/histogram helpers for typed-array outputs.
+pack/histogram helpers for typed-array outputs. It may also own generic fixed
+record table reuse helpers such as `createFixedRecordTable(...)`, because
+reusing `ArrayBuffer` capacity across compile frames is a buffer-boundary
+problem, not a renderer or game-domain problem.
+
+Dogfood projects such as Geukbit may reveal useful pressure, but Zeno must only
+promote dependency-free buffer patterns. Do not promote scene graphs, entities,
+components, editor inspectors, asset loaders, ECS behavior, Three.js, WebGPU, or
+renderer upload APIs into Zeno core. Those belong in the consuming app or
+renderer package behind a port.
 
 `@exornea/zeno-compiler` turns schema-only TypeScript into generated view code.
 It reads a restricted `.zeno.ts` schema grammar in `analyzer`, lowers it to

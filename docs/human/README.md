@@ -96,6 +96,11 @@ convenience wrappers. If a renderer needs to pack several queues in one fused
 pass, a handwritten loop can still be faster; keep that as a deliberate lower
 layer rather than mixing it into the generic plan surface.
 
+When an adapter rebuilds same-shaped fixed-row tables every frame or document
+revision, use `createFixedRecordTable(byteLength, initialCapacity?)` to reuse
+capacity. It is a generic `ArrayBuffer`/`DataView` table boundary, not a scene
+graph, ECS, renderer, or GPU upload API.
+
 ## Start Here
 
 - [Getting Started](getting-started.md)

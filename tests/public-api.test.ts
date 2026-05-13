@@ -10,6 +10,7 @@ describe("public package runtime exports", () => {
     expect(Object.keys(buffers).sort()).toMatchInlineSnapshot(`
       [
         "createF32PackPlan",
+        "createFixedRecordTable",
         "createUintPackPlan",
         "histogramU16Field",
         "histogramU8Field",

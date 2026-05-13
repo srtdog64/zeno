@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-example-renderer-draw-batch-buffer",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "start": "node ./dist/main.js"
   },
   "dependencies": {
-    "@exornea/zeno-buffers": "2.8.0",
-    "@exornea/zeno-compiler": "2.8.0",
-    "@exornea/zeno-runtime": "2.8.0",
-    "@exornea/zeno-types": "2.8.0"
+    "@exornea/zeno-buffers": "2.9.0",
+    "@exornea/zeno-compiler": "2.9.0",
+    "@exornea/zeno-runtime": "2.9.0",
+    "@exornea/zeno-types": "2.9.0"
   }
 }

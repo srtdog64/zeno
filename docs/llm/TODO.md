@@ -209,8 +209,8 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.8.0` after release review if the assert-once hot-loop guard and
-  decode-free byte predicate surface remain the right release boundary
+- publish `2.9.0` after release review if the Geukbit dogfood boundary and
+  fixed-record table reuse surface remain the right release boundary
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,

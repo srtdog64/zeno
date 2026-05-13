@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 2.9.0
+
+Status: Geukbit dogfood boundary and fixed-record table reuse release.
 
 - Added `createFixedRecordTable(byteLength, initialCapacity?)` to
   `@exornea/zeno-buffers` as a generic fixed-row `ArrayBuffer`/`DataView`

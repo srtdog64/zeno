@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-example-webgl-raw-double-buffer",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "private": true,
   "type": "module",
   "scripts": {

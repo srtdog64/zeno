@@ -2,7 +2,7 @@ import {
   POINTER32_BYTE_LENGTH,
   POINTER32_NULL,
 } from "./pointer32.js";
-import { assertDataViewRange } from "./range.js";
+import { assertAlignedOffset, assertDataViewRange } from "./range.js";
 import { ProjectionView } from "./view-base.js";
 import { VectorView } from "./vector-base.js";
 
@@ -18,6 +18,7 @@ export class PointerVectorView<TView extends ProjectionView> extends VectorView<
     ) => TView,
     baseOffset = 0,
     littleEndian = true,
+    private readonly targetAlignment = 1,
   ) {
     super(view, descriptorOffset, baseOffset, littleEndian);
   }
@@ -51,6 +52,7 @@ export class PointerVectorView<TView extends ProjectionView> extends VectorView<
     const pointerOffset = this.payloadOffset() + index * POINTER32_BYTE_LENGTH;
     const targetOffset = this.absoluteOffset(pointerOffset) + relativeOffset;
     assertDataViewRange(this.view, targetOffset, this.targetByteLength);
+    assertAlignedOffset(targetOffset, this.targetAlignment, "pointer32 target offset");
     return targetOffset;
   }
 

@@ -55,6 +55,17 @@ The important boundary:
 
 > Zeno owns CPU-side binary layout. Renderers still own rendering.
 
+Zeno's default read path is projection, not object materialization:
+
+```txt
+buffer -> generated DataView view
+```
+
+That is Zeno's form of deserialization. It reads from the backing buffer without
+building a plain JavaScript object graph. If you need `buffer -> plain object`,
+treat that as explicit materialization for editor, debug, import, or export
+code. It is not the hot path.
+
 ## Quick Start
 
 Install:

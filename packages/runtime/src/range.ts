@@ -25,6 +25,23 @@ export function assertDataViewRange(
   }
 }
 
+export function assertAlignedOffset(
+  offset: number,
+  alignment: number,
+  label: string,
+): void {
+  assertNonNegativeInteger(offset, label);
+  assertNonNegativeInteger(alignment, "alignment");
+
+  if (alignment === 0) {
+    throw new RangeError("alignment must be greater than zero");
+  }
+
+  if (offset % alignment !== 0) {
+    throw new RangeError(`${label} must be aligned to ${alignment} bytes: ${offset}`);
+  }
+}
+
 export function assertBufferRange(
   buffer: ArrayBufferLike,
   offset: number,

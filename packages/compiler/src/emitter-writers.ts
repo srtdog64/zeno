@@ -173,7 +173,7 @@ static write${pascalName}(writer: DynamicLayoutWriter, values: readonly ${field.
   },
   pointer: ({ layout, field, pascalName }) => method`
 static write${pascalName}(writer: DynamicLayoutWriter, values: readonly (number | null)[]) {
-  return writer.writePointerVector(${layout.name}View.${field.name}Offset, values, ${field.element.targetTypeName}View.byteLength);
+  return writer.writePointerVector(${layout.name}View.${field.name}Offset, values, ${field.element.targetTypeName}View.byteLength, ${field.element.targetTypeName}View.alignment);
 }`,
 } satisfies {
   readonly [K in VectorElementLayout["kind"]]: VectorWriterEmitter<K>;
@@ -329,7 +329,7 @@ function emitVectorObjectFieldWriteAtBase(
     }
     case "pointer":
       return [
-        `  writer.writePointerVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.targetTypeName}View.byteLength);`,
+        `  writer.writePointerVectorAtBase(baseOffset, ${layout.name}View.${field.name}Offset, value.${field.name}, ${field.element.targetTypeName}View.byteLength, ${field.element.targetTypeName}View.alignment);`,
       ];
   }
 }

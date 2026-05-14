@@ -740,6 +740,44 @@ describe("dynamic layout runtime skeleton", () => {
     expect(() => (writer.writePointerVector as any)(0, [28])).toThrow(RangeError);
   });
 
+  it("rejects checked pointer vector targets that violate target alignment", () => {
+    class AlignedNodeView extends ProjectionView {
+      static readonly byteLength = 8;
+      static readonly alignment = 4;
+
+      constructor(view: DataView, baseOffset = 0, littleEndian = true) {
+        super(view, baseOffset, littleEndian);
+      }
+    }
+
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+    const writer = new DynamicLayoutWriter(view, 16);
+
+    expect(() =>
+      writer.writePointerVector(0, [42], AlignedNodeView.byteLength, AlignedNodeView.alignment),
+    ).toThrow(RangeError);
+
+    writeVector32Descriptor(view, 0, { relOffset: 16, count: 1 });
+    view.setInt32(16, 42 - 16, true);
+
+    const pointers = new PointerVectorView(
+      view,
+      0,
+      AlignedNodeView.byteLength,
+      (targetView, baseOffset, littleEndian) =>
+        new AlignedNodeView(targetView, baseOffset, littleEndian),
+      0,
+      true,
+      AlignedNodeView.alignment,
+    );
+
+    expect(() => pointers.targetOffsetAt(0)).toThrow(RangeError);
+
+    view.setInt32(16, 40 - 16, true);
+    expect(pointers.targetOffsetAt(0)).toBe(40);
+  });
+
   it("rejects a malformed descriptor corpus with out-of-range payloads", () => {
     const spanBuffer = new ArrayBuffer(64);
     const spanView = new DataView(spanBuffer);

@@ -120,7 +120,7 @@ static get${pascalName}TargetOffset(view: DataView, baseOffset = 0, littleEndian
   if (targetOffset === null) {
     return null;
   }
-  ${layout.name}View.assertPointerTargetRange(view, targetOffset, ${field.targetTypeName}View.byteLength);
+  ${layout.name}View.assertPointerTargetRange(view, targetOffset, ${field.targetTypeName}View.byteLength, ${field.targetTypeName}View.alignment);
   return targetOffset;
 }
 static setUnchecked${pascalName}TargetOffset(view: DataView, targetOffset: number | null, baseOffset = 0, littleEndian = ${littleEndianDefault}): void {
@@ -133,7 +133,7 @@ static setUnchecked${pascalName}TargetOffset(view: DataView, targetOffset: numbe
 }
 static set${pascalName}TargetOffset(view: DataView, targetOffset: number | null, baseOffset = 0, littleEndian = ${littleEndianDefault}): void {
   if (targetOffset !== null) {
-    ${layout.name}View.assertPointerTargetRange(view, targetOffset, ${field.targetTypeName}View.byteLength);
+    ${layout.name}View.assertPointerTargetRange(view, targetOffset, ${field.targetTypeName}View.byteLength, ${field.targetTypeName}View.alignment);
   }
   ${layout.name}View.setUnchecked${pascalName}TargetOffset(view, targetOffset, baseOffset, littleEndian);
 }

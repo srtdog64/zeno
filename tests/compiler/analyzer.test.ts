@@ -704,7 +704,7 @@ describe("analyzeProjectionFile", () => {
     expect(source).toContain("get uncheckedNextTargetOffset(): number | null");
     expect(source).toContain("static writeChildren(writer: DynamicLayoutWriter");
     expect(source).toContain(
-      "writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength)",
+      "writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength, NodeView.alignment)",
     );
     expect(source).toContain("childrenView(): PointerVectorView<NodeView>");
     expect(source).toContain("nextView(): NodeView | null");

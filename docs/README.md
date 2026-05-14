@@ -12,6 +12,7 @@ Human-facing docs:
 
 - [Getting Started](human/getting-started.md)
 - [Schema Grammar](human/schema-grammar.md)
+- [Pointer Lifetime](human/pointer-lifetime.md)
 - [Renderer Buffer Case Studies](human/renderer-buffer-case-studies.md)
 - [Performance Witness](human/performance-comparison.md)
 

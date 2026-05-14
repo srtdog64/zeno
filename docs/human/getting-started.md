@@ -89,6 +89,17 @@ Scalar reads are the hot path. Dynamic strings and vectors are lazy view APIs:
 byte slices are cheap, but decoding strings and materializing arrays are
 explicit costs.
 
+This is the key deserialization model:
+
+```txt
+projection read: buffer -> DataView-backed view
+materialization: buffer -> plain JS object/string/array
+```
+
+Projection read is the default Zeno path. It keeps the buffer as the source of
+truth and avoids building an object graph. Materialization is a separate cold
+path for UI, debugging, import/export, or tests.
+
 ## 4. Write a Record
 
 Use the generated object writer when constructing a full record. The view class
@@ -167,8 +178,9 @@ be better for TS-only teams that do not need cross-language schema tooling.
 
 - Object-level serializers reject vectors of structs that themselves contain
   dynamic tail fields; use `z.vector<z.pointer<T>>` for those shapes.
-- `z.pointer<T>` stores relative offsets only; object graph allocation/serialization is not
-  implemented.
+- `z.pointer<T>` stores relative offsets only. It proves addressability, not
+  object lifetime. If records can be deleted or reused, read
+  [pointer-lifetime.md](pointer-lifetime.md).
 - `z.utf8`/`z.bytes` return views or explicit decode helpers, not free JS strings.
 - Versioning and schema diff tooling are not implemented; v2 treats
   layout-changing schema edits as breaking.

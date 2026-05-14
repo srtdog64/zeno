@@ -194,15 +194,21 @@ private static assertPointer32Payload(value: number): void {
   }
 }
 
-private static assertPointerTargetRange(view: DataView, targetOffset: number, byteLength: number): void {
+private static assertPointerTargetRange(view: DataView, targetOffset: number, byteLength: number, alignment = 1): void {
   if (!Number.isSafeInteger(targetOffset) || targetOffset < 0) {
     throw new RangeError(\`pointer32 target offset must be a non-negative safe integer: \${targetOffset}\`);
   }
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
     throw new RangeError(\`pointer32 target byteLength must be a non-negative safe integer: \${byteLength}\`);
   }
+  if (!Number.isSafeInteger(alignment) || alignment <= 0) {
+    throw new RangeError(\`pointer32 target alignment must be a positive safe integer: \${alignment}\`);
+  }
   if (byteLength > view.byteLength - targetOffset) {
     throw new RangeError(\`pointer32 target \${targetOffset}..\${targetOffset + byteLength} exceeds DataView length \${view.byteLength}\`);
+  }
+  if (targetOffset % alignment !== 0) {
+    throw new RangeError(\`pointer32 target offset must be aligned to \${alignment} bytes: \${targetOffset}\`);
   }
 }`;
 }

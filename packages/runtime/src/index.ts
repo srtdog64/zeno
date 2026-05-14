@@ -74,6 +74,7 @@ export {
   type ZenoFrameHeader,
   type ZenoFramePayloadExpectation,
 } from "./abi.js";
+export { ArenaEpoch, GenerationHandleTable, type GenerationHandle } from "./lifetime.js";
 export {
   DynamicLayoutWriter,
   SharedDynamicLayoutWriter,

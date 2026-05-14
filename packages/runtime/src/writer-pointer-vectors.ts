@@ -4,7 +4,7 @@ import {
   POINTER32_NULL,
   pointer32RelativeOffset,
 } from "./pointer32.js";
-import { assertDataViewRange, assertNonNegativeInteger } from "./range.js";
+import { assertAlignedOffset, assertDataViewRange, assertNonNegativeInteger } from "./range.js";
 import { StructVectorLayoutWriter } from "./writer-struct-vectors.js";
 
 export class PointerVectorLayoutWriter extends StructVectorLayoutWriter {
@@ -12,12 +12,14 @@ export class PointerVectorLayoutWriter extends StructVectorLayoutWriter {
     descriptorOffset: number,
     targetOffsets: readonly (number | null)[],
     targetByteLength: number,
+    targetAlignment = 1,
   ): Vector32Descriptor {
     return this.writePointerVectorAtBase(
       this.baseOffset,
       descriptorOffset,
       targetOffsets,
       targetByteLength,
+      targetAlignment,
     );
   }
 
@@ -26,8 +28,13 @@ export class PointerVectorLayoutWriter extends StructVectorLayoutWriter {
     descriptorOffset: number,
     targetOffsets: readonly (number | null)[],
     targetByteLength: number,
+    targetAlignment = 1,
   ): Vector32Descriptor {
     assertNonNegativeInteger(targetByteLength, "targetByteLength");
+    assertNonNegativeInteger(targetAlignment, "targetAlignment");
+    if (targetAlignment === 0) {
+      throw new RangeError("targetAlignment must be greater than zero");
+    }
 
     const payloadOffset = this.reserve(targetOffsets.length * POINTER32_BYTE_LENGTH, 4);
     const payloadAbsoluteOffset = this.baseOffset + payloadOffset;
@@ -50,6 +57,7 @@ export class PointerVectorLayoutWriter extends StructVectorLayoutWriter {
       const absolutePointerOffset = payloadAbsoluteOffset + index * POINTER32_BYTE_LENGTH;
       if (targetOffset !== null) {
         assertDataViewRange(this.view, targetOffset, targetByteLength);
+        assertAlignedOffset(targetOffset, targetAlignment, "pointer32 target offset");
       }
       const value =
         targetOffset === null

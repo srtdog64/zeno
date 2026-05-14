@@ -403,15 +403,21 @@ describe("compiler snapshots", () => {
           }
         }
 
-        private static assertPointerTargetRange(view: DataView, targetOffset: number, byteLength: number): void {
+        private static assertPointerTargetRange(view: DataView, targetOffset: number, byteLength: number, alignment = 1): void {
           if (!Number.isSafeInteger(targetOffset) || targetOffset < 0) {
             throw new RangeError(\`pointer32 target offset must be a non-negative safe integer: \${targetOffset}\`);
           }
           if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
             throw new RangeError(\`pointer32 target byteLength must be a non-negative safe integer: \${byteLength}\`);
           }
+          if (!Number.isSafeInteger(alignment) || alignment <= 0) {
+            throw new RangeError(\`pointer32 target alignment must be a positive safe integer: \${alignment}\`);
+          }
           if (byteLength > view.byteLength - targetOffset) {
             throw new RangeError(\`pointer32 target \${targetOffset}..\${targetOffset + byteLength} exceeds DataView length \${view.byteLength}\`);
+          }
+          if (targetOffset % alignment !== 0) {
+            throw new RangeError(\`pointer32 target offset must be aligned to \${alignment} bytes: \${targetOffset}\`);
           }
         }
 
@@ -458,7 +464,7 @@ describe("compiler snapshots", () => {
         }
 
         static writeChildren(writer: DynamicLayoutWriter, values: readonly (number | null)[]) {
-          return writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength);
+          return writer.writePointerVector(NodeView.childrenOffset, values, NodeView.byteLength, NodeView.alignment);
         }
 
         static write(view: DataView, value: NodeViewInput, baseOffset = 0, littleEndian = true): DynamicLayoutWriter {
@@ -470,7 +476,7 @@ describe("compiler snapshots", () => {
         static writeInto(view: DataView, writer: DynamicLayoutWriter, value: NodeViewInput, baseOffset = 0, littleEndian = true): void {
           NodeView.setValue(view, value.value, baseOffset, littleEndian);
           NodeView.setNextTargetOffset(view, value.next, baseOffset, littleEndian);
-          writer.writePointerVectorAtBase(baseOffset, NodeView.childrenOffset, value.children, NodeView.byteLength);
+          writer.writePointerVectorAtBase(baseOffset, NodeView.childrenOffset, value.children, NodeView.byteLength, NodeView.alignment);
         }
 
         static getValue(view: DataView, baseOffset = 0, littleEndian = true): number {
@@ -593,7 +599,7 @@ describe("compiler snapshots", () => {
           if (targetOffset === null) {
             return null;
           }
-          NodeView.assertPointerTargetRange(view, targetOffset, NodeView.byteLength);
+          NodeView.assertPointerTargetRange(view, targetOffset, NodeView.byteLength, NodeView.alignment);
           return targetOffset;
         }
         static setUncheckedNextTargetOffset(view: DataView, targetOffset: number | null, baseOffset = 0, littleEndian = true): void {
@@ -606,7 +612,7 @@ describe("compiler snapshots", () => {
         }
         static setNextTargetOffset(view: DataView, targetOffset: number | null, baseOffset = 0, littleEndian = true): void {
           if (targetOffset !== null) {
-            NodeView.assertPointerTargetRange(view, targetOffset, NodeView.byteLength);
+            NodeView.assertPointerTargetRange(view, targetOffset, NodeView.byteLength, NodeView.alignment);
           }
           NodeView.setUncheckedNextTargetOffset(view, targetOffset, baseOffset, littleEndian);
         }
@@ -658,7 +664,7 @@ describe("compiler snapshots", () => {
           if (targetOffset === null) {
             return null;
           }
-          NodeView.assertPointerTargetRange(this.view, targetOffset, NodeView.byteLength);
+          NodeView.assertPointerTargetRange(this.view, targetOffset, NodeView.byteLength, NodeView.alignment);
           return targetOffset;
         }
         set uncheckedNextTargetOffset(targetOffset: number | null) {
@@ -671,7 +677,7 @@ describe("compiler snapshots", () => {
         }
         set nextTargetOffset(targetOffset: number | null) {
           if (targetOffset !== null) {
-            NodeView.assertPointerTargetRange(this.view, targetOffset, NodeView.byteLength);
+            NodeView.assertPointerTargetRange(this.view, targetOffset, NodeView.byteLength, NodeView.alignment);
           }
           this.uncheckedNextTargetOffset = targetOffset;
         }
@@ -694,7 +700,7 @@ describe("compiler snapshots", () => {
         }
 
         childrenView(): PointerVectorView<NodeView> {
-          return new PointerVectorView(this.view, 8, NodeView.byteLength, (view, baseOffset, littleEndian) => new NodeView(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
+          return new PointerVectorView(this.view, 8, NodeView.byteLength, (view, baseOffset, littleEndian) => new NodeView(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian, NodeView.alignment);
         }
 
       }

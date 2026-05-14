@@ -41,6 +41,16 @@ InstanceView.getXAt(view, index);
 InstanceView.countVisibleWhereEq(view, count, true);
 ```
 
+Zeno reads by projection. In normal use, deserialization means:
+
+```txt
+buffer -> generated DataView-backed view
+```
+
+It does not mean `buffer -> plain JavaScript object`. Building objects, strings,
+or arrays from a buffer is materialization. That is useful for editor panels,
+debugging, import/export, and tests, but it is not Zeno's hot path.
+
 For manual hot loops, validate once and then use the unchecked cursor or raw
 offset path:
 
@@ -89,6 +99,10 @@ Dynamic text is explicit. Use byte predicates such as `startsWithAscii`,
 When a loop already has the descriptor offset, use the lower-level
 `span*Ascii` helpers to avoid creating a span view and `Uint8Array`.
 
+Pointers are addresses, not ownership proof. A pointer can point inside the
+buffer and still be stale if the application reused that slot for another
+object. For a simple explanation, see [Pointer Lifetime](pointer-lifetime.md).
+
 For renderer-style packing, prefer `@exornea/zeno-buffers` plan APIs when you
 want a reusable generic buffer boundary: `createF32PackPlan`,
 `createUintPackPlan`, and `pack*Plan...`. The `pack*Fields...` helpers are
@@ -105,6 +119,7 @@ graph, ECS, renderer, or GPU upload API.
 
 - [Getting Started](getting-started.md)
 - [Schema Grammar](schema-grammar.md)
+- [Pointer Lifetime](pointer-lifetime.md)
 - [Layered Model](../reference/layers/README.md)
 - [Renderer Buffer Case Studies](renderer-buffer-case-studies.md)
 - [Performance Witness](performance-comparison.md)

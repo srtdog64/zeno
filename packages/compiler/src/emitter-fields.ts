@@ -113,7 +113,7 @@ ${field.name}View(): DynamicStructVectorView<${field.element.typeName}View> {
         case "pointer":
           return method`
 ${field.name}View(): PointerVectorView<${field.element.targetTypeName}View> {
-  return new PointerVectorView(this.view, ${field.offset}, ${field.element.targetTypeName}View.byteLength, (view, baseOffset, littleEndian) => new ${field.element.targetTypeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian);
+  return new PointerVectorView(this.view, ${field.offset}, ${field.element.targetTypeName}View.byteLength, (view, baseOffset, littleEndian) => new ${field.element.targetTypeName}View(view, baseOffset, littleEndian), this.baseOffset, this.littleEndian, ${field.element.targetTypeName}View.alignment);
 }`;
       }
   }
@@ -157,7 +157,7 @@ get ${field.name}TargetOffset(): number | null {
   if (targetOffset === null) {
     return null;
   }
-  ${layout.name}View.assertPointerTargetRange(this.view, targetOffset, ${field.targetTypeName}View.byteLength);
+  ${layout.name}View.assertPointerTargetRange(this.view, targetOffset, ${field.targetTypeName}View.byteLength, ${field.targetTypeName}View.alignment);
   return targetOffset;
 }
 set unchecked${pascalName}TargetOffset(targetOffset: number | null) {
@@ -170,7 +170,7 @@ set unchecked${pascalName}TargetOffset(targetOffset: number | null) {
 }
 set ${field.name}TargetOffset(targetOffset: number | null) {
   if (targetOffset !== null) {
-    ${layout.name}View.assertPointerTargetRange(this.view, targetOffset, ${field.targetTypeName}View.byteLength);
+    ${layout.name}View.assertPointerTargetRange(this.view, targetOffset, ${field.targetTypeName}View.byteLength, ${field.targetTypeName}View.alignment);
   }
   this.unchecked${pascalName}TargetOffset = targetOffset;
 }

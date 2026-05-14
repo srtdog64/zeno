@@ -149,6 +149,34 @@ export interface Row {
     expect(full).toContain("countActiveWhereEq");
   });
 
+  it("rejects generated pointer targets that violate target alignment", () => {
+    const emitted = compileSchema(`import type { z } from "@exornea/zeno-types";
+
+export interface Node {
+  value: z.i32;
+  next: z.pointer<Node>;
+}
+`);
+    typeCheckGenerated(emitted);
+    const generated = runGeneratedModule(emitted);
+    const NodeView = generated.NodeView as GeneratedViewConstructor;
+    const buffer = new ArrayBuffer(64);
+    const view = new DataView(buffer);
+
+    expect(NodeView.alignment).toBe(4);
+    expect(NodeView.byteLength).toBe(8);
+    expect(() => NodeView.setNextTargetOffset(view, 10)).toThrow(/aligned to 4 bytes/);
+    expect(() => NodeView.write(view, { value: 1, next: 10 })).toThrow(/aligned to 4 bytes/);
+
+    NodeView.setNextTargetOffset(view, 12);
+    expect(NodeView.getNextTargetOffset(view)).toBe(12);
+
+    const node = new NodeView(view) as GeneratedPointerNodeView;
+    expect(() => {
+      node.nextTargetOffset = 10;
+    }).toThrow(/aligned to 4 bytes/);
+  });
+
   it("type-checks split generated view output", () => {
     const sourceText = `import type { z } from "@exornea/zeno-types";
 
@@ -187,6 +215,10 @@ interface GeneratedPacketView {
   headerView(): { readonly code: number };
   nameView(): { text(): string };
   scoresView(): { toArray(): number[] };
+}
+
+interface GeneratedPointerNodeView {
+  nextTargetOffset: number | null;
 }
 
 function schemaForScalarFields(fields: readonly ScalarKind[]): string {

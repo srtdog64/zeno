@@ -193,16 +193,22 @@ Runtime projection APIs throw `RangeError` when:
 - descriptor storage itself is out of bounds,
 - descriptor payload range is out of bounds,
 - scalar access exceeds the `DataView`,
-- checked pointer dereference target range is out of bounds,
-- pointer vector writes omit or fail the target byte-length range proof,
+- checked pointer dereference target range is out of bounds or violates the
+  target struct alignment,
+- pointer vector writes omit or fail the target byte-length/alignment proof,
 - pointer traversal exceeds its explicit step budget.
 
 This is a runtime memory-boundary policy. Compiler/schema failures use
 structured diagnostics and `Result` internally; hot-path projection reads use
 exceptions for malformed buffers.
 
-Pointer range checks prove only that a target byte range is inside the backing
-`DataView`. They do not prove graph acyclicity or semantic object ownership.
+Pointer checks prove only that a target byte range is inside the backing
+`DataView` and aligned for the target struct. They do not prove graph acyclicity,
+semantic object ownership, or liveness. A pointer can still refer to stale or
+repurposed bytes if the application rewrites arenas in place. Applications that
+reuse arenas should carry their own generation, freelist, or lifetime discipline
+above `pointer32`.
+
 Generated pointer dereference moves one edge at a time; graph traversal must use
 an explicit caller budget such as `traversePointerChain(...)`.
 

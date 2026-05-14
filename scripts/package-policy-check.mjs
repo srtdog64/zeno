@@ -51,6 +51,10 @@ const rootExport = {
   },
 };
 
+const publicPublishConfig = {
+  access: "public",
+};
+
 const policies = [
   {
     path: "packages/buffers/package.json",
@@ -100,6 +104,7 @@ for (const policy of policies) {
   assertDeepEqual(manifest.types, "./dist/index.d.ts", `${policy.path} types`);
   assertDeepEqual(manifest.files, policy.files, `${policy.path} files`);
   assertDeepEqual(manifest.exports, rootExport, `${policy.path} root-only exports`);
+  assertDeepEqual(manifest.publishConfig, publicPublishConfig, `${policy.path} publish config`);
 
   if (policy.dependencies === undefined) {
     assertAbsent(manifest, "dependencies", policy.path);

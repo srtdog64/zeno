@@ -31,6 +31,7 @@ describe("public package runtime exports", () => {
   it("keeps the @exornea/zeno-runtime root export surface stable", () => {
     expect(Object.keys(runtime).sort()).toMatchInlineSnapshot(`
       [
+        "ArenaEpoch",
         "BytesSpanView",
         "BytesVectorView",
         "DynamicLayoutArena",
@@ -43,6 +44,7 @@ describe("public package runtime exports", () => {
         "FixedStringArrayView",
         "FixedStringVectorView",
         "FixedStructArrayView",
+        "GenerationHandleTable",
         "POINTER32_BYTE_LENGTH",
         "POINTER32_NULL",
         "PointerVectorView",

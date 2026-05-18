@@ -100,6 +100,30 @@ Projection read is the default Zeno path. It keeps the buffer as the source of
 truth and avoids building an object graph. Materialization is a separate cold
 path for UI, debugging, import/export, or tests.
 
+### Threading In Plain Words
+
+Zeno buffers can move between the main thread and workers. They can also sit in
+a `SharedArrayBuffer` when the app has the right browser headers.
+
+But Zeno is not the thing that manages threads.
+
+Think of Zeno like a ruler for binary memory:
+
+- it says where each field lives,
+- it checks offsets and alignment,
+- it can provide small atomic ready/cursor cells for shared buffers.
+
+Your app still decides:
+
+- which worker writes,
+- which thread reads,
+- whether to wait or skip a frame,
+- whether to use double buffering or triple buffering,
+- when a worker starts or stops.
+
+That part does not belong in Zeno. It belongs in your editor, renderer, game
+loop, or scheduler.
+
 ## 4. Write a Record
 
 Use the generated object writer when constructing a full record. The view class

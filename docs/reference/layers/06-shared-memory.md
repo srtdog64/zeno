@@ -23,6 +23,7 @@ const writer = SharedDynamicLayoutWriter.fromSharedShard(sharedBuffer, shardOpti
 
 - fixed-position writes are still caller-race responsibility
 - no async backoff strategy in the synchronous writer API
+- no worker lifecycle, task scheduling, lock policy, or renderer frame policy
 - host-native control cells are not serialized Zeno ABI fields
 - no guarantee that a single highly contended cursor cell scales across many
   workers
@@ -31,6 +32,24 @@ const writer = SharedDynamicLayoutWriter.fromSharedShard(sharedBuffer, shardOpti
 
 Use this layer only after the dynamic descriptor model is understood and the
 worker ownership protocol is explicit.
+
+## Ownership Boundary
+
+This layer is deliberately narrow. It provides atomic publication building
+blocks for Zeno-owned memory shapes, but it is not a general multithreading
+runtime.
+
+Zeno should not decide:
+
+- whether a worker waits, retries, yields, or drops a frame
+- whether the application uses double buffering or triple buffering
+- which thread owns a renderer upload buffer
+- how a worker pool is created, stopped, or restarted
+- how high-contention work is scheduled
+
+Those choices are application or renderer policy. Keeping them outside Zeno is
+part of the design: Zeno stays a layout/projection library, not a game engine,
+renderer, task runtime, or worker framework.
 
 ## False Sharing Policy
 

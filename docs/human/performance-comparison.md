@@ -393,6 +393,51 @@ Promotion criterion:
   this benchmark measures metadata ingestion and scans, not texture or geometry
   decoding
 
+### Renderer Mesh Rows Versus TypeScript Objects
+
+`bench:renderer-mesh-ts` compares plain TypeScript object arrays against
+fixed-stride binary rows for a renderer-style mesh workload. This is the
+benchmark that answers the practical question: "what if I just keep normal TS
+objects and pack them into typed arrays?"
+
+The workload has two parts:
+
+- mesh vertex rows: `meshId`, `materialId`, flags, position, normal, UV, color
+- draw-batch rows: mesh/material ids and command words packed into `Uint32Array`
+
+Latest local witness:
+
+- Date: 2026-05-14
+- Vertex rows: 250,000
+- Draw batches: 100,000
+- Warmup: 3 runs
+- Measured: 25 runs
+- TS object fixture retained heap: 58.00 MiB
+- Binary fixture retained array buffers: 14.50 MiB
+
+| Workload                                              | Median |     p95 |     p99 |    Std | Median ns/row |
+| ----------------------------------------------------- | -----: | ------: | ------: | -----: | ------------: |
+| TS object mesh vertex pack                            | 2.84ms |  4.98ms | 12.21ms | 2.00ms |      11.36 ns |
+| Handwritten binary mesh vertex pack                   | 1.27ms |  3.17ms | 18.11ms | 3.37ms |       5.08 ns |
+| Zeno buffers planned mesh vertex pack                 | 4.70ms | 10.76ms | 22.87ms | 3.94ms |      18.81 ns |
+| TS object draw command pack                           | 1.48ms |  4.09ms |  6.74ms | 1.35ms |      14.80 ns |
+| Handwritten binary draw command pack                  | 1.24ms |  3.95ms |  4.38ms | 1.14ms |      12.44 ns |
+| Zeno buffers planned draw command pack                | 5.52ms |  8.92ms |  8.96ms | 1.67ms |      55.25 ns |
+| TS object draw command pack where material            | 0.75ms |  4.43ms |  4.56ms | 1.15ms |       7.46 ns |
+| Handwritten binary draw command pack where material   | 0.47ms |  5.07ms |  5.36ms | 1.32ms |       4.68 ns |
+| Zeno buffers planned draw command pack where material | 2.05ms |  2.76ms |  4.01ms | 0.58ms |      20.47 ns |
+
+Interpretation:
+
+- Plain TS objects can be very fast once they already exist and have stable
+  shapes.
+- Fixed-stride binary rows use much less retained JS heap in this witness.
+- Handwritten binary fused loops can beat TS objects for renderer packing.
+- The current generic `@exornea/zeno-buffers` plan API is not always the fastest
+  path, especially for dense command-word packing. It is a reusable generic
+  layer. Renderer-specific fused pack kernels or generated pack kernels need
+  separate benchmark witnesses before being promoted.
+
 ## Scalar Read Timing
 
 | Access mode                                     |   Median |      p95 |      p99 |     Std | Median ns/record | Relative median | Allocation shape            |
@@ -525,6 +570,8 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 - Real game metadata benchmark: [packages/bench/real-game-metadata.mjs](../packages/bench/real-game-metadata.mjs)
 - Renderer surface metadata benchmark:
   [packages/bench/renderer-surface-metadata.mjs](../packages/bench/renderer-surface-metadata.mjs)
+- Renderer mesh TS-object comparison benchmark:
+  [packages/bench/renderer-mesh-ts-comparison.mjs](../packages/bench/renderer-mesh-ts-comparison.mjs)
 - HexGL metadata fixture: [packages/bench/fixtures/hexgl-asset-metadata.json](../packages/bench/fixtures/hexgl-asset-metadata.json)
 - Renderer surface metadata fixture:
   [packages/bench/fixtures/renderer-surface-metadata.json](../packages/bench/fixtures/renderer-surface-metadata.json)

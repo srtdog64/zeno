@@ -10,6 +10,7 @@ Status: v2.4 runtime failure boundary note.
 | Runtime bounds failures throw `RangeError` | load-bearing | Invalid memory access is a memory boundary failure, not a recoverable compiler diagnostic.                                     |
 | Boundary validation is separate            | load-bearing | Untrusted buffers should be validated before entering projection loops.                                                        |
 | Shared writer high contention is separate  | candidate    | A single shared cursor is not the high-contention industrial path; sharding or future async/backoff writers are separate work. |
+| Concurrency ownership stays outside core   | load-bearing | Zeno owns byte layout and small publication primitives, not application thread policy.                                         |
 
 ## Rule
 
@@ -73,6 +74,37 @@ worker 2 -> shard 2 cursor + shard 2 payload
 Future async/backoff writer work should be a separate layer. It should not be
 hidden inside the synchronous `reserve(...)` API unless a benchmark shows the
 tradeoff is consistently better.
+
+## Concurrency Boundary
+
+Zeno is not a concurrency runtime. It does not own worker lifecycle, scheduling,
+retry/backoff policy, frame ownership, renderer upload ownership, or
+multi-producer conflict resolution.
+
+This is intentional. Those policies depend on the application: an editor, a
+renderer, an Electron app, and a browser worker pipeline make different choices
+about dropping work, waiting, sharding, double buffering, or triple buffering.
+
+Zeno may provide small atomic publication primitives when they directly protect
+Zeno-owned memory shapes, for example shared tail cursor reservation or
+descriptor-ready cells. That does not make Zeno responsible for the full
+concurrency protocol.
+
+The boundary is:
+
+```txt
+Zeno owns:
+  byte layout, offsets, alignment, projection, small publication cells
+
+Application owns:
+  thread ownership, worker lifecycle, scheduling, contention policy, retries,
+  frame handoff, renderer upload policy
+```
+
+Do not fold a general task scheduler, worker pool, lock policy, adaptive
+backoff strategy, or renderer frame protocol into Zeno core. If a real workload
+needs one, put it in the consuming application or in a separate scheduler /
+renderer layer.
 
 ## Witness
 

@@ -1,8 +1,29 @@
 # Changelog
 
+## 2.9.1
+
+Status: post-2.9 stability and benchmark-boundary patch.
+
+- Hardened `assertRowRange()` against safe-integer overflow before computing
+  the final byte range.
+- Added a Diagram Studio-style graph index benchmark and stress fixture as
+  workload evidence only. Zeno still does not expose graph-specific public APIs
+  or graph serialization helpers.
+- Added schema grammar documentation drift tests so supported/rejected examples
+  in the human grammar guide stay aligned with analyzer behavior.
+- Expanded benchmark methodology notes for FlatBuffers, real-game metadata, and
+  graph-index workloads so scope, amortization, topology, and attribution are
+  explicit.
+- Aligned package manifests and workspace lockfile at `2.9.1`.
+
 ## 2.9.0
 
 Status: Geukbit dogfood boundary and fixed-record table reuse release.
+
+> Geukbit is an external 3D editor / engine product that uses Zeno; it is not a
+> Zeno subsystem. The "Geukbit dogfood boundary" describes which buffer patterns
+> Zeno will absorb from that real-world caller (generic, dependency-free) versus
+> which it will refuse (scene/entity/component/renderer-specific).
 
 - Added `createFixedRecordTable(byteLength, initialCapacity?)` to
   `@exornea/zeno-buffers` as a generic fixed-row `ArrayBuffer`/`DataView`

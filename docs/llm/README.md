@@ -86,6 +86,18 @@ For repeated compile-frame allocation of same-shaped fixed rows, use
 `ArrayBuffer`, and `DataView`. Do not turn it into a scene/entity/component or
 renderer upload abstraction.
 
+For diagram/editor graphs, keep source-of-truth data as JSON/objects. Zeno may
+model only a rebuildable numeric graph index: interned node ids, fixed edge
+rows, degree arrays, adjacency buffers, and kind histograms. Do not turn this
+into a general graph serializer or editor-state format.
+
+Diagram Studio guidance: canonical graph data stays as JSON/React Flow objects.
+If the graph becomes large, derive `EdgeRow { sourceId, targetId, kind,
+layerMask }` and `NodeRow { idIndex, kind, flags, inDegree, outDegree }` rows.
+Keep string ids in a JS `string[]` table and let Zeno scan only interned numeric
+rows for `llmSummary.ts` / `coherenceMap.ts` style degree, adjacency, kind, and
+frame-membership work.
+
 ## Before Suggesting A Change
 
 Check whether the suggestion:

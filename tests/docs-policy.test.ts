@@ -89,12 +89,29 @@ describe("documentation policy", () => {
     expectPhrase(caseStudies, "examples/renderer-grid-buffer");
   });
 
-  it("keeps release and roadmap documents aligned with the current v2.8 surface", () => {
+  it("keeps graph indexes separate from graph serialization and editor state", () => {
+    const humanReadme = readRepoFile("docs/human/README.md");
+    const llmReadme = readRepoFile("docs/llm/README.md");
+    const todo = readRepoFile("docs/llm/TODO.md");
+    const performance = readRepoFile("docs/human/performance-comparison.md");
+    const buffersIndex = readRepoFile("packages/buffers/src/index.ts");
+
+    expectPhrase(humanReadme, "Keep the canonical graph as JSON/React Flow objects");
+    expectPhrase(humanReadme, "Keep string ids in a normal JavaScript `string[]` table");
+    expectPhrase(llmReadme, "Zeno may model only a rebuildable numeric graph index");
+    expectPhrase(llmReadme, "Do not turn this into a general graph serializer");
+    expectPhrase(todo, "not as canonical editor state or a graph serializer");
+    expectPhrase(performance, "does not promote Zeno as a graph serializer");
+    expectPhrase(performance, "The string id table stays outside Zeno as normal JavaScript data");
+    expect(buffersIndex).not.toMatch(/Graph|graph|serializeGraph|deserializeGraph|GraphSerializer/);
+  });
+
+  it("keeps release and roadmap documents aligned with the current v2.9 surface", () => {
     const architecture = readRepoFile("docs/reference/architecture.md");
     const releaseChecklist = readRepoFile("docs/reference/release-checklist.md");
     const todo = readRepoFile("docs/llm/TODO.md");
 
-    expect(architecture).toContain("Current v2.8 status");
+    expect(architecture).toContain("Current v2.9 status");
     expect(architecture).not.toContain("Current v1 status");
     expect(todo).toContain("## Candidate Work");
     expect(todo).not.toContain("## v2.2 Candidate Work");

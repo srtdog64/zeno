@@ -115,6 +115,40 @@ revision, use `createFixedRecordTable(byteLength, initialCapacity?)` to reuse
 capacity. It is a generic `ArrayBuffer`/`DataView` table boundary, not a scene
 graph, ECS, renderer, or GPU upload API.
 
+For diagram or graph editors, keep the human-authored graph as JSON or normal
+objects. Labels, notes, selection state, layout positions, and editor history
+are not Zeno's job. If the graph becomes large enough that topology scans are
+slow, build a rebuildable graph index: intern string node ids into
+numbers, store numeric node/edge rows in fixed buffers, and rebuild that index
+whenever the source graph changes.
+
+Diagram Studio is the intended mental model. Keep the canonical graph as
+JSON/React Flow objects, then add a derived index only when the graph is large
+enough to justify it:
+
+```ts
+interface EdgeRow {
+  sourceId: z.u32;
+  targetId: z.u32;
+  kind: z.u16;
+  layerMask: z.u32;
+}
+
+interface NodeRow {
+  idIndex: z.u32;
+  kind: z.u16;
+  flags: z.u32;
+  inDegree: z.u32;
+  outDegree: z.u32;
+}
+```
+
+Keep string ids in a normal JavaScript `string[]` table. Zeno should only handle
+the interned numeric node and edge rows. That lets repeated analysis code such
+as `llmSummary.ts` or `coherenceMap.ts` compute degree counts, adjacency,
+kind counts, and frame membership counts without reparsing or walking the full
+editor object graph every time.
+
 ## Start Here
 
 - [Getting Started](getting-started.md)

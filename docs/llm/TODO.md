@@ -209,8 +209,9 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.9.0` after release review if the Geukbit dogfood boundary and
-  fixed-record table reuse surface remain the right release boundary
+- publish `2.9.1` after release review if the post-2.9 stability patch remains
+  limited to fail-closed row-range validation, graph-index benchmark evidence,
+  and documentation/test-policy cleanup
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,
@@ -415,6 +416,11 @@ Status: satisfied as a diagnostic release gate.
   schemas after the SoA native-array path has a browser benchmark witness. These
   should output caller-owned typed arrays and must not import renderer
   libraries.
+- diagram graph indexes: model Diagram Studio / Obsidian-style graph
+  workloads as rebuildable numeric indexes, not as canonical editor state or a
+  graph serializer. Source-of-truth labels, notes, layout positions, and memos
+  stay in JSON/objects. Zeno may benchmark interned node ids, fixed edge rows,
+  degree arrays, adjacency buffers, and kind histograms.
 
 ## Ongoing policies
 

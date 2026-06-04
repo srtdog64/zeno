@@ -17,7 +17,12 @@ export function assertRowRange(
     return;
   }
 
-  const lastByte = (count - 1) * byteLength + fieldEnd;
+  const safeProduct = (count - 1) * byteLength;
+  if (!Number.isSafeInteger(safeProduct)) {
+    throw new RangeError("Byte offset calculation overflowed safe integer range");
+  }
+
+  const lastByte = safeProduct + fieldEnd;
   assertNonNegativeSafeInteger(lastByte, "lastByte");
 
   if (lastByte > view.byteLength) {

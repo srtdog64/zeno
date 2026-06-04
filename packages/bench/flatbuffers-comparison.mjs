@@ -409,3 +409,20 @@ console.log("");
 console.log("Interpretation:");
 console.log("  Raw DataView is the lower-level baseline; beating it consistently is not the contract.");
 console.log("  The useful question is whether Zeno keeps named TS-schema access near DataView while avoiding FlatBuffers table indirection and per-record object materialization.");
+console.log("");
+console.log("Methodological notes:");
+console.log(
+  "  Scope: scalar-only access on a fixed-stride record array. Dynamic fields (string, bytes, vector) are present in the Zeno fixture but not exercised in these scan loops.",
+);
+console.log(
+  "  Topology: synthetic records, deterministic field values, exactly periodic. Real workloads have correlated values and irregular access; expect optimistic results here for any path that benefits from branch predictor warmth.",
+);
+console.log(
+  "  Cost amortization: bench measures scan-only. Pack/build cost is excluded for both sides. FlatBuffers builder allocations and Zeno generated-object writer cost are not part of these numbers.",
+);
+console.log(
+  "  Fair baseline: payload bytes are not equivalent (Zeno 88-byte fixture includes non-scalar fields; FlatBuffers table is leaner). The scan comparison isolates access pattern, not memory footprint. See `Payload bytes are diagnostic only` above.",
+);
+console.log(
+  "  Attribution: Zeno paths exercise generated static accessors and the `sumX` scan kernel. FlatBuffers path uses the upstream JS generated class. Differences reflect generated-code shape and table-indirection cost, not runtime helper choice.",
+);

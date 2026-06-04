@@ -289,7 +289,7 @@ The workload compares:
 - FlatBuffers JS table path-prefix scan over UTF-8 path bytes
 - binary metadata packing cost
 
-Latest local witness:
+Current local sample:
 
 - Date: 2026-05-10
 - Source rows: 184 HexGL metadata rows
@@ -438,6 +438,107 @@ Interpretation:
   layer. Renderer-specific fused pack kernels or generated pack kernels need
   separate benchmark witnesses before being promoted.
 
+### Diagram Graph Index Witness
+
+`bench:graph-index` models a Diagram Studio / Obsidian-style graph workload.
+The source graph is a normal object graph with string node ids. Labels, memos,
+selection state, and layout positions intentionally stay outside the binary
+index. The benchmark lowers only repeated topology work into a rebuildable
+numeric index:
+
+- node kind rows
+- edge source/target ids
+- edge kind rows
+- in/out degree arrays
+- adjacency buffers
+
+Command:
+
+```powershell
+npm run bench:graph-index
+```
+
+Current policy: this benchmark does not promote Zeno as a graph serializer. It
+tests whether a large editor graph can keep JSON/objects as source of truth
+while using Zeno-style fixed rows as a rebuildable analysis index.
+
+Diagram Studio should follow this split if it ever adopts the pattern:
+
+```ts
+interface EdgeRow {
+  sourceId: z.u32;
+  targetId: z.u32;
+  kind: z.u16;
+  layerMask: z.u32;
+}
+
+interface NodeRow {
+  idIndex: z.u32;
+  kind: z.u16;
+  flags: z.u32;
+  inDegree: z.u32;
+  outDegree: z.u32;
+}
+```
+
+The string id table stays outside Zeno as normal JavaScript data. The binary
+rows are only for repeated topology work: degree calculation, adjacency
+construction, kind counts, and frame membership counts.
+
+Current local sample:
+
+- Date: 2026-06-04
+- Nodes: 40,000
+- Edges: 160,000
+- Warmup: 3 runs
+- Measured: 20 runs
+- JSON payload: 12.63 MiB
+- Interned typed-array payload: 2.52 MiB
+- Binary row payload: 3.05 MiB
+- The exact timings are diagnostic. Re-run `npm run bench:graph-index` on the
+  target machine before using this as evidence.
+
+Fixture retained memory:
+
+| Fixture                    | Heap delta | ArrayBuffer delta |
+| -------------------------- | ---------: | ----------------: |
+| String-keyed object graph  |  23.14 MiB |               0 B |
+| JSON payload               |  12.63 MiB |               0 B |
+| Numeric-keyed object graph |  12.21 MiB |               0 B |
+| Typed arrays               |   7.71 KiB |          2.52 MiB |
+| Binary rows                |   6.47 KiB |          3.05 MiB |
+
+Timing summary:
+
+| Workload                                       |    Median |       p95 |       p99 |      Std | Median ns/edge |
+| ---------------------------------------------- | --------: | --------: | --------: | -------: | -------------: |
+| String-keyed object graph summary              |  59.54 ms |  93.18 ms | 113.33 ms | 18.72 ms |      372.11 ns |
+| JSON.parse + string-keyed object graph summary | 203.01 ms | 250.19 ms | 271.68 ms | 31.79 ms |     1268.78 ns |
+| Numeric-keyed object graph summary             |   2.96 ms |   3.65 ms |  25.01 ms |  4.94 ms |       18.50 ns |
+| Interned typed-array graph index               |   2.04 ms |   2.94 ms |  26.14 ms |  5.38 ms |       12.75 ns |
+| Zeno binary graph index summary                |   1.96 ms |   3.56 ms |  16.69 ms |  3.29 ms |       12.28 ns |
+
+Delta interpretation against the string-keyed object graph summary:
+
+| Comparison                                     | Median delta | Pooled std | Status      |
+| ---------------------------------------------- | -----------: | ---------: | ----------- |
+| JSON.parse + string-keyed object graph summary |   +143.47 ms |   36.89 ms | above-noise |
+| Numeric-keyed object graph summary             |    -56.58 ms |   19.36 ms | above-noise |
+| Interned typed-array graph index               |    -57.50 ms |   19.48 ms | above-noise |
+| Zeno binary graph index summary                |    -57.57 ms |   19.01 ms | above-noise |
+
+Delta interpretation against the numeric-keyed object graph summary:
+
+| Comparison                       | Median delta | Pooled std | Status       |
+| -------------------------------- | -----------: | ---------: | ------------ |
+| Interned typed-array graph index |     -0.92 ms |    7.30 ms | within-noise |
+| Zeno binary graph index summary  |     -0.99 ms |    5.94 ms | within-noise |
+
+Interpretation: this supports the rebuildable-index direction. It does
+not mean diagram labels, memos, editor selection, or layout JSON should move to
+Zeno. The binary path only owns repeated topology scans over interned numeric
+rows.
+
 ## Scalar Read Timing
 
 | Access mode                                     |   Median |      p95 |      p99 |     Std | Median ns/record | Relative median | Allocation shape            |
@@ -572,6 +673,8 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
   [packages/bench/renderer-surface-metadata.mjs](../packages/bench/renderer-surface-metadata.mjs)
 - Renderer mesh TS-object comparison benchmark:
   [packages/bench/renderer-mesh-ts-comparison.mjs](../packages/bench/renderer-mesh-ts-comparison.mjs)
+- Diagram graph index benchmark:
+  [packages/bench/diagram-graph-index.mjs](../packages/bench/diagram-graph-index.mjs)
 - HexGL metadata fixture: [packages/bench/fixtures/hexgl-asset-metadata.json](../packages/bench/fixtures/hexgl-asset-metadata.json)
 - Renderer surface metadata fixture:
   [packages/bench/fixtures/renderer-surface-metadata.json](../packages/bench/fixtures/renderer-surface-metadata.json)

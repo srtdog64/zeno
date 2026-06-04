@@ -7,6 +7,7 @@ const rootDir = path.resolve(fileURLToPath(import.meta.url), "..", "..");
 
 for (const relativePath of [
   "packages/compiler/dist",
+  "packages/buffers/dist",
   "packages/runtime/dist",
   "packages/schema/dist",
   "packages/types/dist",

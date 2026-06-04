@@ -202,8 +202,24 @@ compareToBaseline(
 );
 
 console.log("");
+console.log("Methodological notes:");
 console.log(
-  "Methodological note: HexGL asset payload bytes are not stored here. The fixture contains path, extension, size, and kind metadata from a pinned public repository tree, repeated to create a large metadata scan workload.",
+  "  Scope: HexGL asset payload bytes are not stored here. The fixture contains path, extension, size, and kind metadata from a pinned public repository tree.",
+);
+console.log(
+  `  Topology: ${sourceRows.length.toLocaleString("en-US")} real rows are repeated to reach ${records.length.toLocaleString("en-US")} scaled rows. Distribution is exactly periodic; cache behavior is optimistic relative to a real heterogeneous asset catalog.`,
+);
+console.log(
+  "  Cost amortization: each run measures one scan pass. Pack runs measure one pack pass. Real metadata pipelines pack once and scan many times; the per-run delta shown here is not the end-to-end delta.",
+);
+console.log(
+  "  Fair baseline: JSON.parse + scan includes parse cost; pre-parsed scan isolates access pattern. Compare against the pre-parsed scan when judging what the binary representation contributes versus what JSON parsing costs.",
+);
+console.log(
+  "  Attribution: Zeno binary scans use hand-written DataView access against the generated row layout, not the buffers pack helpers. The result shows fixed-stride scan speed parity with native typed-array layout, not a buffers-package contribution.",
+);
+console.log(
+  "  Checksum: binary and FlatBuffers scans are verified pairwise. JSON scan checksums are not cross-verified against binary in this bench; semantic equivalence with JSON is asserted by construction of the binary payload.",
 );
 
 function expandRecords(rows, targetCount) {

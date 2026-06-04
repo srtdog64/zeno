@@ -2,6 +2,12 @@
 
 Status: Geukbit dogfood boundary and fixed-record table reuse release.
 
+> Geukbit is an external 3D editor / engine product that uses Zeno as a binary
+> projection layer. It is the dogfood source of pressure for this release, not
+> a Zeno subsystem. References to "Geukbit" in this changelog identify the
+> caller whose real-world buffer patterns motivated the new helper; the helper
+> itself contains no Geukbit-specific code.
+
 ## What Changed
 
 - Added `createFixedRecordTable(byteLength, initialCapacity?)` to

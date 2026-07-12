@@ -113,7 +113,9 @@ layer rather than mixing it into the generic plan surface.
 When an adapter rebuilds same-shaped fixed-row tables every frame or document
 revision, use `createFixedRecordTable(byteLength, initialCapacity?)` to reuse
 capacity. It is a generic `ArrayBuffer`/`DataView` table boundary, not a scene
-graph, ECS, renderer, or GPU upload API.
+graph, ECS, renderer, or GPU upload API. After `reset(count)`, only the first
+`count` rows are live; a later capacity growth preserves that active byte range,
+not inactive bytes left elsewhere in the old capacity.
 
 For diagram or graph editors, keep the human-authored graph as JSON or normal
 objects. Labels, notes, selection state, layout positions, and editor history

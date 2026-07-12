@@ -209,9 +209,12 @@ Status: satisfied as a diagnostic release gate.
 
 ## Immediate next tasks
 
-- publish `2.9.1` after release review if the post-2.9 stability patch remains
-  limited to fail-closed row-range validation, graph-index benchmark evidence,
-  and documentation/test-policy cleanup
+- publish `2.9.2` after release review if the patch remains limited to
+  fixed-record table growth safety/performance and benchmark coverage
+- keep fixed-record table growth fail-closed on unsafe byte-length products and
+  copy only `activeByteLength` when capacity grows
+- keep dynamic predicate benchmarks paired with equivalent raw `DataView`
+  baselines; do not compare prefix/suffix/includes work against full equality
 - keep publishing under the owned `@exornea/zeno-*` package family
 - keep the publish order explicit for future releases:
   `@exornea/zeno-types`, `@exornea/zeno-schema`, `@exornea/zeno-runtime`,

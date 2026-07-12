@@ -1,6 +1,6 @@
 {
   "name": "@exornea/zeno-example-renderer-entity-transform-buffer",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "start": "node ./dist/main.js"
   },
   "dependencies": {
-    "@exornea/zeno-buffers": "2.9.1",
-    "@exornea/zeno-compiler": "2.9.1",
-    "@exornea/zeno-runtime": "2.9.1",
-    "@exornea/zeno-types": "2.9.1"
+    "@exornea/zeno-buffers": "2.9.2",
+    "@exornea/zeno-compiler": "2.9.2",
+    "@exornea/zeno-runtime": "2.9.2",
+    "@exornea/zeno-types": "2.9.2"
   }
 }

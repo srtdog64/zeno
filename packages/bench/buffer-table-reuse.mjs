@@ -5,6 +5,10 @@ import { createFixedRecordTable } from "../../packages/buffers/dist/index.js";
 const WARMUP_RUNS = Number(process.env.ZENO_TABLE_REUSE_BENCH_WARMUP ?? 3);
 const MEASURE_RUNS = Number(process.env.ZENO_TABLE_REUSE_BENCH_RUNS ?? 25);
 const ITERATIONS = Number(process.env.ZENO_TABLE_REUSE_BENCH_ITERATIONS ?? 5_000);
+const GROWTH_ROWS = Number(process.env.ZENO_TABLE_GROWTH_BENCH_ROWS ?? 1_024);
+const GROWTH_STRIDE = 32;
+const SPARSE_CAPACITY = Number(process.env.ZENO_TABLE_SPARSE_BENCH_CAPACITY ?? 65_536);
+const SPARSE_ACTIVE_ROWS = 64;
 
 const CELL_STRIDE = 12;
 const ENTITY_STRIDE = 28;
@@ -23,6 +27,10 @@ console.log(`iterations=${ITERATIONS} warmup=${WARMUP_RUNS} runs=${MEASURE_RUNS}
 console.log(
   `tables: cells=${CELL_COUNT}x${CELL_STRIDE}, entities=${ENTITY_COUNT}x${ENTITY_STRIDE}, agents=${AGENT_COUNT}x${AGENT_STRIDE}`,
 );
+console.log(`growth witness: rows=${GROWTH_ROWS} stride=${GROWTH_STRIDE}`);
+console.log(
+  `sparse regrowth witness: capacity=${SPARSE_CAPACITY} activeRows=${SPARSE_ACTIVE_ROWS} stride=${GROWTH_STRIDE}`,
+);
 console.log("");
 
 const fresh = measure("fresh ArrayBuffer/DataView tables", freshTablesPass);
@@ -30,6 +38,32 @@ const reused = measure("createFixedRecordTable reset reuse", reusableTablesPass(
 
 console.log("");
 compareToBaseline("createFixedRecordTable reset reuse", fresh.stats, reused.stats);
+
+console.log("");
+const exactGrowth = measure("exact-fit incremental table growth", exactFitGrowthPass);
+const geometricGrowth = measure("createFixedRecordTable geometric growth", geometricGrowthPass);
+console.log("");
+compareToBaseline(
+  "createFixedRecordTable geometric growth",
+  exactGrowth.stats,
+  geometricGrowth.stats,
+);
+
+console.log("");
+const fullCapacityRegrowth = measure(
+  "full-capacity sparse regrowth copy",
+  fullCapacitySparseRegrowthPass,
+);
+const activeRowsRegrowth = measure(
+  "createFixedRecordTable active-row sparse regrowth",
+  activeRowsSparseRegrowthPass,
+);
+console.log("");
+compareToBaseline(
+  "createFixedRecordTable active-row sparse regrowth",
+  fullCapacityRegrowth.stats,
+  activeRowsRegrowth.stats,
+);
 
 function freshTablesPass() {
   let checksum = 0;
@@ -63,6 +97,66 @@ function reusableTablesPass() {
 
     return checksum;
   };
+}
+
+function exactFitGrowthPass() {
+  let buffer = new ArrayBuffer(0);
+  let checksum = 0;
+
+  for (let count = 1; count <= GROWTH_ROWS; count += 1) {
+    const nextBuffer = new ArrayBuffer(count * GROWTH_STRIDE);
+    new Uint8Array(nextBuffer).set(new Uint8Array(buffer));
+    const view = new DataView(nextBuffer);
+    view.setUint32((count - 1) * GROWTH_STRIDE, count, true);
+    checksum = mix32(checksum, view.getUint32((count - 1) * GROWTH_STRIDE, true));
+    buffer = nextBuffer;
+  }
+
+  return checksum;
+}
+
+function geometricGrowthPass() {
+  const table = createFixedRecordTable(GROWTH_STRIDE);
+  let checksum = 0;
+
+  for (let count = 1; count <= GROWTH_ROWS; count += 1) {
+    const view = table.reset(count);
+    view.setUint32((count - 1) * GROWTH_STRIDE, count, true);
+    checksum = mix32(checksum, view.getUint32((count - 1) * GROWTH_STRIDE, true));
+  }
+
+  return checksum;
+}
+
+function fullCapacitySparseRegrowthPass() {
+  const currentBuffer = new ArrayBuffer(SPARSE_CAPACITY * GROWTH_STRIDE);
+  const currentView = new DataView(currentBuffer);
+  for (let index = 0; index < SPARSE_ACTIVE_ROWS; index += 1) {
+    currentView.setUint32(index * GROWTH_STRIDE, index + 1, true);
+  }
+
+  const nextBuffer = new ArrayBuffer(SPARSE_CAPACITY * 2 * GROWTH_STRIDE);
+  new Uint8Array(nextBuffer).set(new Uint8Array(currentBuffer));
+  return checksumActiveRows(new DataView(nextBuffer));
+}
+
+function activeRowsSparseRegrowthPass() {
+  const table = createFixedRecordTable(GROWTH_STRIDE, SPARSE_CAPACITY);
+  const currentView = table.reset(SPARSE_ACTIVE_ROWS);
+  for (let index = 0; index < SPARSE_ACTIVE_ROWS; index += 1) {
+    currentView.setUint32(index * GROWTH_STRIDE, index + 1, true);
+  }
+
+  const nextView = table.ensureCapacity(SPARSE_CAPACITY + 1);
+  return checksumActiveRows(nextView);
+}
+
+function checksumActiveRows(view) {
+  let checksum = 0;
+  for (let index = 0; index < SPARSE_ACTIVE_ROWS; index += 1) {
+    checksum = mix32(checksum, view.getUint32(index * GROWTH_STRIDE, true));
+  }
+  return checksum;
 }
 
 function writeFixtureTables(cellView, entityView, agentView, seed) {

@@ -188,6 +188,9 @@ describe("zeno-buffers", () => {
     );
     expect(() => createFixedRecordTable(0)).toThrow(RangeError);
     expect(() => createFixedRecordTable(STRIDE).reset(-1)).toThrow(RangeError);
+    expect(() => createFixedRecordTable(Number.MAX_SAFE_INTEGER, 2)).toThrow(
+      "Table buffer byte length exceeds safe integer range",
+    );
   });
 });
 

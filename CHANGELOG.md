@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.9.2
+
+Status: fixed-record table growth and benchmark coverage patch.
+
+- Hardened fixed-record table allocation so `byteLength * capacity` fails
+  closed before leaving JavaScript's safe integer range.
+- Changed fixed-record table growth to copy only `activeByteLength`; inactive
+  capacity is not live table data and no longer moves into the new buffer.
+- Expanded `bench:buffers` with exact-fit growth, geometric growth, and sparse
+  regrowth witnesses.
+- Expanded `bench:dynamic` with matched raw `DataView` baselines for ASCII
+  equality, prefix, suffix, includes, and byte hashing.
+- Documented the active-row preservation contract and refreshed the local
+  performance witness.
+
 ## 2.9.1
 
 Status: post-2.9 stability and benchmark-boundary patch.

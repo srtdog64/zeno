@@ -26,7 +26,7 @@ class FixedRecordTableImpl implements FixedRecordTable {
 
     this.byteLength = byteLength;
     this.#capacity = initialCapacity;
-    this.#buffer = new ArrayBuffer(byteLength * initialCapacity);
+    this.#buffer = new ArrayBuffer(tableBufferByteLength(byteLength, initialCapacity));
     this.#view = new DataView(this.#buffer);
   }
 
@@ -58,8 +58,8 @@ class FixedRecordTableImpl implements FixedRecordTable {
     }
 
     const nextCapacity = nextTableCapacity(this.#capacity, count);
-    const nextBuffer = new ArrayBuffer(this.byteLength * nextCapacity);
-    new Uint8Array(nextBuffer).set(new Uint8Array(this.#buffer));
+    const nextBuffer = new ArrayBuffer(tableBufferByteLength(this.byteLength, nextCapacity));
+    new Uint8Array(nextBuffer).set(new Uint8Array(this.#buffer, 0, this.activeByteLength));
     this.#buffer = nextBuffer;
     this.#view = new DataView(nextBuffer);
     this.#capacity = nextCapacity;
@@ -71,6 +71,16 @@ class FixedRecordTableImpl implements FixedRecordTable {
     this.#count = count;
     return this.#view;
   }
+}
+
+function tableBufferByteLength(byteLength: number, capacity: number): number {
+  const total = byteLength * capacity;
+  if (!Number.isSafeInteger(total)) {
+    throw new RangeError(
+      `Table buffer byte length exceeds safe integer range: byteLength=${byteLength}, capacity=${capacity}`,
+    );
+  }
+  return total;
 }
 
 function nextTableCapacity(current: number, required: number): number {

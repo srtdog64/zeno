@@ -165,6 +165,22 @@ describe("dynamic layout runtime skeleton", () => {
     expect(spanIncludesAscii(view, 0, "-dyn")).toBe(true);
     expect(spanIncludesAscii(view, 0, "missing")).toBe(false);
     expect(spanHashBytes(view, 0)).toBe(hashBytes(payload));
+
+    writeSpan32Descriptor(view, 0, { relOffset: 60, byteLength: 8 });
+    expect(() => spanEqualsAscii(view, 0, "12345678")).toThrow(RangeError);
+    expect(() => spanStartsWithAscii(view, 0, "12")).toThrow(RangeError);
+    expect(() => spanEndsWithAscii(view, 0, "78")).toThrow(RangeError);
+    expect(() => spanIncludesAscii(view, 0, "34")).toThrow(RangeError);
+    expect(() => spanHashBytes(view, 0)).toThrow(RangeError);
+  });
+
+  it("reserves unaligned and aligned writer spans", () => {
+    const writer = new DynamicLayoutWriter(new DataView(new ArrayBuffer(32)), 1);
+
+    expect(writer.reserve(2)).toBe(1);
+    expect(writer.tailOffset).toBe(3);
+    expect(writer.reserve(2, 4)).toBe(4);
+    expect(writer.tailOffset).toBe(6);
   });
 
   it("caches vector descriptors until refresh or rebase", () => {

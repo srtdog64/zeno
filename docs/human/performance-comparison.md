@@ -194,6 +194,36 @@ expand the Zeno core claim or add a renderer dependency; it shows what the next
 renderer layer looks like when object materialization and per-record pack loops
 are removed.
 
+## Fixed-Record Table Reuse
+
+`createFixedRecordTable(...)` keeps one caller-owned `ArrayBuffer`/`DataView`
+pair and grows capacity geometrically. Growth preserves only active rows;
+bytes outside `activeByteLength` are not part of the table's live data and are
+not copied into a larger buffer.
+
+Command:
+
+```sh
+npm run bench:buffers
+```
+
+Current local sample (2026-07-12, 3 warmups, 25 measured runs):
+
+| Workload                                 |    Median |       p95 |       p99 |      Std |
+| ---------------------------------------- | --------: | --------: | --------: | -------: |
+| Fresh renderer-style tables              | 170.95 ms | 253.81 ms | 266.43 ms | 37.67 ms |
+| Fixed-record table reset reuse           |  74.75 ms |  82.93 ms |  86.19 ms |  6.75 ms |
+| Exact-fit incremental growth, 1,024 rows |   3.21 ms |   8.63 ms |   8.83 ms |  1.68 ms |
+| Geometric incremental growth, 1,024 rows |   0.12 ms |   0.32 ms |   0.33 ms |  0.08 ms |
+| Full-capacity sparse regrowth copy       |   0.75 ms |   1.33 ms |   1.36 ms |  0.25 ms |
+| Active-row-only sparse regrowth copy     |   0.04 ms |   0.41 ms |   0.42 ms |  0.12 ms |
+
+The sparse witness starts with capacity for 65,536 32-byte rows, marks only 64
+rows active, then grows past the old capacity. Copying only active bytes avoids
+moving about 2 MiB of inactive capacity. All three comparisons were above the
+pooled local noise floor. This is a reuse/growth witness, not a claim that a
+fixed-record table makes scalar reads faster than raw `DataView`.
+
 ## Dynamic Layout Timing
 
 Dynamic descriptors are supported, but the current performance witness does not
@@ -209,7 +239,7 @@ npm run bench:dynamic
 
 Run parameters:
 
-- Date: 2026-05-09
+- Date: 2026-07-12
 - Records: 100,000
 - Warmup: 3 runs
 - Measured: 25 runs
@@ -218,48 +248,63 @@ Run parameters:
 
 Local Node result:
 
-| Workload                         |   Median |      p95 |      p99 |     Std | Median ns/record |
-| -------------------------------- | -------: | -------: | -------: | ------: | ---------------: |
-| Direct span bytes `DataView`     |  2.89 ms | 15.03 ms | 15.17 ms | 3.39 ms |         28.92 ns |
-| Direct span bytes `Uint8Array`   |  4.40 ms | 15.80 ms | 16.70 ms | 3.31 ms |         44.03 ns |
-| Zeno `BytesSpanView.bytes()`     |  7.60 ms | 18.37 ms | 21.11 ms | 4.01 ms |         76.01 ns |
-| Direct UTF-8 decode              | 13.62 ms | 16.58 ms | 16.72 ms | 1.96 ms |        136.19 ns |
-| Zeno `Utf8SpanView.text()`       | 27.31 ms | 41.06 ms | 43.97 ms | 6.75 ms |        273.08 ns |
-| `JSON.parse` string array        |  5.78 ms | 10.53 ms | 20.87 ms | 3.46 ms |         57.81 ns |
-| Direct scalar vector `i32`       |  0.13 ms |  0.18 ms |  1.57 ms | 0.29 ms |          1.31 ns |
-| Zeno `ScalarVectorView.at(i)`    |  3.48 ms |  4.36 ms |  6.96 ms | 0.83 ms |         34.85 ns |
-| Direct bytes vector              |  5.63 ms | 17.54 ms | 17.72 ms | 3.48 ms |         56.31 ns |
-| Zeno `BytesVectorView.bytesAt()` |  6.11 ms | 18.87 ms | 23.49 ms | 4.32 ms |         61.07 ns |
-| Direct UTF-8 vector decode       | 11.38 ms | 14.50 ms | 15.15 ms | 1.54 ms |        113.79 ns |
-| Zeno `Utf8VectorView.textAt(i)`  | 20.32 ms | 22.12 ms | 25.13 ms | 1.62 ms |        203.17 ns |
-| Manual `writeUtf8`               | 65.84 ms | 75.85 ms | 79.52 ms | 5.23 ms |        658.41 ns |
-| `DynamicLayoutWriter.writeUtf8`  | 77.00 ms | 82.72 ms | 82.74 ms | 3.62 ms |        770.00 ns |
-| Manual `writeBytes`              |  3.98 ms |  7.81 ms | 10.17 ms | 1.71 ms |         39.81 ns |
-| `DynamicLayoutWriter.writeBytes` | 10.05 ms | 11.39 ms | 16.67 ms | 1.71 ms |        100.47 ns |
-| Manual `writeScalarVector`       |  6.38 ms |  7.71 ms |  8.10 ms | 0.88 ms |         63.80 ns |
-| `writeScalarVector`              |  9.25 ms | 11.31 ms | 13.23 ms | 1.20 ms |         92.53 ns |
+| Workload                              |   Median |      p95 |      p99 |     Std | Median ns/record |
+| ------------------------------------- | -------: | -------: | -------: | ------: | ---------------: |
+| Direct span bytes `DataView`          |  3.02 ms | 13.67 ms | 14.07 ms | 3.02 ms |         30.20 ns |
+| Direct span bytes `Uint8Array`        |  5.10 ms |  7.18 ms |  7.27 ms | 1.03 ms |         51.02 ns |
+| Zeno `BytesSpanView.bytes()`          |  8.28 ms | 12.45 ms | 13.09 ms | 1.61 ms |         82.77 ns |
+| Direct UTF-8 decode                   | 11.33 ms | 16.51 ms | 17.38 ms | 2.17 ms |        113.30 ns |
+| Zeno `Utf8SpanView.text()`            | 19.82 ms | 23.78 ms | 26.25 ms | 2.27 ms |        198.21 ns |
+| View bytes plus `equalsAscii`         |  9.03 ms | 14.46 ms | 17.35 ms | 2.50 ms |         90.31 ns |
+| Descriptor `spanEqualsAscii`          |  5.98 ms |  8.56 ms | 10.97 ms | 1.36 ms |         59.77 ns |
+| Descriptor `spanStartsWithAscii`      |  2.85 ms |  3.85 ms |  4.18 ms | 0.46 ms |         28.49 ns |
+| Descriptor `spanEndsWithAscii`        |  2.91 ms |  4.00 ms |  4.44 ms | 0.47 ms |         29.05 ns |
+| Descriptor `spanIncludesAscii`, hit   |  5.11 ms |  6.95 ms |  6.98 ms | 0.96 ms |         51.05 ns |
+| Descriptor `spanIncludesAscii`, miss  |  4.95 ms |  7.38 ms |  7.42 ms | 0.96 ms |         49.52 ns |
+| Descriptor `spanHashBytes`            |  5.66 ms |  6.20 ms |  7.06 ms | 1.05 ms |         56.57 ns |
+| `JSON.parse` string array             |  6.12 ms |  8.47 ms |  8.90 ms | 1.37 ms |         61.25 ns |
+| Direct scalar vector `i32`            |  0.13 ms |  0.28 ms |  1.50 ms | 0.27 ms |          1.33 ns |
+| Zeno `ScalarVectorView.at(i)`         |  2.51 ms |  3.82 ms |  6.68 ms | 0.95 ms |         25.14 ns |
+| Zeno `ScalarVectorView.nativeArray()` |  0.09 ms |  0.12 ms |  1.40 ms | 0.26 ms |          0.95 ns |
+| Direct bytes vector                   |  6.12 ms |  7.50 ms |  9.51 ms | 1.32 ms |         61.24 ns |
+| Zeno `BytesVectorView.bytesAt()`      |  7.28 ms |  8.69 ms | 12.17 ms | 1.65 ms |         72.82 ns |
+| Direct UTF-8 vector decode            | 14.31 ms | 16.07 ms | 18.28 ms | 2.01 ms |        143.10 ns |
+| Zeno `Utf8VectorView.textAt(i)`       | 19.26 ms | 22.94 ms | 23.18 ms | 2.47 ms |        192.55 ns |
+| Manual `writeUtf8`                    | 60.70 ms | 65.12 ms | 71.93 ms | 4.86 ms |        606.99 ns |
+| `DynamicLayoutWriter.writeUtf8`       | 76.69 ms | 87.85 ms | 88.61 ms | 7.46 ms |        766.94 ns |
+| Manual `writeBytes`                   |  3.21 ms |  4.78 ms |  6.34 ms | 0.84 ms |         32.14 ns |
+| `DynamicLayoutWriter.writeBytes`      | 10.90 ms | 12.84 ms | 19.49 ms | 2.14 ms |        109.04 ns |
+| Manual `writeScalarVector`            |  6.61 ms |  7.48 ms |  8.45 ms | 0.72 ms |         66.10 ns |
+| `writeScalarVector`                   |  7.97 ms |  9.64 ms | 12.46 ms | 1.64 ms |         79.66 ns |
 
 Delta interpretation:
 
-| Comparison                          | Median delta vs direct |      Pooled std | Status       |
-| ----------------------------------- | ---------------------: | --------------: | ------------ |
-| `BytesSpanView.bytes()` vs DataView |       +47.09 ns/record | 52.47 ns/record | within noise |
-| `BytesSpanView.bytes()`             |       +31.97 ns/record | 51.98 ns/record | within noise |
-| `Utf8SpanView.text()`               |      +136.89 ns/record | 70.30 ns/record | above noise  |
-| `JSON.parse` string array           |       -78.39 ns/record | 39.78 ns/record | above noise  |
-| `ScalarVectorView.at(i)`            |       +33.54 ns/record |  8.81 ns/record | above noise  |
-| `BytesVectorView.bytesAt(i)`        |        +4.76 ns/record | 55.49 ns/record | within noise |
-| `Utf8VectorView.textAt(i)`          |       +89.38 ns/record | 22.31 ns/record | above noise  |
-| `DynamicLayoutWriter.writeUtf8`     |      +111.59 ns/record | 63.64 ns/record | above noise  |
-| `DynamicLayoutWriter.writeBytes`    |       +60.65 ns/record | 24.18 ns/record | above noise  |
-| `writeScalarVector`                 |       +28.73 ns/record | 14.86 ns/record | above noise  |
+| Comparison                           | Median delta vs direct |      Pooled std | Status       |
+| ------------------------------------ | ---------------------: | --------------: | ------------ |
+| `BytesSpanView.bytes()` vs DataView  |       +52.57 ns/record | 34.22 ns/record | above noise  |
+| `Utf8SpanView.text()`                |       +84.91 ns/record | 31.42 ns/record | above noise  |
+| Descriptor `spanEqualsAscii`         |       +24.50 ns/record | 14.99 ns/record | above noise  |
+| Descriptor `spanStartsWithAscii`     |       +22.96 ns/record |  8.03 ns/record | above noise  |
+| Descriptor `spanEndsWithAscii`       |       +21.83 ns/record |  7.83 ns/record | above noise  |
+| Descriptor `spanIncludesAscii`, hit  |       +30.37 ns/record | 11.19 ns/record | above noise  |
+| Descriptor `spanIncludesAscii`, miss |       +24.91 ns/record | 12.31 ns/record | above noise  |
+| Descriptor `spanHashBytes`           |       +34.36 ns/record | 22.06 ns/record | above noise  |
+| `ScalarVectorView.at(i)`             |       +23.81 ns/record |  9.87 ns/record | above noise  |
+| `ScalarVectorView.nativeArray()`     |        -0.39 ns/record |  3.81 ns/record | within noise |
+| `BytesVectorView.bytesAt(i)`         |       +11.58 ns/record | 21.16 ns/record | within noise |
+| `Utf8VectorView.textAt(i)`           |       +49.45 ns/record | 31.83 ns/record | above noise  |
+| `DynamicLayoutWriter.writeUtf8`      |      +159.95 ns/record | 89.03 ns/record | above noise  |
+| `DynamicLayoutWriter.writeBytes`     |       +76.90 ns/record | 22.95 ns/record | above noise  |
+| `writeScalarVector`                  |       +13.56 ns/record | 17.95 ns/record | within noise |
 
 Current conclusion: the dynamic runtime API is correctness-first and ergonomic,
-not yet a promoted hot path. Caching each vector descriptor after the first view
-access moves byte vector indexing to within the direct baseline noise, but
-string decode and dynamic writer UTF-8 encoding still dominate. Promote dynamic
-performance only after byte-slice predicates, generated dynamic scan helpers,
-or immutable descriptor snapshot APIs have repeated benchmark witnesses.
+not yet a promoted hot path. Descriptor-level ASCII predicates avoid the
+`Uint8Array` view and string materialization path, but their checked descriptor
+and payload boundaries still cost roughly 20-34 ns/record over equivalent raw
+loops in this witness. `ScalarVectorView.nativeArray()` remains the preferred
+native-endian scalar-vector scan path. String decode and dynamic writer UTF-8
+encoding still dominate; do not promote broad dynamic-layout performance claims
+from these results.
 
 ## Real WebGL Game Metadata Witness
 
@@ -667,6 +712,8 @@ claim to callback scans, dynamic fields, `i64`/`u64`, or boolean counts yet.
 ## Cross-References
 
 - Benchmark implementation: [packages/bench/index.mjs](../packages/bench/index.mjs)
+- Fixed-record table reuse benchmark:
+  [packages/bench/buffer-table-reuse.mjs](../packages/bench/buffer-table-reuse.mjs)
 - FlatBuffers comparison benchmark: [packages/bench/flatbuffers-comparison.mjs](../packages/bench/flatbuffers-comparison.mjs)
 - Real game metadata benchmark: [packages/bench/real-game-metadata.mjs](../packages/bench/real-game-metadata.mjs)
 - Renderer surface metadata benchmark:

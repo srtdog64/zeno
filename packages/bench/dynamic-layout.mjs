@@ -11,7 +11,11 @@ import {
   hashBytes,
   readSpan32Descriptor,
   readVector32Descriptor,
+  spanEndsWithAscii,
   spanEqualsAscii,
+  spanHashBytes,
+  spanIncludesAscii,
+  spanStartsWithAscii,
   writeSpan32Descriptor,
   writeVector32Descriptor,
 } from "../../packages/runtime/dist/index.js";
@@ -24,6 +28,10 @@ const VECTOR32 = 8;
 const sharedEncoder = new TextEncoder();
 const sharedDecoder = new TextDecoder();
 const TEXT = "zeno-dynamic-payload";
+const TEXT_PREFIX = "zeno";
+const TEXT_SUFFIX = "payload";
+const TEXT_NEEDLE = "dynamic";
+const TEXT_MISSING = "missing";
 const TEXT_BYTES = sharedEncoder.encode(TEXT);
 const BYTE_PAYLOAD = Uint8Array.from({ length: 32 }, (_, index) => ((index + 1) * 17) & 0xff);
 
@@ -203,10 +211,126 @@ function zenoUtf8EqualsAsciiPass(view, count) {
   return checksum;
 }
 
-function spanDescriptorEqualsAsciiPass(view, count) {
+function spanDescriptorEqualsAsciiPass(view, count, value = TEXT) {
   let checksum = 0;
   for (let index = 0; index < count; index += 1) {
-    checksum += spanEqualsAscii(view, index * SPAN32, TEXT) ? 1 : 0;
+    checksum += spanEqualsAscii(view, index * SPAN32, value) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function directSpanEqualsAsciiPass(view, count, value) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    const descriptorOffset = index * SPAN32;
+    const relOffset = view.getUint32(descriptorOffset, true);
+    const byteLength = view.getUint32(descriptorOffset + 4, true);
+    if (byteLength !== value.length) {
+      continue;
+    }
+
+    checksum += directAsciiMatchesAt(view, relOffset, value, 0) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function directSpanStartsWithAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    const descriptorOffset = index * SPAN32;
+    const relOffset = view.getUint32(descriptorOffset, true);
+    const byteLength = view.getUint32(descriptorOffset + 4, true);
+    checksum +=
+      TEXT_PREFIX.length <= byteLength && directAsciiMatchesAt(view, relOffset, TEXT_PREFIX, 0)
+        ? 1
+        : 0;
+  }
+  return checksum;
+}
+
+function directSpanEndsWithAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    const descriptorOffset = index * SPAN32;
+    const relOffset = view.getUint32(descriptorOffset, true);
+    const byteLength = view.getUint32(descriptorOffset + 4, true);
+    checksum +=
+      TEXT_SUFFIX.length <= byteLength &&
+      directAsciiMatchesAt(view, relOffset, TEXT_SUFFIX, byteLength - TEXT_SUFFIX.length)
+        ? 1
+        : 0;
+  }
+  return checksum;
+}
+
+function directSpanIncludesAsciiPass(view, count, value) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    const descriptorOffset = index * SPAN32;
+    const relOffset = view.getUint32(descriptorOffset, true);
+    const byteLength = view.getUint32(descriptorOffset + 4, true);
+    const limit = byteLength - value.length;
+    let matches = value.length === 0;
+    const first = value.charCodeAt(0);
+    for (let offset = 0; !matches && offset <= limit; offset += 1) {
+      if (view.getUint8(relOffset + offset) !== first) {
+        continue;
+      }
+      matches = directAsciiMatchesAt(view, relOffset, value, offset);
+    }
+    checksum += matches ? 1 : 0;
+  }
+  return checksum;
+}
+
+function directAsciiMatchesAt(view, spanOffset, value, valueOffset) {
+  for (let index = 0; index < value.length; index += 1) {
+    if (view.getUint8(spanOffset + valueOffset + index) !== value.charCodeAt(index)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function spanDescriptorStartsWithAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum += spanStartsWithAscii(view, index * SPAN32, TEXT_PREFIX) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function spanDescriptorEndsWithAsciiPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum += spanEndsWithAscii(view, index * SPAN32, TEXT_SUFFIX) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function spanDescriptorIncludesAsciiPass(view, count, value) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum += spanIncludesAscii(view, index * SPAN32, value) ? 1 : 0;
+  }
+  return checksum;
+}
+
+function directSpanHashPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    const descriptorOffset = index * SPAN32;
+    const relOffset = view.getUint32(descriptorOffset, true);
+    const byteLength = view.getUint32(descriptorOffset + 4, true);
+    checksum = hashDataViewBytes(view, relOffset, byteLength, checksum);
+  }
+  return checksum;
+}
+
+function spanDescriptorHashPass(view, count) {
+  let checksum = 0;
+  for (let index = 0; index < count; index += 1) {
+    checksum = spanHashBytes(view, index * SPAN32, 0, true, checksum);
   }
   return checksum;
 }
@@ -442,13 +566,82 @@ const zenoUtf8EqualsAscii = measure("Zeno Utf8SpanView.bytes() + equalsAscii", (
 const spanDescriptorEqualsAscii = measure("Span32 descriptor + spanEqualsAscii", () =>
   spanDescriptorEqualsAsciiPass(textSpan.view, RECORD_COUNT),
 );
+const directSpanEqualsAscii = measure("direct Span32 ASCII equality", () =>
+  directSpanEqualsAsciiPass(textSpan.view, RECORD_COUNT, TEXT),
+);
+const directSpanEqualsAsciiMiss = measure("direct Span32 ASCII equality miss", () =>
+  directSpanEqualsAsciiPass(textSpan.view, RECORD_COUNT, TEXT_MISSING),
+);
+const spanDescriptorEqualsAsciiMiss = measure("Span32 descriptor equality miss", () =>
+  spanDescriptorEqualsAsciiPass(textSpan.view, RECORD_COUNT, TEXT_MISSING),
+);
+const directSpanStartsWithAscii = measure("direct Span32 ASCII prefix", () =>
+  directSpanStartsWithAsciiPass(textSpan.view, RECORD_COUNT),
+);
+const spanDescriptorStartsWithAscii = measure("Span32 descriptor + spanStartsWithAscii", () =>
+  spanDescriptorStartsWithAsciiPass(textSpan.view, RECORD_COUNT),
+);
+const directSpanEndsWithAscii = measure("direct Span32 ASCII suffix", () =>
+  directSpanEndsWithAsciiPass(textSpan.view, RECORD_COUNT),
+);
+const spanDescriptorEndsWithAscii = measure("Span32 descriptor + spanEndsWithAscii", () =>
+  spanDescriptorEndsWithAsciiPass(textSpan.view, RECORD_COUNT),
+);
+const directSpanIncludesAscii = measure("direct Span32 ASCII includes hit", () =>
+  directSpanIncludesAsciiPass(textSpan.view, RECORD_COUNT, TEXT_NEEDLE),
+);
+const spanDescriptorIncludesAscii = measure("Span32 descriptor + spanIncludesAscii hit", () =>
+  spanDescriptorIncludesAsciiPass(textSpan.view, RECORD_COUNT, TEXT_NEEDLE),
+);
+const directSpanIncludesAsciiMiss = measure("direct Span32 ASCII includes miss", () =>
+  directSpanIncludesAsciiPass(textSpan.view, RECORD_COUNT, TEXT_MISSING),
+);
+const spanDescriptorIncludesAsciiMiss = measure("Span32 descriptor + spanIncludesAscii miss", () =>
+  spanDescriptorIncludesAsciiPass(textSpan.view, RECORD_COUNT, TEXT_MISSING),
+);
+const directSpanHash = measure("direct Span32 byte hash", () =>
+  directSpanHashPass(textSpan.view, RECORD_COUNT),
+);
+const spanDescriptorHash = measure("Span32 descriptor + spanHashBytes", () =>
+  spanDescriptorHashPass(textSpan.view, RECORD_COUNT),
+);
 const jsonParse = measure("JSON.parse string array", () => jsonStringParsePass(jsonTextPayload));
 compareToBaseline("Utf8SpanView.text()", directUtf8.stats, zenoUtf8.stats);
 compareToBaseline("Utf8SpanView.bytes() + equalsAscii", zenoUtf8.stats, zenoUtf8EqualsAscii.stats);
 compareToBaseline(
   "Span32 descriptor + spanEqualsAscii",
-  zenoUtf8EqualsAscii.stats,
+  directSpanEqualsAscii.stats,
   spanDescriptorEqualsAscii.stats,
+);
+compareToBaseline(
+  "Span32 descriptor equality miss",
+  directSpanEqualsAsciiMiss.stats,
+  spanDescriptorEqualsAsciiMiss.stats,
+);
+compareToBaseline(
+  "Span32 descriptor + spanStartsWithAscii",
+  directSpanStartsWithAscii.stats,
+  spanDescriptorStartsWithAscii.stats,
+);
+compareToBaseline(
+  "Span32 descriptor + spanEndsWithAscii",
+  directSpanEndsWithAscii.stats,
+  spanDescriptorEndsWithAscii.stats,
+);
+compareToBaseline(
+  "Span32 descriptor + spanIncludesAscii hit",
+  directSpanIncludesAscii.stats,
+  spanDescriptorIncludesAscii.stats,
+);
+compareToBaseline(
+  "Span32 descriptor + spanIncludesAscii miss",
+  directSpanIncludesAsciiMiss.stats,
+  spanDescriptorIncludesAsciiMiss.stats,
+);
+compareToBaseline(
+  "Span32 descriptor + spanHashBytes",
+  directSpanHash.stats,
+  spanDescriptorHash.stats,
 );
 compareToBaseline("JSON.parse string array", directUtf8.stats, jsonParse.stats);
 
@@ -514,6 +707,12 @@ measureRetainedMemory("Utf8SpanView.bytes() + equalsAscii", () =>
 );
 measureRetainedMemory("Span32 descriptor + spanEqualsAscii", () =>
   spanDescriptorEqualsAsciiPass(textSpan.view, RECORD_COUNT),
+);
+measureRetainedMemory("Span32 descriptor + spanIncludesAscii", () =>
+  spanDescriptorIncludesAsciiPass(textSpan.view, RECORD_COUNT, TEXT_NEEDLE),
+);
+measureRetainedMemory("Span32 descriptor + spanHashBytes", () =>
+  spanDescriptorHashPass(textSpan.view, RECORD_COUNT),
 );
 measureRetainedMemory("ScalarVectorView.at(i)", () =>
   zenoScalarVectorPass(scalarVector.view, RECORD_COUNT),
